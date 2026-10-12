@@ -1106,3 +1106,9 @@ kbd {
   background: var(--accent-soft);
   color: var(--accent);
 }
+
+@media (max-width: 500px) {
+  .hide-sm {
+    display: none;
+  }
+}

@@ -32,3 +32,14 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Keeps the screen awake (Screen Wake Lock) while the timer runs.
 - Every timer run belongs to a logged session: completed sets are marked done (with reps/weight typed in the timer), Tabata/EMOM/interval rounds are logged, AMRAP/For Time results are saved, and each block’s active time is measured. A paused timer can be resumed later.
 - Timer tab with quick timers (Tabata, AMRAP, EMOM, For Time, Intervals, Timed sets) and a list of program days to run.
+
+## Phase 4 — Logging, progression and muscle display (2026-10-12)
+- Workout logging per set: weight, reps, time (m:ss) and distance depending on the exercise; fields are prefilled from the plan. One tap marks a set done, tapping the set number skips it, add/remove sets, drop-set reps per drop.
+- AMRAP and For Time results (rounds, extra reps, time) can be entered or edited on the workout screen.
+- “Last time” line with the previous session’s sets next to every exercise, and a “▲ Progress” marker on sets that beat the same set last time.
+- Session summary: duration, volume, sets and reps; per exercise best set, estimated 1RM (Epley), volume and change vs last time; “First time” and “Progress” badges.
+- Personal records: max weight, estimated 1RM, most reps at a weight, longest time and most AMRAP rounds (same exercises and time cap).
+- Exercise page: front/back body silhouette with primary and secondary muscles, best values and a chronological progression list.
+- Session summary shows the silhouette coloured by the share of work per muscle, plus a ranked muscle list with percentages.
+- History tab grouped by month; “Log past workout”; edit any logged session (sets, plan, date/time, duration, effort, notes); repeat a past workout.
+- Fixed: fast consecutive taps could overwrite each other; all workout edits are now transactional.

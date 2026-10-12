@@ -1,10 +1,13 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { BodyMap } from '../components/BodyMap';
+import { ExerciseHistory } from '../components/ExerciseHistory';
 import { Icon } from '../components/Icon';
 import { EmptyState, PageHeader, useToast } from '../components/ui';
 import { MUSCLE_LABEL } from '../data/muscles';
 import { db } from '../db/db';
 import { uid } from '../lib/ids';
+import { exerciseIntensity } from '../lib/muscleLoad';
 
 export default function ExerciseDetailPage() {
   const { id = '' } = useParams();
@@ -64,6 +67,15 @@ export default function ExerciseDetailPage() {
           <h2 id="muscles-h" className="mb">
             Muscles
           </h2>
+          <BodyMap values={exerciseIntensity(exercise)} compact />
+          <div className="row small faint mt-s mb" style={{ justifyContent: 'center', gap: 16 }}>
+            <span className="row" style={{ gap: 6 }}>
+              <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgb(255,209,102)' }} /> Primary
+            </span>
+            <span className="row" style={{ gap: 6 }}>
+              <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgb(166,76,20)' }} /> Secondary
+            </span>
+          </div>
           <h3 className="small muted">Primary</h3>
           <div className="chips mt-s mb">
             {exercise.primaryMuscles.map((m) => (
@@ -85,6 +97,7 @@ export default function ExerciseDetailPage() {
             )}
           </div>
         </section>
+        <ExerciseHistory exerciseId={exercise.id} />
         {exercise.notes && (
           <section className="card">
             <h2 className="mb">Notes</h2>

@@ -47,8 +47,8 @@ export function Icon({ name, size, title }: { name: IconName; size?: number; tit
   return (
     <svg
       viewBox="0 0 24 24"
-      width={size}
-      height={size}
+      width={size ?? '1.25em'}
+      height={size ?? '1.25em'}
       fill="none"
       stroke="currentColor"
       strokeWidth={2}
