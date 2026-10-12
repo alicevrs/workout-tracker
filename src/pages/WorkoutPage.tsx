@@ -1,14 +1,16 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { BlockEditor } from '../components/BlockEditor';
 import { Icon } from '../components/Icon';
+import { hasActiveRun, TimerScreen } from '../components/TimerScreen';
 import { EmptyState, PageHeader, useToast } from '../components/ui';
 import { db } from '../db/db';
 import { useExerciseMap, useProfile } from '../db/repo';
 import type { BlockFormat, PerformedBlock, Session } from '../db/types';
 import { formatDate } from '../lib/dates';
-import { describeBlock, FORMAT_INFO, FORMATS, newBlock } from '../lib/program';
+import { describeBlock, estimateBlockSeconds, FORMAT_INFO, FORMATS, newBlock } from '../lib/program';
+import { formatDuration } from '../lib/dates';
 import { applyBlockEdit, blockToPerformed, performedToBlock } from '../lib/session';
 
 export default function WorkoutPage() {
@@ -20,6 +22,26 @@ export default function WorkoutPage() {
   const session = useLiveQuery(() => db.sessions.get(id), [id]);
   const [editing, setEditing] = useState<string | null>(null);
   const [newFormat, setNewFormat] = useState<BlockFormat>('sets_reps');
+  const [timerBlocks, setTimerBlocks] = useState<number[] | null>(null);
+  const [params, setParams] = useSearchParams();
+  const [pendingRun, setPendingRun] = useState<number[] | null>(null);
+
+  // Auto-open the timer for quick timers (?run=all) and offer to resume an interrupted run.
+  const autoRun = useRef(params.get('run') === 'all');
+  const sessionLoaded = !!session;
+  useEffect(() => {
+    if (!session) return;
+    if (autoRun.current) {
+      autoRun.current = false;
+      setTimerBlocks(session.blocks.map((_, i) => i));
+      setParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionLoaded]);
+  useEffect(() => {
+    if (session && !timerBlocks) setPendingRun(hasActiveRun(session.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.id, timerBlocks]);
 
   if (session === undefined) return <div className="page" />;
   if (!session)
@@ -60,6 +82,22 @@ export default function WorkoutPage() {
         }
       />
       <div className="stack">
+        {pendingRun && !timerBlocks && (
+          <div className="banner warn">
+            <div className="grow">A timer is paused for this workout.</div>
+            <button className="btn small primary" onClick={() => setTimerBlocks(pendingRun)}>
+              <Icon name="timer" /> Open timer
+            </button>
+          </div>
+        )}
+        {session.blocks.length > 1 && (
+          <button className="btn primary block" onClick={() => setTimerBlocks(session.blocks.map((_, i) => i))}>
+            <Icon name="timer" /> Run all blocks with the timer
+            <span className="small" style={{ opacity: 0.8 }}>
+              ≈ {formatDuration(session.blocks.reduce((s, b) => s + estimateBlockSeconds(performedToBlock(b)), 0))}
+            </span>
+          </button>
+        )}
         {session.programDayId && (
           <p className="small faint">Changes here apply to this workout only. The program stays unchanged.</p>
         )}
@@ -72,9 +110,14 @@ export default function WorkoutPage() {
                   <span className="chip primary">{FORMAT_INFO[b.format].short}</span> <strong>{b.name ?? FORMAT_INFO[b.format].label}</strong>
                   <div className="small muted">{describeBlock(performedToBlock(b))}</div>
                 </div>
-                <button className="btn small" aria-expanded={open} onClick={() => setEditing(open ? null : b.id)}>
-                  <Icon name="edit" /> {open ? 'Done' : 'Edit'}
-                </button>
+                <div className="row">
+                  <button className="btn small" aria-expanded={open} onClick={() => setEditing(open ? null : b.id)}>
+                    <Icon name="edit" /> {open ? 'Done' : 'Edit'}
+                  </button>
+                  <button className="btn small primary" onClick={() => setTimerBlocks([session.blocks.indexOf(b)])} aria-label={`Start timer for ${b.name ?? FORMAT_INFO[b.format].label}`}>
+                    <Icon name="timer" /> Timer
+                  </button>
+                </div>
               </div>
               {open ? (
                 <>
@@ -138,6 +181,16 @@ export default function WorkoutPage() {
           Notes
           <textarea defaultValue={session.notes ?? ''} onBlur={(e) => save({ notes: e.target.value || undefined })} />
         </label>
+
+        {timerBlocks && (
+          <TimerScreen
+            session={session}
+            blockIndexes={timerBlocks}
+            onClose={() => {
+              setTimerBlocks(null);
+            }}
+          />
+        )}
 
         {session.status === 'in_progress' && (
           <button className="btn danger" onClick={discard}>

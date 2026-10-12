@@ -260,7 +260,10 @@ p {
 .grid {
   display: grid;
   gap: 12px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
+}
+.grid > * {
+  min-width: 0;
 }
 @media (min-width: 700px) {
   .grid.two {
@@ -417,6 +420,13 @@ button {
 }
 .btn.block {
   width: 100%;
+  white-space: normal;
+  text-align: center;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.main {
+  overflow-x: hidden;
 }
 .btn.icon {
   width: var(--tap);

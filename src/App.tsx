@@ -11,6 +11,7 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ProgramsPage = lazy(() => import('./pages/ProgramsPage'));
 const ProgramEditPage = lazy(() => import('./pages/ProgramEditPage'));
 const WorkoutPage = lazy(() => import('./pages/WorkoutPage'));
+const TimerPage = lazy(() => import('./pages/TimerPage'));
 
 interface NavItem {
   to: string;
@@ -22,6 +23,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { to: '/', label: 'Today', icon: 'home', mobile: true },
   { to: '/programs', label: 'Programs', icon: 'calendar', mobile: true },
+  { to: '/timer', label: 'Timer', icon: 'timer', mobile: true },
   { to: '/exercises', label: 'Exercises', icon: 'dumbbell', mobile: false },
   { to: '/settings', label: 'Settings', icon: 'settings', mobile: false },
 ];
@@ -51,6 +53,7 @@ export default function App() {
             <Route path="/programs" element={<ProgramsPage />} />
             <Route path="/programs/:id" element={<ProgramEditPage />} />
             <Route path="/workout/:id" element={<WorkoutPage />} />
+            <Route path="/timer" element={<TimerPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<div className="empty">Page not found.</div>} />
           </Routes>
