@@ -70,7 +70,7 @@ export const SPORTS: Sport[] = [
   { id: 'cross_country_skiing', label: 'Cross-country skiing', group: 'snow', met: 9.0, distance: true, elevation: true, primary: ['quads', 'lats', 'triceps'], secondary: ['glutes', 'abs', 'calves'], aliases: ['nordic_ski', 'cross_country_skiing', 'skate_skiing', 'classic_skiing'] },
   { id: 'snowboarding', label: 'Snowboarding', group: 'snow', met: 5.3, distance: true, elevation: false, primary: ['quads', 'glutes'], secondary: ['abs', 'calves', 'obliques'], aliases: ['snowboard', 'snowboarding'] },
   // Climbing
-  { id: 'sport_climbing', label: 'Sport climbing', group: 'climbing', met: 7.5, distance: false, elevation: false, primary: ['forearms', 'lats', 'biceps'], secondary: ['upper_back', 'abs', 'calves', 'quads'], aliases: ['rock_climbing', 'climbing', 'sport_climbing', 'indoor_climbing', 'lead_climbing'] },
+  { id: 'sport_climbing', label: 'Sport climbing', group: 'climbing', met: 7.5, distance: false, elevation: false, primary: ['forearms', 'lats', 'biceps'], secondary: ['upper_back', 'abs', 'calves', 'quads'], aliases: ['rock_climbing', 'rock_climb', 'climbing', 'sport_climbing', 'indoor_climbing', 'lead_climbing'] },
   { id: 'bouldering', label: 'Bouldering', group: 'climbing', met: 6.0, distance: false, elevation: false, primary: ['forearms', 'lats', 'biceps'], secondary: ['abs', 'upper_back', 'quads'], aliases: ['bouldering'] },
   { id: 'via_ferrata', label: 'Via ferrata / mountaineering', group: 'climbing', met: 6.5, distance: true, elevation: true, primary: ['quads', 'forearms'], secondary: ['glutes', 'lats', 'calves'], aliases: ['via_ferrata'] },
   // Fitness & mind-body
@@ -88,7 +88,7 @@ export const SPORTS: Sport[] = [
   { id: 'basketball', label: 'Basketball', group: 'team', met: 6.5, distance: false, elevation: false, primary: ['quads', 'calves'], secondary: ['front_delts', 'glutes'], aliases: ['basketball'] },
   { id: 'golf', label: 'Golf', group: 'other', met: 4.8, distance: true, elevation: false, primary: ['obliques'], secondary: ['forearms', 'lower_back'], aliases: ['golf'] },
   { id: 'horse_riding', label: 'Horse riding', group: 'other', met: 5.5, distance: true, elevation: false, primary: ['adductors', 'abs'], secondary: ['lower_back', 'quads'], aliases: ['horseback_riding', 'horse_riding', 'equestrian'] },
-  { id: 'other', label: 'Other activity', group: 'other', met: 5.0, distance: true, elevation: true, primary: [], secondary: [], aliases: ['other', 'workout', 'generic'] },
+  { id: 'other', label: 'Other activity', group: 'other', met: 5.0, distance: true, elevation: true, primary: [], secondary: [], aliases: ['other', 'workout', 'generic', 'elliptical', 'stair_stepper', 'wheelchair', 'handcycle', 'velomobile'] },
 ];
 
 /** Activity types that mean a gym session. */

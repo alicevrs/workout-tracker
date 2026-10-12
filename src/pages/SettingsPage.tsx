@@ -34,7 +34,7 @@ export default function SettingsPage() {
         </section>
         <section className="card" aria-labelledby="import-h">
           <h2 id="import-h" className="mb">
-            Import activities (Garmin)
+            Import activities (Garmin, Strava)
           </h2>
           <ImportPanel />
         </section>

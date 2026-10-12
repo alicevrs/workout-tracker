@@ -89,6 +89,8 @@ export function activityToSession(a: ImportedActivity, now = Date.now()): Sessio
     importedCalories: a.calories,
     hr: a.avgHr || a.maxHr || a.hrSamples ? { avg: a.avgHr, max: a.maxHr, samples: a.hrSamples } : undefined,
     distanceM: a.distanceM,
+    elevationGainM: a.elevationGainM,
+    notes: a.description,
     activityType: a.activityType,
     source: a.source === 'apple_health' ? 'manual' : a.source,
     externalIds: a.externalId ? [a.externalId] : [],
@@ -102,6 +104,7 @@ export function mergeInto(s: Session, a: ImportedActivity, now = Date.now()): { 
   if (a.calories !== undefined && s.importedCalories === undefined) next.importedCalories = a.calories;
   if ((a.avgHr || a.maxHr) && !s.hr?.avg) next.hr = { avg: a.avgHr, max: a.maxHr, samples: a.hrSamples };
   if (a.distanceM && !s.distanceM) next.distanceM = a.distanceM;
+  if (a.elevationGainM && !s.elevationGainM) next.elevationGainM = a.elevationGainM;
   if (a.activityType && !s.activityType && s.blocks.length === 0) next.activityType = a.activityType;
   if (!s.endedAt) next.endedAt = a.startTime + (a.elapsedSec ?? a.durationSec) * 1000;
   if (a.externalId && !s.externalIds?.includes(a.externalId)) next.externalIds = [...(s.externalIds ?? []), a.externalId];

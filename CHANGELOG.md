@@ -109,3 +109,7 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Templates now add separate workouts: “My workouts” (Abs + cardio, Legs & glutes 1, Legs & glutes 2, Body Pump) and “Sample workouts”.
 - Today has two buttons: “Start a workout” (pick a saved workout or a free one, with a date: today starts it live with the timer, a past date creates it on that day to fill in) and “Start a sport or outdoor activity” (also with a date).
 - Workout screen: “Mark all as done (as planned)”; per-block “Mark block as done” only shows on blocks with open sets; the run-all timer button only on workouts in progress.
+
+## Strava archive import (2026-10-13)
+- Import the free Strava export (“Download your account” .zip, or its activities.csv) in Settings → Import activities: every activity becomes a session with its sport, time, distance, elevation, calories, heart rate and description. Uses the same ids as the Strava API (`strava:<id>`), so nothing is duplicated, and merges with workouts logged in the app.
+- Note: Strava now gives API access (automatic sync) only to subscribers; the archive import works with a free account.

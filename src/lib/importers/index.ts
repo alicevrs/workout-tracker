@@ -1,9 +1,10 @@
 import { appleHealthImporter } from './appleHealth';
 import { fitImporter } from './fit';
+import { stravaArchiveImporter } from './stravaArchive';
 import { tcxImporter } from './tcx';
 import { ImportError, type FileImporter } from './types';
 
-export const FILE_IMPORTERS: FileImporter[] = [fitImporter, tcxImporter, ...(appleHealthImporter ? [appleHealthImporter] : [])];
+export const FILE_IMPORTERS: FileImporter[] = [fitImporter, tcxImporter, stravaArchiveImporter, ...(appleHealthImporter ? [appleHealthImporter] : [])];
 
 export function importerFor(fileName: string): FileImporter {
   const lower = fileName.toLowerCase();

@@ -47,7 +47,9 @@ export default function StravaPanel() {
         Enable Strava import
       </label>
       {!settings.stravaEnabled ? (
-        <p className="small muted">Off. Nothing is sent to Strava. Turn it on to import your Strava activities.</p>
+        <p className="small muted">
+          Off. The automatic connection needs a Strava subscription, because Strava only gives API access to subscribers. Without it, import your Strava archive in “Import activities” above.
+        </p>
       ) : (
         <>
           <p className="small muted">

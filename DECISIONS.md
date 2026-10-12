@@ -111,3 +111,7 @@ Choices made while building the app, with the reason for each.
 ## Workouts (replacing weekly programs)
 - A saved workout is stored as a `Program` with exactly one day, so sessions keep their `programId`/`programDayId` links and backups stay compatible. The weekday field is no longer used.
 - `migrateProgramsToWorkouts` runs at startup and after a backup import: multi-day programs are split into one workout per day; days with the same name are kept once; the first workout keeps the original program id and every workout keeps its original day id.
+
+## Strava without a subscription
+- Strava restricts its API to paying subscribers, so the free route is the account archive. Only `activities.csv` is read (with `fflate`, a small zip library): it already has the summary values, and parsing hundreds of original files on a phone would be slow. Strava writes dates in UTC and repeats some column names; the first “Elapsed Time” is seconds and the second “Distance” is metres.
+- Activities where someone else tagged the user are in the archive only if the tag was accepted on Strava.

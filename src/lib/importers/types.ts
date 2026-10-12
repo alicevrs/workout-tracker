@@ -16,6 +16,9 @@ export interface ImportedActivity {
   /** Total elapsed time in seconds (incl. pauses), if known. */
   elapsedSec?: number;
   distanceM?: number;
+  elevationGainM?: number;
+  /** Free text from the source (e.g. a Strava description), saved as notes on new sessions. */
+  description?: string;
   calories?: number;
   avgHr?: number;
   maxHr?: number;
