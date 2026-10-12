@@ -45,7 +45,7 @@ export default function App() {
     <div className="app">
       <nav className="sidebar" aria-label="Main">
         <div className="brand">
-          <img src="favicon.svg" alt="" width={28} height={28} /> Workout Tracker
+          <img src="favicon-mr.svg" alt="" width={28} height={28} /> Workout Tracker
         </div>
         {NAV.map((n) => (
           <NavLink key={n.to} to={n.to} end={n.to === '/'}>

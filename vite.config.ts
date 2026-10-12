@@ -13,7 +13,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon-mr.svg', 'apple-touch-icon-mr.png'],
       manifest: {
         name: 'Workout Tracker',
         short_name: 'Workouts',
@@ -25,9 +25,9 @@ export default defineConfig({
         start_url: base,
         scope: base,
         icons: [
-          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'icon-192-mr.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icon-512-mr.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icon-maskable-512-mr.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {
