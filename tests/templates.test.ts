@@ -84,6 +84,9 @@ describe('my training week, as the timer runs it', () => {
     expect(w('Legs & glutes A', 'Romanian deadlift')).toBe(16);
     expect(w('Legs & glutes A', 'Leg press')).toBe(80);
     expect(w('Legs & glutes B', 'Cable kickback')).toBe(8);
+    expect(w('Legs & glutes A', 'Bulgarian split squat')).toBe(8);
+    const abAd = blockPhases(blockOf('Legs & glutes B', 'Abduction / adduction'), 0).filter((p) => p.kind === 'work');
+    expect(abAd.map((p) => p.targetWeight)).toEqual([60, 30, 60, 30, 60, 30, 60]);
     const pump = blockOf('Body Pump', 'Body Pump class (55 min)').entries;
     expect(pump.find((e) => e.exerciseId === 'back-squat')?.planned?.targetWeight).toBe(10);
     expect(pump.find((e) => e.exerciseId === 'push-up')?.planned?.targetWeight).toBeUndefined();
