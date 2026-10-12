@@ -1,4 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useState } from 'react';
+import { LogPastWorkout } from '../components/LogPastWorkout';
+import { toDateKey } from '../lib/dates';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { isStandalone } from '../components/InstallHelp';
@@ -16,6 +19,7 @@ export default function TodayPage() {
   const active = useLiveQuery(() => db.sessions.where('status').equals('in_progress').toArray(), []);
   const programs = useLiveQuery(() => db.programs.toArray(), []);
   const today = weekdayIndex();
+  const [logging, setLogging] = useState(false);
   const settings = useSettings();
   const oldest = useLiveQuery(() => db.sessions.orderBy('startedAt').first(), []);
   const remind = backupReminderDue(settings, oldest?.startedAt);
@@ -123,12 +127,16 @@ export default function TodayPage() {
             <Link className="btn" to="/activity/new">
               <Icon name="flag" /> Log activity
             </Link>
+            <button className="btn" onClick={() => setLogging(true)}>
+              <Icon name="history" /> Log a past workout
+            </button>
             <Link className="btn" to="/programs">
               <Icon name="calendar" /> Programs
             </Link>
           </div>
         </section>
       </div>
+      <LogPastWorkout open={logging} onClose={() => setLogging(false)} date={toDateKey(Date.now() - 86_400_000)} />
     </div>
   );
 }

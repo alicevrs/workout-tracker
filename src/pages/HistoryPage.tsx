@@ -1,21 +1,20 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ActivityCalendar } from '../components/ActivityCalendar';
+import { LogPastWorkout } from '../components/LogPastWorkout';
 import { Icon } from '../components/Icon';
 import { EmptyState, PageHeader, Segmented } from '../components/ui';
 import { sessionActivity } from '../lib/activities';
 import { db } from '../db/db';
 import { useProfile } from '../db/repo';
 import { formatDuration, formatTime } from '../lib/dates';
-import { createSession } from '../lib/session';
 import { sessionSummary } from '../lib/stats';
 import { compact } from '../lib/units';
 
 const SOURCE_LABEL: Record<string, string> = { fit: 'Garmin FIT', tcx: 'TCX', strava: 'Strava', timer: 'Timer', manual: '' };
 
 export default function HistoryPage() {
-  const navigate = useNavigate();
   const { unit } = useProfile();
   const sessions = useLiveQuery(() => db.sessions.orderBy('startedAt').reverse().toArray(), []);
   const [view, setView] = useState<'list' | 'calendar'>(() => {
@@ -40,12 +39,7 @@ export default function HistoryPage() {
     groups.set(key, [...(groups.get(key) ?? []), s]);
   }
 
-  const logPast = async () => {
-    const start = Date.now() - 3600_000;
-    const s = { ...createSession({ title: 'Workout', now: start }), status: 'completed' as const, endedAt: start + 3600_000 };
-    await db.sessions.add(s);
-    navigate(`/workout/${s.id}`);
-  };
+  const [logging, setLogging] = useState(false);
 
   return (
     <div className="page">
@@ -56,7 +50,7 @@ export default function HistoryPage() {
             <Link className="btn primary" to="/activity/new">
               <Icon name="plus" /> Activity
             </Link>
-            <button className="btn" onClick={logPast} aria-label="Log a past gym workout">
+            <button className="btn" onClick={() => setLogging(true)} aria-label="Log a workout on any date">
               <Icon name="dumbbell" /> <span className="hide-sm">Past workout</span>
             </button>
           </>
@@ -74,6 +68,7 @@ export default function HistoryPage() {
         />
       </div>
       {view === 'calendar' && sessions && <ActivityCalendar sessions={sessions} />}
+      <LogPastWorkout open={logging} onClose={() => setLogging(false)} />
       {sessions && sessions.length === 0 && view === 'list' && (
         <div className="card">
           <EmptyState icon="history" title="No workouts yet" action={<Link className="btn primary" to="/">Start a workout</Link>}>

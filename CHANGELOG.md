@@ -100,3 +100,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - New exercises: mobility routine, stretching routine, barbell warm-up, clean and press, split squat, lying leg raise, flutter kicks, plank shoulder tap. Incline walk now uses 8 MET (steep treadmill walking).
 - Progress badges only compare like with like (weighted with weighted, bodyweight/timed with bodyweight/timed).
 - Template update: real weights (RDL 16 kg, leg press 80 kg, cable kickback 8 kg, Bulgarian split squat 8 kg, abduction 60 kg, adduction 30 kg, Body Pump bar 10 kg) and a generic “Abs (mixed exercises)” for the abs block.
+- Log workouts on any date: “+ Workout” on a day in the calendar, “Log a past workout” on Today, the History button, and a Date field in every “Log as done”. Choose a program day (log as planned or enter the sets yourself), an empty workout, or a sport activity.

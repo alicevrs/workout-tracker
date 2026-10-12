@@ -483,7 +483,8 @@ textarea:focus {
   outline: none;
   border-color: var(--accent);
 }
-input[type='checkbox'] {
+input[type='checkbox'],
+input[type='radio'] {
   width: 22px;
   height: 22px;
   min-height: 0;
