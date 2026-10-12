@@ -1,6 +1,7 @@
 import { InstallHelp } from '../components/InstallHelp';
 import { ProfileForm } from '../components/ProfileForm';
 import { StorageStatus } from '../components/StorageStatus';
+import { TimerSettings } from '../components/TimerSettings';
 import { PageHeader } from '../components/ui';
 
 export default function SettingsPage() {
@@ -13,6 +14,12 @@ export default function SettingsPage() {
             Profile
           </h2>
           <ProfileForm />
+        </section>
+        <section className="card" aria-labelledby="timer-h">
+          <h2 id="timer-h" className="mb">
+            Timer
+          </h2>
+          <TimerSettings />
         </section>
         <section className="card" aria-labelledby="storage-h">
           <h2 id="storage-h" className="mb">
