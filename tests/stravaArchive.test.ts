@@ -50,6 +50,11 @@ describe('Strava archive import', () => {
     expect(gym.activityType).toBe('weight_training');
   });
 
+  it('uses moving time when a recording was left paused for hours', () => {
+    const csv = 'Activity ID,Activity Date,Activity Type,Elapsed Time,Moving Time,Distance\n9,"Oct 10, 2026, 8:00:00 AM",Run,217685,3024,8135';
+    expect(parseStravaActivitiesCsv(csv)[0]).toMatchObject({ durationSec: 3024, elapsedSec: 3024 });
+  });
+
   it('reads activities.csv from the archive zip', () => {
     const zip = zipSync({ 'export_123/activities.csv': strToU8(CSV), 'export_123/profile.csv': strToU8('x') });
     const list = parseStravaArchive(zip.buffer.slice(zip.byteOffset, zip.byteOffset + zip.byteLength) as ArrayBuffer, 'export_123.zip');

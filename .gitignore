@@ -6,3 +6,8 @@ dev-dist
 .env
 .wrangler
 .claude/
+
+# Personal data exports — never commit
+/Strava export_*/
+/*.zip
+tests/_local/

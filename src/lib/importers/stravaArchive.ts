@@ -83,10 +83,15 @@ export function parseStravaActivitiesCsv(text: string): ImportedActivity[] {
     desc: first('Activity Description'),
     elapsed: first('Elapsed Time'),
     moving: first('Moving Time'),
-    elevation: first('Elevation Gain'),
-    calories: first('Calories'),
-    avgHr: first('Average Heart Rate'),
-    maxHr: first('Max Heart Rate'),
+  };
+  // Columns that appear more than once: take the first non-empty value.
+  const all = (name: string) => head.map((h, i) => (h === name ? i : -1)).filter((i) => i >= 0);
+  const firstNum = (r: string[], name: string) => {
+    for (const i of all(name)) {
+      const v = num(r[i]);
+      if (v) return v;
+    }
+    return undefined;
   };
   const out: ImportedActivity[] = [];
   for (const r of rows.slice(1)) {
@@ -94,6 +99,8 @@ export function parseStravaActivitiesCsv(text: string): ImportedActivity[] {
     if (!id) continue;
     const elapsed = num(r[col.elapsed]) ?? 0;
     const moving = (col.moving >= 0 ? num(r[col.moving]) : undefined) ?? elapsed;
+    // A recording left paused (e.g. stopped hours later) inflates elapsed time: fall back to moving time.
+    const total = elapsed > moving * 2 && elapsed - moving > 3600 ? moving : elapsed;
     let dist = iDist >= 0 ? num(r[iDist]) : undefined;
     if (dist !== undefined && distInKm) dist *= 1000;
     out.push({
@@ -104,12 +111,12 @@ export function parseStravaActivitiesCsv(text: string): ImportedActivity[] {
       activityType: normaliseType(r[col.type]?.trim()),
       startTime: parseStravaDate(r[col.date]),
       durationSec: Math.round(moving),
-      elapsedSec: Math.round(elapsed),
+      elapsedSec: Math.round(total),
       distanceM: dist || undefined,
-      elevationGainM: col.elevation >= 0 ? num(r[col.elevation]) || undefined : undefined,
-      calories: col.calories >= 0 ? num(r[col.calories]) || undefined : undefined,
-      avgHr: col.avgHr >= 0 && num(r[col.avgHr]) ? Math.round(num(r[col.avgHr])!) : undefined,
-      maxHr: col.maxHr >= 0 && num(r[col.maxHr]) ? Math.round(num(r[col.maxHr])!) : undefined,
+      elevationGainM: firstNum(r, 'Elevation Gain'),
+      calories: firstNum(r, 'Calories'),
+      avgHr: firstNum(r, 'Average Heart Rate') ? Math.round(firstNum(r, 'Average Heart Rate')!) : undefined,
+      maxHr: firstNum(r, 'Max Heart Rate') ? Math.round(firstNum(r, 'Max Heart Rate')!) : undefined,
     });
   }
   return out;
