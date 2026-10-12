@@ -70,3 +70,7 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - README with step-by-step setup for GitHub Pages, installing, backups, Garmin import and the Strava Worker.
 - Robustness: if a page of an older version is missing after an update the app reloads itself; errors on a screen show a message with a Reload button instead of a blank page.
 - Example FIT and TCX files in `samples/`.
+
+## Verification (2026-10-12)
+- 87 unit tests pass (`npm test`): calories and BMR, Epley 1RM, volume and PRs, timer phases and engine, timer → session link, FIT (real binary file), TCX, duplicate matching, backup round trip and migrations, analytics, Strava mapping and rate limits, the Cloudflare Worker.
+- Offline check in headless Chrome with the network switched off: every screen loads and a Tabata timer runs on time. After freezing the page for 40 s (like a locked iPhone) the timer resumed at the exact right phase and second.
