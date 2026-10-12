@@ -57,3 +57,16 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Calories: MET method with a MET table by block type and effort, cardio METs per exercise, body weight from the weight log nearest to the workout date (fallback: profile weight), Mifflin-St Jeor BMR. Every calorie value shows its source (estimated or imported) and a note that estimates are approximate.
 - Body weight log with a chart (Settings), BMR display and the MET table.
 - Effort (light / moderate / vigorous) per workout.
+
+## Phase 6 — Import, backup and Strava (2026-10-12)
+- Backup export as one JSON file with a schema version; on iPhone it opens the share sheet (Save to Files / iCloud Drive, AirDrop), on a Mac it downloads.
+- Backup import with a preview and two modes: replace all data, or merge (newest record wins). Older backup formats are migrated; files from a newer app version, damaged files and non-backup files are rejected with a clear message. Strava tokens are never included.
+- Weekly backup reminder on the Today screen.
+- Persistent storage request (from Phase 1) with status in Settings.
+- Garmin FIT and TCX import: duration, distance, calories, average/max heart rate, heart-rate chart and activity type. Re-imports are detected, and an import that matches a workout logged in the app (start within 10 minutes, similar duration) is merged into it. Clear error message per file when an import fails.
+- Strava: OAuth login through a small Cloudflare Worker (`worker/strava-worker.js`) that holds the client secret; only access/refresh tokens are stored on the device. Imports activities since a chosen date, fetches details (calories) only for new activities, stays under Strava’s rate limits, merges with existing workouts, can disconnect. Works around the iPhone home-screen redirect issue with a copy/paste connection code. The whole feature lives in `src/strava/` and can be switched off at runtime or at build time.
+- Apple Health: documented extension point (`src/lib/importers/appleHealth.ts`), not implemented.
+- GitHub Actions workflow that tests, builds and deploys to GitHub Pages.
+- README with step-by-step setup for GitHub Pages, installing, backups, Garmin import and the Strava Worker.
+- Robustness: if a page of an older version is missing after an update the app reloads itself; errors on a screen show a message with a Reload button instead of a blank page.
+- Example FIT and TCX files in `samples/`.

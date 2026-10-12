@@ -66,3 +66,24 @@ Choices made while building the app, with the reason for each.
 - “This week / month / year” in comparisons runs up to today and is compared with the *whole* previous period. The running-total chart shows whether you are ahead of last period’s pace.
 - The muscle donut shows the top 7 muscles plus “Other”; the bar view lists all of them.
 - Weekly streak = consecutive weeks with at least one workout, counting the current week only once it has a workout.
+
+## Backup
+- **Format:** `{ app: "workout-tracker", schemaVersion, exportedAt, data: { exercises, programs, sessions, bodyWeights, profile, settings } }`. Only custom exercises are included (the catalog ships with the app).
+- **Migrations:** `MIGRATIONS[n]` upgrades a version-n file to n + 1; imports run the chain up to the current version, then fill missing fields with defaults and drop records that are clearly broken (instead of failing the whole import). The current format is version 1. A file from a newer app version is refused, with a message to update the app first.
+- Backups never contain Strava tokens or device-only settings (last backup date, reminder, storage request).
+- On iPhone the export uses the Web Share API with a file (share sheet → Save to Files / AirDrop). Everywhere else, and as a fallback, the file is downloaded.
+- Reminder: shown on Today when the last backup (or “Later”) is more than 7 days ago; someone who never backed up is reminded once their oldest workout is a week old.
+- On iPhone the file pickers don’t restrict file types, because iOS greys out `.fit`/`.json` files when an `accept` filter is used.
+
+## Imports
+- All importers produce the same `ImportedActivity` shape; matching and saving are shared (`src/lib/importers/apply.ts`). Adding a source = one parser.
+- **Duplicate rule:** same external id (e.g. `strava:123`, `fit:<start>:<duration>`) → already imported. Otherwise a session that started within **10 minutes** and has a duration within **20 % or 5 minutes** is the same workout: imported values are added to it (calories, heart rate, distance, the external id), but logged sets, title and notes are never changed. Values already present are not overwritten.
+- FIT files can contain several sessions (multisport); each becomes its own activity. Heart-rate samples are downsampled to at most 600 points.
+- TCX average heart rate is weighted by lap time.
+
+## Strava
+- OAuth “authorization code” flow. The Cloudflare Worker exchanges the code and refreshes tokens with the client secret; it returns only the tokens and the athlete’s id and first name, checks the `Origin` header against `ALLOWED_ORIGIN`, and stores nothing.
+- The app calls the Strava API directly with the access token; if the browser blocks that call, it retries through the Worker’s read-only `/api/` pass-through.
+- Rate limits: the app keeps its own request log and stops at 80 requests per 15 minutes and 800 per day (Strava’s read limits are 100 and 1,000). Activity details (needed for calories) are fetched only for activities not imported before, at most 30 per sync.
+- Redirect back to the app: `https://<user>.github.io/<repo>/?code=…&state=…`. If the `state` does not match (the redirect opened in Safari instead of the installed app, which has separate storage), the app shows the code to paste into the installed app instead of failing.
+- Requested scope: `read,activity:read_all` (read only; includes private activities).

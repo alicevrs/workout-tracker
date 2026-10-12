@@ -4,6 +4,8 @@ import { Icon } from '../components/Icon';
 import { isStandalone } from '../components/InstallHelp';
 import { PageHeader } from '../components/ui';
 import { db } from '../db/db';
+import { saveSettings, useSettings } from '../db/repo';
+import { backupReminderDue } from '../lib/backup';
 import { formatTime } from '../lib/dates';
 import { describeBlock, weekdayIndex } from '../lib/program';
 import { createSession } from '../lib/session';
@@ -13,6 +15,9 @@ export default function TodayPage() {
   const active = useLiveQuery(() => db.sessions.where('status').equals('in_progress').toArray(), []);
   const programs = useLiveQuery(() => db.programs.toArray(), []);
   const today = weekdayIndex();
+  const settings = useSettings();
+  const oldest = useLiveQuery(() => db.sessions.orderBy('startedAt').first(), []);
+  const remind = backupReminderDue(settings, oldest?.startedAt);
   const planned = (programs ?? []).flatMap((p) => p.days.filter((d) => d.weekday === today).map((d) => ({ program: p, day: d })));
 
   const startEmpty = async () => {
@@ -37,6 +42,22 @@ export default function TodayPage() {
           <div className="banner info">
             <div className="grow">
               Install the app on your Home Screen for full-screen use and offline access. <Link to="/settings">How to install</Link>
+            </div>
+          </div>
+        )}
+
+        {remind && (
+          <div className="banner warn" role="status">
+            <div className="grow">
+              <strong>Weekly backup.</strong> Your data lives only on this device. Export a backup to iCloud Drive or your Mac.
+            </div>
+            <div className="row">
+              <Link className="btn small primary" to="/settings#backup">
+                Back up
+              </Link>
+              <button className="btn small ghost" onClick={() => saveSettings({ backupReminderDismissedAt: Date.now() })}>
+                Later
+              </button>
             </div>
           </div>
         )}

@@ -4,9 +4,18 @@ import { StorageStatus } from '../components/StorageStatus';
 import { TimerSettings } from '../components/TimerSettings';
 import { WeightLog } from '../components/WeightLog';
 import { EnergyInfo } from '../components/EnergyInfo';
+import { BackupPanel } from '../components/BackupPanel';
+import { ImportPanel } from '../components/ImportPanel';
+import { Suspense, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { StravaPanel } from '../strava';
 import { PageHeader } from '../components/ui';
 
 export default function SettingsPage() {
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash) document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' });
+  }, [hash]);
   return (
     <div className="page">
       <PageHeader title="Settings" />
@@ -17,6 +26,28 @@ export default function SettingsPage() {
           </h2>
           <ProfileForm />
         </section>
+        <section className="card" aria-labelledby="backup-h" id="backup">
+          <h2 id="backup-h" className="mb">
+            Backup
+          </h2>
+          <BackupPanel />
+        </section>
+        <section className="card" aria-labelledby="import-h">
+          <h2 id="import-h" className="mb">
+            Import activities (Garmin)
+          </h2>
+          <ImportPanel />
+        </section>
+        {StravaPanel && (
+          <section className="card" aria-labelledby="strava-h">
+            <h2 id="strava-h" className="mb">
+              Strava
+            </h2>
+            <Suspense fallback={null}>
+              <StravaPanel />
+            </Suspense>
+          </section>
+        )}
         <section className="card" aria-labelledby="weight-h">
           <h2 id="weight-h" className="mb">
             Body weight log

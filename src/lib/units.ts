@@ -25,3 +25,8 @@ export function compact(n: number): string {
   if (Math.abs(n) >= 1000) return `${(n / 1000).toFixed(1)}k`;
   return String(Math.round(n * 10) / 10);
 }
+
+/** plural(1, 'workout') → "1 workout", plural(3, 'workout') → "3 workouts" */
+export function plural(n: number, word: string, many = `${word}s`): string {
+  return `${n} ${n === 1 ? word : many}`;
+}

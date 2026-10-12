@@ -1,0 +1,9 @@
+# Only needed if you deploy with the command line (npx wrangler deploy).
+# The README explains the simpler way: paste strava-worker.js into the Cloudflare dashboard.
+name = "workout-tracker-strava"
+main = "strava-worker.js"
+compatibility_date = "2026-01-01"
+
+[vars]
+ALLOWED_ORIGIN = "https://YOUR-GITHUB-USERNAME.github.io"
+# STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET: set with `npx wrangler secret put …`

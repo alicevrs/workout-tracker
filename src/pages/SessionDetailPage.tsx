@@ -14,6 +14,8 @@ import { blockToPerformed, createSession, performedToBlock } from '../lib/sessio
 import { detectPRs, exerciseHistory, PR_LABEL, sessionMetrics, sessionSummary } from '../lib/stats';
 import { compact, formatWeight } from '../lib/units';
 import { SessionCalories } from '../components/SessionCalories';
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { AXIS, ChartTooltip, GRID, SERIES } from '../components/charts';
 
 export default function SessionDetailPage() {
   const { id = '' } = useParams();
@@ -72,8 +74,17 @@ export default function SessionDetailPage() {
       <div className="stack">
         <div className="stat-tiles">
           <Stat label="Duration" value={sum.durationSec ? formatDuration(sum.durationSec) : '–'} />
-          <Stat label="Volume" value={sum.volume ? `${compact(unit === 'kg' ? sum.volume : sum.volume / 0.45359237)} ${unit}` : '–'} />
-          <Stat label="Sets" value={sum.sets || '–'} sub={sum.reps ? `${sum.reps} reps` : undefined} />
+          {sum.sets === 0 && (session.distanceM || session.hr?.avg) ? (
+            <>
+              <Stat label="Distance" value={session.distanceM ? `${(session.distanceM / 1000).toFixed(2)} km` : '–'} />
+              <Stat label="Avg heart rate" value={session.hr?.avg ? `${Math.round(session.hr.avg)} bpm` : '–'} sub={session.hr?.max ? `max ${session.hr.max}` : undefined} />
+            </>
+          ) : (
+            <>
+              <Stat label="Volume" value={sum.volume ? `${compact(unit === 'kg' ? sum.volume : sum.volume / 0.45359237)} ${unit}` : '–'} />
+              <Stat label="Sets" value={sum.sets || '–'} sub={sum.reps ? `${sum.reps} reps` : undefined} />
+            </>
+          )}
           <SessionCalories session={session} />
         </div>
 
@@ -107,6 +118,7 @@ export default function SessionDetailPage() {
         )}
 
         <div className="grid two-wide">
+          {(metrics.size > 0 || session.blocks.length > 0) && (
           <section className="card">
             <h2 className="mb">Exercises</h2>
             {metrics.size === 0 && <p className="muted small">No completed sets.</p>}
@@ -155,6 +167,7 @@ export default function SessionDetailPage() {
                 </div>
               ))}
           </section>
+          )}
 
           <section className="card" aria-labelledby="muscle-h">
             <h2 id="muscle-h" className="mb">
@@ -196,6 +209,19 @@ export default function SessionDetailPage() {
               {session.hr.max && <Stat label="Max" value={`${Math.round(session.hr.max)} bpm`} />}
               {session.distanceM ? <Stat label="Distance" value={`${(session.distanceM / 1000).toFixed(2)} km`} /> : null}
             </div>
+            {session.hr.samples && session.hr.samples.length > 1 && (
+              <div className="chart-box mt" style={{ height: 200 }} role="img" aria-label={`Heart rate over time, average ${session.hr.avg} bpm, max ${session.hr.max} bpm`}>
+                <ResponsiveContainer>
+                  <LineChart data={session.hr.samples.map(([t, bpm]) => ({ t, bpm }))} margin={{ top: 8, right: 12, bottom: 0, left: -12 }}>
+                    <CartesianGrid {...GRID} />
+                    <XAxis dataKey="t" type="number" domain={['dataMin', 'dataMax']} tickFormatter={(v) => formatClock(v)} {...AXIS} minTickGap={30} />
+                    <YAxis {...AXIS} width={44} domain={['dataMin - 5', 'dataMax + 5']} />
+                    <Tooltip cursor={{ stroke: '#898781', strokeWidth: 1 }} content={<ChartTooltip format={(v) => `${v} bpm`} labelFormat={(l) => formatClock(Number(l))} />} />
+                    <Line type="monotone" dataKey="bpm" name="Heart rate" stroke={SERIES[0]} strokeWidth={2} dot={false} isAnimationActive={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </section>
         )}
 

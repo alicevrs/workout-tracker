@@ -1,8 +1,13 @@
-import { lazy, Suspense } from 'react';
-import { NavLink, Route, Routes } from 'react-router-dom';
+import { Suspense } from 'react';
+import { lazyPage as lazy } from './lib/lazyPage';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { Icon, type IconName } from './components/Icon';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import TodayPage from './pages/TodayPage';
+import { isStravaRedirect, StravaRedirectNotice } from './strava';
+
+const stravaRedirect = isStravaRedirect();
 
 const ExercisesPage = lazy(() => import('./pages/ExercisesPage'));
 const ExerciseDetailPage = lazy(() => import('./pages/ExerciseDetailPage'));
@@ -34,6 +39,7 @@ const NAV: NavItem[] = [
 ];
 
 export default function App() {
+  const location = useLocation();
   return (
     <div className="app">
       <nav className="sidebar" aria-label="Main">
@@ -48,6 +54,12 @@ export default function App() {
       </nav>
       <main className="main">
         <UpdatePrompt />
+        {stravaRedirect && StravaRedirectNotice && (
+          <Suspense fallback={null}>
+            <StravaRedirectNotice />
+          </Suspense>
+        )}
+        <ErrorBoundary key={location.pathname}>
         <Suspense fallback={<div className="empty">Loading…</div>}>
           <Routes>
             <Route path="/" element={<TodayPage />} />
@@ -66,6 +78,7 @@ export default function App() {
             <Route path="*" element={<div className="empty">Page not found.</div>} />
           </Routes>
         </Suspense>
+        </ErrorBoundary>
       </main>
       <nav className="bottom-nav" aria-label="Main">
         {NAV.filter((n) => n.mobile).map((n) => (
