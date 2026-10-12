@@ -164,7 +164,7 @@ export default function WorkoutPage() {
             </span>
           </button>
         )}
-        {session.programDayId && inProgress && <p className="small faint">Plan changes here apply to this workout only. The program stays unchanged.</p>}
+        {session.programDayId && inProgress && <p className="small faint">Plan changes here apply to today’s session only. Your saved workout stays unchanged.</p>}
 
         {session.blocks.map((b, bi) => {
           const open = editing === b.id;

@@ -87,7 +87,7 @@ export function LogPastWorkout({
   };
 
   return (
-    <Sheet open={open} onClose={onClose} title={fixedDay ? `Log “${fixedDay.name}”` : 'Log a workout'}>
+    <Sheet open={open} onClose={onClose} title={fixedDay ? `Log “${fixedDay.name}”` : initialDate && initialDate < toDateKey(Date.now()) ? 'Log a past workout' : 'Log a workout'}>
       <div className="form-grid mb">
         <label className="field">
           Date
@@ -108,13 +108,14 @@ export function LogPastWorkout({
             <label key={day.id} className="check-row">
               <input type="radio" name="past-day" checked={choice === day.id} onChange={() => setChoice(day.id)} />
               <span>
-                {day.name} <span className="small faint">· {program.name}</span>
+                {day.name}
+                {program.name !== day.name && <span className="small faint"> · {program.name}</span>}
               </span>
             </label>
           ))}
           <label className="check-row">
             <input type="radio" name="past-day" checked={choice === ''} onChange={() => setChoice('')} />
-            Other workout (empty, add blocks yourself)
+            Free workout (build it yourself)
           </label>
           <Link className="btn small ghost" to={`/activity/new?date=${date}`} onClick={onClose}>
             <Icon name="flag" /> A sport or outdoor activity instead

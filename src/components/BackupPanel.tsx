@@ -3,6 +3,7 @@ import { db } from '../db/db';
 import { saveSettings, useSettings } from '../db/repo';
 import { backupFileName, BackupError, createBackup, readBackup, restoreBackup, summarize, type BackupFile } from '../lib/backup';
 import { formatDate } from '../lib/dates';
+import { migrateProgramsToWorkouts } from '../lib/workouts';
 import { plural } from '../lib/units';
 import { Icon } from './Icon';
 import { isIOS } from './InstallHelp';
@@ -65,6 +66,7 @@ export function BackupPanel() {
     setBusy(true);
     try {
       await restoreBackup(db, pending, mode);
+      await migrateProgramsToWorkouts(db);
       setPending(null);
       toast(mode === 'replace' ? 'Backup restored' : 'Backup merged');
     } catch (e) {

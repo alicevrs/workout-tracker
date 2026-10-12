@@ -1,3 +1,4 @@
+import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import exercises from '../src/data/exercises.json';
 import type { Exercise } from '../src/db/types';
@@ -7,26 +8,44 @@ import { completeBlocks, loggedDaySession } from '../src/lib/quickLog';
 import { createSession } from '../src/lib/session';
 import { sessionSummary } from '../src/lib/stats';
 import { blockPhases, buildPhases, totalPlannedSeconds } from '../src/lib/timer/phases';
-import { glutesConditioningWeek, TEMPLATES } from '../src/lib/templates';
+import { myWorkouts, TEMPLATES } from '../src/lib/templates';
+import { migrateProgramsToWorkouts, splitProgram } from '../src/lib/workouts';
+import { WorkoutDB } from '../src/db/db';
+import { sampleProgram } from '../src/lib/sampleProgram';
 
 const ids = new Set((exercises as Exercise[]).map((e) => e.id));
-const week = glutesConditioningWeek();
-const day = (name: string) => week.days.find((d) => d.name === name)!;
-const blockOf = (dayName: string, blockName: string) => createSession({ program: week, day: day(dayName) }).blocks.find((b) => b.name === blockName)!;
+const NAMES: Record<string, string> = { 'Abs + incline walk': 'Abs + cardio', 'Legs & glutes A': 'Legs & glutes 1', 'Legs & glutes B': 'Legs & glutes 2' };
+const mine = myWorkouts();
+const workout = (name: string) => mine.find((w) => w.name === (NAMES[name] ?? name))!;
+const day = (name: string) => workout(name).days[0];
+const blockOf = (dayName: string, blockName: string) => createSession({ program: workout(dayName), day: day(dayName) }).blocks.find((b) => b.name === blockName)!;
 
 describe('templates', () => {
   it('only use exercises from the catalog', () => {
-    for (const t of TEMPLATES) for (const d of t.create().days) for (const b of d.blocks) for (const e of b.entries) expect(ids, `${t.id}: ${e.exerciseId}`).toContain(e.exerciseId);
+    for (const t of TEMPLATES) for (const w of t.create()) for (const d of w.days) for (const b of d.blocks) for (const e of b.entries) expect(ids, `${t.id}: ${e.exerciseId}`).toContain(e.exerciseId);
   });
 
-  it('builds the week Monday to Friday', () => {
-    expect(week.days.map((d) => [d.weekday, d.name])).toEqual([
-      [0, 'Abs + incline walk'],
-      [1, 'Legs & glutes A'],
-      [2, 'Body Pump'],
-      [3, 'Abs + incline walk'],
-      [4, 'Legs & glutes B'],
-    ]);
+  it('creates four single-workout templates without weekdays', () => {
+    expect(mine.map((w) => w.name)).toEqual(['Abs + cardio', 'Legs & glutes 1', 'Legs & glutes 2', 'Body Pump']);
+    expect(mine.every((w) => w.days.length === 1 && w.days[0].weekday === undefined && w.days[0].name === w.name)).toBe(true);
+  });
+
+  it('splits old multi-day programs into workouts, once per name, keeping day ids', () => {
+    const old = { ...sampleProgram(), name: 'My training week' };
+    old.days = [{ ...old.days[0], name: 'Abs + incline walk' }, { ...old.days[1], name: 'Legs & glutes A' }, { ...old.days[0], id: 'dup', name: 'Abs + incline walk' }];
+    const split = splitProgram(old);
+    expect(split.map((w) => w.name)).toEqual(['Abs + cardio', 'Legs & glutes 1']);
+    expect(split[0].id).toBe(old.id);
+    expect(split[1].days[0].id).toBe(old.days[1].id);
+  });
+
+  it('migrates stored programs and is safe to run twice', async () => {
+    const db = new WorkoutDB('migrate-workouts');
+    await db.programs.add(sampleProgram());
+    expect(await migrateProgramsToWorkouts(db)).toBe(1);
+    expect(await migrateProgramsToWorkouts(db)).toBe(0);
+    expect((await db.programs.toArray()).every((p) => p.days.length === 1)).toBe(true);
+    expect(await db.programs.count()).toBe(3);
   });
 });
 
@@ -93,7 +112,7 @@ describe('my training week, as the timer runs it', () => {
   });
 
   it('Body Pump lasts about 55 minutes', () => {
-    const s = createSession({ program: week, day: day('Body Pump') });
+    const s = createSession({ program: workout('Body Pump'), day: day('Body Pump') });
     const minutes = totalPlannedSeconds(buildPhases(s.blocks)) / 60;
     expect(minutes).toBeGreaterThan(53);
     expect(minutes).toBeLessThan(57);
@@ -103,7 +122,7 @@ describe('my training week, as the timer runs it', () => {
 describe('log as done', () => {
   it('logs every Body Pump exercise as done and makes a 55-minute session', () => {
     const end = new Date('2026-10-14T20:00:00').getTime();
-    const s = loggedDaySession(week, day('Body Pump'), { endAt: end });
+    const s = loggedDaySession(workout('Body Pump'), day('Body Pump'), { endAt: end });
     expect(s.status).toBe('completed');
     expect((s.endedAt! - s.startedAt) / 60000).toBeCloseTo(55, 0);
     const sum = sessionSummary(s);
@@ -114,17 +133,17 @@ describe('log as done', () => {
   });
 
   it('skips optional blocks unless they were done', () => {
-    const without = loggedDaySession(week, day('Legs & glutes A'));
+    const without = loggedDaySession(workout('Legs & glutes A'), day('Legs & glutes A'));
     const opt = without.blocks.find((b) => b.name === 'Bulgarian split squat')!;
     expect(opt.skipped).toBe(true);
     expect(opt.entries[0].sets).toHaveLength(0);
-    const withOpt = loggedDaySession(week, day('Legs & glutes A'), { includeOptional: [day('Legs & glutes A').blocks.find((b) => b.name === 'Bulgarian split squat')!.id] });
+    const withOpt = loggedDaySession(workout('Legs & glutes A'), day('Legs & glutes A'), { includeOptional: [day('Legs & glutes A').blocks.find((b) => b.name === 'Bulgarian split squat')!.id] });
     expect(withOpt.blocks.find((b) => b.name === 'Bulgarian split squat')!.entries[0].sets).toHaveLength(8);
     expect(withOpt.endedAt! - withOpt.startedAt).toBeGreaterThan(without.endedAt! - without.startedAt);
   });
 
   it('logs the hip thrust sets with their own weights and reps', () => {
-    const s = loggedDaySession(week, day('Legs & glutes A'));
+    const s = loggedDaySession(workout('Legs & glutes A'), day('Legs & glutes A'));
     const sets = s.blocks.find((b) => b.name === 'Hip thrust')!.entries[0].sets;
     expect(sets.map((x) => [x.weight, x.reps, !!x.warmup])).toEqual([
       [60, 15, true],
@@ -137,7 +156,7 @@ describe('log as done', () => {
   });
 
   it('completeBlocks fills one block without touching the others', () => {
-    const s = createSession({ program: week, day: day('Legs & glutes B') });
+    const s = createSession({ program: workout('Legs & glutes B'), day: day('Legs & glutes B') });
     const { blocks } = completeBlocks(s.blocks, [2], 0);
     expect(blocks[2].entries[0].sets.every((x) => x.completed)).toBe(true);
     expect(blocks[3].entries[0].sets).toHaveLength(0);

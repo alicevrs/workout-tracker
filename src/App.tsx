@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { lazyPage as lazy } from './lib/lazyPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, NavLink, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { Icon, type IconName } from './components/Icon';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import TodayPage from './pages/TodayPage';
@@ -13,8 +13,8 @@ const ExercisesPage = lazy(() => import('./pages/ExercisesPage'));
 const ExerciseDetailPage = lazy(() => import('./pages/ExerciseDetailPage'));
 const ExerciseEditPage = lazy(() => import('./pages/ExerciseEditPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
-const ProgramsPage = lazy(() => import('./pages/ProgramsPage'));
-const ProgramEditPage = lazy(() => import('./pages/ProgramEditPage'));
+const WorkoutsPage = lazy(() => import('./pages/WorkoutsPage'));
+const WorkoutEditPage = lazy(() => import('./pages/WorkoutEditPage'));
 const WorkoutPage = lazy(() => import('./pages/WorkoutPage'));
 const TimerPage = lazy(() => import('./pages/TimerPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
@@ -31,11 +31,11 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { to: '/', label: 'Today', icon: 'home', mobile: true },
-  { to: '/programs', label: 'Programs', icon: 'calendar', mobile: true },
+  { to: '/workouts', label: 'Workouts', icon: 'dumbbell', mobile: true },
   { to: '/timer', label: 'Timer', icon: 'timer', mobile: true },
   { to: '/history', label: 'History', icon: 'history', mobile: true },
   { to: '/analytics', label: 'Analytics', icon: 'chart', mobile: true },
-  { to: '/exercises', label: 'Exercises', icon: 'dumbbell', mobile: false },
+  { to: '/exercises', label: 'Exercises', icon: 'list', mobile: false },
   { to: '/settings', label: 'Settings', icon: 'settings', mobile: false },
 ];
 
@@ -68,8 +68,10 @@ export default function App() {
             <Route path="/exercises/new" element={<ExerciseEditPage />} />
             <Route path="/exercises/:id" element={<ExerciseDetailPage />} />
             <Route path="/exercises/:id/edit" element={<ExerciseEditPage />} />
-            <Route path="/programs" element={<ProgramsPage />} />
-            <Route path="/programs/:id" element={<ProgramEditPage />} />
+            <Route path="/workouts" element={<WorkoutsPage />} />
+            <Route path="/workouts/:id" element={<WorkoutEditPage />} />
+            <Route path="/programs" element={<Navigate to="/workouts" replace />} />
+            <Route path="/programs/:id" element={<ProgramRedirect />} />
             <Route path="/workout/:id" element={<WorkoutPage />} />
             <Route path="/timer" element={<TimerPage />} />
             <Route path="/history" element={<HistoryPage />} />
@@ -93,4 +95,9 @@ export default function App() {
       </nav>
     </div>
   );
+}
+
+function ProgramRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/workouts/${id}`} replace />;
 }

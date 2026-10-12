@@ -50,7 +50,7 @@ export default function TimerPage() {
         </section>
 
         <section className="card">
-          <h2 className="mb">From a program</h2>
+          <h2 className="mb">Your workouts</h2>
           {active && active.length > 0 && (
             <div className="mb">
               {active.map((s) => (
@@ -65,7 +65,7 @@ export default function TimerPage() {
               p.days.map((d) => (
                 <div key={d.id} className="row" style={{ minHeight: 52 }}>
                   <div className="grow" style={{ minWidth: 0 }}>
-                    <strong>{d.name}</strong> <span className="small muted">· {p.name}</span>
+                    <strong>{d.name}</strong>
                     <div className="small faint ellipsis">{d.blocks.map((b) => FORMAT_INFO[b.format].short).join(' + ') || 'No blocks'}</div>
                   </div>
                   <button
@@ -85,7 +85,7 @@ export default function TimerPage() {
             )
           ) : (
             <p className="small muted">
-              No programs yet. <Link to="/programs">Create one</Link> to run its blocks back to back.
+              No saved workouts yet. <Link to="/workouts">Create one</Link> to run its blocks back to back.
             </p>
           )}
         </section>

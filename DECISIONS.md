@@ -107,3 +107,7 @@ Choices made while building the app, with the reason for each.
 - Body Pump: one timed block with the 10 usual tracks of a 55-minute class (warm-up, squats, chest, back, triceps, biceps, lunges, shoulders, core, cool-down) and approximate durations and reps; releases change every quarter, so the content is an approximation. Barbell tracks use a 10 kg bar.
 - “Log as done” records blocks exactly as if the timer had run them as planned (same code path as the timer), with rep-based sets counted as 40 s each.
 - Weights in the template: RDL 16 kg, leg press 80 kg, cable kickback 8 kg, Bulgarian split squat 8 kg, abduction 60 kg / adduction 30 kg, Body Pump bar 10 kg, hip thrust 60 kg warm-up / 100 kg working sets, glute bridge and back extension 10 kg.
+
+## Workouts (replacing weekly programs)
+- A saved workout is stored as a `Program` with exactly one day, so sessions keep their `programId`/`programDayId` links and backups stay compatible. The weekday field is no longer used.
+- `migrateProgramsToWorkouts` runs at startup and after a backup import: multi-day programs are split into one workout per day; days with the same name are kept once; the first workout keeps the original program id and every workout keeps its original day id.

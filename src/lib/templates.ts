@@ -1,8 +1,9 @@
 // Ready-made programs the user can add from the Programs screen.
 
 import type { Block, BlockParams, ExerciseEntry, IntervalSegment, Program, ProgramDay, SetTarget } from '../db/types';
+import { splitProgram, workoutFromDay } from './workouts';
 import { uid } from './ids';
-import { cloneDay, defaultParams, defaultTimer, newEntry } from './program';
+import { defaultParams, defaultTimer, newEntry } from './program';
 import { sampleProgram } from './sampleProgram';
 
 function entry(exerciseId: string, format: Block['format'], patch: Partial<ExerciseEntry> = {}): ExerciseEntry {
@@ -159,25 +160,20 @@ function bodyPump(): ProgramDay {
   };
 }
 
-export function glutesConditioningWeek(): Program {
-  const now = Date.now();
-  const monday = absAndWalk('Abs + incline walk', 0);
-  return {
-    id: uid(),
-    name: 'My training week',
-    notes: 'Mon & Thu abs + incline walk · Tue & Fri legs and glutes · Wed Body Pump. Days can be swapped: start any day from Today.',
-    createdAt: now,
-    updatedAt: now,
-    days: [monday, legsA(), bodyPump(), { ...cloneDay(monday, 'Abs + incline walk'), weekday: 3 }, legsB()],
-  };
+/** The personal workouts: abs + cardio, two legs & glutes days and Body Pump. */
+export function myWorkouts(): Program[] {
+  return [absAndWalk('Abs + cardio', 0), legsA(), legsB(), bodyPump()].map((d) => {
+    const name = { 'Legs & glutes A': 'Legs & glutes 1', 'Legs & glutes B': 'Legs & glutes 2' }[d.name] ?? d.name;
+    return workoutFromDay(d, name);
+  });
 }
 
-export const TEMPLATES: { id: string; name: string; description: string; create: () => Program }[] = [
+export const TEMPLATES: { id: string; name: string; description: string; create: () => Program[] }[] = [
   {
-    id: 'glutes-week',
-    name: 'My training week',
-    description: 'Mon/Thu abs + incline walk, Tue/Fri legs & glutes (hip thrust EMOM, RDL, kickbacks…), Wed Body Pump.',
-    create: glutesConditioningWeek,
+    id: 'my-workouts',
+    name: 'My workouts',
+    description: 'Abs + cardio, Legs & glutes 1, Legs & glutes 2 and Body Pump.',
+    create: myWorkouts,
   },
-  { id: 'sample', name: 'Sample week', description: 'An example that uses every block format.', create: sampleProgram },
+  { id: 'sample', name: 'Sample workouts', description: 'Upper body, conditioning and lower body examples using every block format.', create: () => splitProgram(sampleProgram()) },
 ];

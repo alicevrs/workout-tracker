@@ -2,6 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 import App from './App';
+import { db } from './db/db';
+import { migrateProgramsToWorkouts } from './lib/workouts';
 import { ensureSeeded, getSettings, requestPersistentStorage, saveSettings } from './db/repo';
 import { ToastProvider } from './components/ui';
 import '@fontsource/inter/latin-400.css';
@@ -15,8 +17,9 @@ import './styles.css';
 async function boot() {
   try {
     await ensureSeeded();
+    await migrateProgramsToWorkouts(db);
   } catch (e) {
-    console.error('Seeding failed', e);
+    console.error('Startup migration failed', e);
   }
   // Ask once on first launch; Settings shows the current status and lets the user ask again.
   try {

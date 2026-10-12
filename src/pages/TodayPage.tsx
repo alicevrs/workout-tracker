@@ -5,30 +5,29 @@ import { toDateKey } from '../lib/dates';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { isStandalone } from '../components/InstallHelp';
-import { PageHeader } from '../components/ui';
+import { PageHeader, Sheet } from '../components/ui';
 import { db } from '../db/db';
 import { saveSettings, useSettings } from '../db/repo';
 import { backupReminderDue } from '../lib/backup';
 import { formatTime } from '../lib/dates';
-import { describeBlock, WEEKDAYS, weekdayIndex } from '../lib/program';
-import { DayActions } from '../components/DayActions';
+import { describeBlock } from '../lib/program';
+import { workoutDay } from '../lib/workouts';
+import type { Program } from '../db/types';
 import { createSession } from '../lib/session';
 
 export default function TodayPage() {
   const navigate = useNavigate();
   const active = useLiveQuery(() => db.sessions.where('status').equals('in_progress').toArray(), []);
-  const programs = useLiveQuery(() => db.programs.toArray(), []);
-  const today = weekdayIndex();
-  const [logging, setLogging] = useState(false);
+  const workouts = useLiveQuery(() => db.programs.orderBy('name').toArray(), []);
+  const [logDate, setLogDate] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
   const settings = useSettings();
   const oldest = useLiveQuery(() => db.sessions.orderBy('startedAt').first(), []);
   const remind = backupReminderDue(settings, oldest?.startedAt);
-  const planned = (programs ?? []).flatMap((p) => p.days.filter((d) => d.weekday === today).map((d) => ({ program: p, day: d })));
-  const otherDays = (programs ?? []).flatMap((p) => p.days.filter((d) => d.weekday !== today && d.blocks.length).map((d) => ({ program: p, day: d })));
-
-  const startEmpty = async () => {
-    const s = createSession({ title: 'Workout' });
+  const start = async (w: Program | null) => {
+    const s = w ? createSession({ program: w, day: workoutDay(w) }) : createSession({ title: 'Workout' });
     await db.sessions.add(s);
+    setStarting(false);
     navigate(`/workout/${s.id}`);
   };
 
@@ -85,58 +84,55 @@ export default function TodayPage() {
         )}
 
         <section className="card">
-          <h2 className="mb">Planned for today</h2>
-          {planned.length === 0 ? (
-            <p className="muted small">
-              Nothing scheduled. Assign a weekday to a program day, or start a free workout.
-            </p>
-          ) : (
-            planned.map(({ program, day }) => (
-              <div key={day.id} className="row wrap" style={{ minHeight: 56 }}>
-                <div className="grow" style={{ minWidth: 0, flex: '1 1 180px' }}>
-                  <strong>{day.name}</strong> <span className="small muted">· {program.name}</span>
-                  <div className="small faint ellipsis">{day.blocks.map(describeBlock).join(' · ')}</div>
-                </div>
-                <DayActions program={program} day={day} />
-              </div>
-            ))
-          )}
-          {otherDays.length > 0 && (
-            <details className="mt-s">
-              <summary className="small muted" style={{ cursor: 'pointer', minHeight: 40, display: 'flex', alignItems: 'center' }}>
-                Do another day of your program
-              </summary>
-              {otherDays.map(({ program, day }) => (
-                <div key={day.id} className="row wrap" style={{ minHeight: 52, borderTop: '1px solid var(--border)' }}>
-                  <div className="grow" style={{ minWidth: 0, flex: '1 1 160px' }}>
-                    <strong>{day.name}</strong>
-                    <div className="small faint ellipsis">
-                      {program.name}
-                      {day.weekday !== undefined ? ` · ${WEEKDAYS[day.weekday]}` : ''}
-                    </div>
-                  </div>
-                  <DayActions program={program} day={day} compact />
-                </div>
-              ))}
-            </details>
-          )}
-          <div className="row wrap mt">
-            <button className="btn" onClick={startEmpty}>
-              <Icon name="plus" /> Free workout
+          <h2 className="mb">Train</h2>
+          <div className="stack">
+            <button className="btn primary block" style={{ minHeight: 56 }} onClick={() => setStarting(true)}>
+              <Icon name="play" /> Start a workout
             </button>
-            <Link className="btn" to="/activity/new">
-              <Icon name="flag" /> Log activity
-            </Link>
-            <button className="btn" onClick={() => setLogging(true)}>
-              <Icon name="history" /> Log a past workout
-            </button>
-            <Link className="btn" to="/programs">
-              <Icon name="calendar" /> Programs
+            <div className="grid two">
+              <button className="btn block" onClick={() => setLogDate(toDateKey(Date.now()))}>
+                <Icon name="check" /> Log a workout
+              </button>
+              <button className="btn block" onClick={() => setLogDate(toDateKey(Date.now() - 86_400_000))}>
+                <Icon name="history" /> Log a past workout
+              </button>
+            </div>
+            <Link className="btn block ghost" to="/activity/new">
+              <Icon name="flag" /> Log a sport or outdoor activity
             </Link>
           </div>
+          {workouts && workouts.length === 0 && (
+            <p className="small muted mt">
+              Save the workouts you do often in <Link to="/workouts">Workouts</Link> to start or log them with one tap.
+            </p>
+          )}
         </section>
       </div>
-      <LogPastWorkout open={logging} onClose={() => setLogging(false)} date={toDateKey(Date.now() - 86_400_000)} />
+      <LogPastWorkout open={logDate !== null} onClose={() => setLogDate(null)} date={logDate ?? undefined} />
+      <Sheet open={starting} onClose={() => setStarting(false)} title="Start a workout">
+        <ul className="list">
+          {(workouts ?? []).map((w) => (
+            <li key={w.id}>
+              <button className="list-item" style={{ width: '100%', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', textAlign: 'left', cursor: 'pointer' }} onClick={() => start(w)}>
+                <div className="grow">
+                  <div style={{ fontWeight: 650 }}>{w.name}</div>
+                  <div className="small muted ellipsis">{workoutDay(w).blocks.map((b) => b.name ?? describeBlock(b)).join(' · ')}</div>
+                </div>
+                <Icon name="play" />
+              </button>
+            </li>
+          ))}
+          <li>
+            <button className="list-item" style={{ width: '100%', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer' }} onClick={() => start(null)}>
+              <div className="grow">
+                <div style={{ fontWeight: 650 }}>Free workout</div>
+                <div className="small muted">Start empty and add blocks as you go</div>
+              </div>
+              <Icon name="plus" />
+            </button>
+          </li>
+        </ul>
+      </Sheet>
     </div>
   );
 }

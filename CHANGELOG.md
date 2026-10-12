@@ -101,3 +101,9 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Progress badges only compare like with like (weighted with weighted, bodyweight/timed with bodyweight/timed).
 - Template update: real weights (RDL 16 kg, leg press 80 kg, cable kickback 8 kg, Bulgarian split squat 8 kg, abduction 60 kg, adduction 30 kg, Body Pump bar 10 kg) and a generic “Abs (mixed exercises)” for the abs block.
 - Log workouts on any date: “+ Workout” on a day in the calendar, “Log a past workout” on Today, the History button, and a Date field in every “Log as done”. Choose a program day (log as planned or enter the sets yourself), an empty workout, or a sport activity.
+
+## Workouts instead of weekly programs (2026-10-13)
+- The Programs tab is now **Workouts**: a flat list of saved workouts (no days of the week). Each workout can be started, or logged for today or any past day, straight from the list; tap it to edit its blocks.
+- Existing programs are split automatically into one workout per day (same-name days kept once; the personal template's days are renamed Abs + cardio, Legs & glutes 1, Legs & glutes 2). Logged sessions are not affected. Backups from before are converted on import.
+- Today: “Start a workout” (pick a saved workout or a free workout), “Log a workout”, “Log a past workout” and “Log a sport or outdoor activity”.
+- Templates now add separate workouts: “My workouts” (Abs + cardio, Legs & glutes 1, Legs & glutes 2, Body Pump) and “Sample workouts”.
