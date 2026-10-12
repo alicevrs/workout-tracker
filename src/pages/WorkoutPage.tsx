@@ -103,10 +103,10 @@ export default function WorkoutPage() {
   };
 
   const activeIdx = session.blocks.map((b, i) => (b.skipped ? -1 : i)).filter((i) => i >= 0);
-  const markDone = (bi: number) => {
+  const markDone = (bi: number, ask = true) => {
     const b = session.blocks[bi];
-    if (b.entries.some((e) => e.sets.some((x) => x.completed)) && !confirm('Some sets are already logged. Mark the rest as done as planned?')) return;
-    updateBlock(b.id, (fresh) => {
+    if (ask && b.entries.some((e) => e.sets.some((x) => x.completed)) && !confirm('Some sets are already logged. Mark the rest as done as planned?')) return;
+    return updateBlock(b.id, (fresh) => {
       const all = session.blocks.map((x) => (x.id === fresh.id ? fresh : x));
       const done = completeBlocks(all, [bi], Date.now()).blocks[bi];
       // Keep sets already logged; only fill in what was still open.
@@ -119,7 +119,16 @@ export default function WorkoutPage() {
         }),
       };
     });
-    toast('Marked as done');
+  };
+  const openBlocks = activeIdx.filter((i) => {
+    const b = session.blocks[i];
+    if (b.format === 'amrap' || b.format === 'for_time' || !b.entries.length) return false;
+    return hasPlannedSets(b.format) ? b.entries.some((e) => e.sets.some((x) => !x.completed && !x.skipped)) : b.entries.every((e) => e.sets.length === 0);
+  });
+  const markAllDone = async () => {
+    if (!confirm('Mark every open set as done, exactly as planned?')) return;
+    for (const i of openBlocks) await markDone(i, false);
+    toast('All marked as done');
   };
 
   const durationMin = session.endedAt ? Math.round((session.endedAt - session.startedAt) / 60000) : undefined;
@@ -156,12 +165,17 @@ export default function WorkoutPage() {
             </button>
           </div>
         )}
-        {activeIdx.length > 1 && (
+        {inProgress && activeIdx.length > 1 && (
           <button className="btn primary block" onClick={() => setTimerBlocks(activeIdx)}>
             <Icon name="timer" /> Run all blocks with the timer
             <span className="small" style={{ opacity: 0.8 }}>
               ≈ {formatDuration(activeIdx.reduce((s, i) => s + estimateBlockSeconds(performedToBlock(session.blocks[i])), 0))}
             </span>
+          </button>
+        )}
+        {openBlocks.length > 1 && (
+          <button className="btn block" onClick={markAllDone}>
+            <Icon name="check" /> Mark all as done (as planned)
           </button>
         )}
         {session.programDayId && inProgress && <p className="small faint">Plan changes here apply to today’s session only. Your saved workout stays unchanged.</p>}
@@ -233,8 +247,8 @@ export default function WorkoutPage() {
                 />
               ))}
               {b.entries.length === 0 && !open && <p className="small muted">No exercises. Use Plan to add some, or just run the timer.</p>}
-              {b.entries.length > 0 && b.format !== 'amrap' && b.format !== 'for_time' && (
-                <button className="btn small ghost mt-s" onClick={() => markDone(bi)}>
+              {openBlocks.includes(bi) && (
+                <button className="btn small ghost mt-s" onClick={() => markDone(bi)?.then(() => toast('Marked as done'))}>
                   <Icon name="check" /> Mark block as done (as planned)
                 </button>
               )}

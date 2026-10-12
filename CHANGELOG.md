@@ -107,3 +107,5 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Existing programs are split automatically into one workout per day (same-name days kept once; the personal template's days are renamed Abs + cardio, Legs & glutes 1, Legs & glutes 2). Logged sessions are not affected. Backups from before are converted on import.
 - Today: “Start a workout” (pick a saved workout or a free workout), “Log a workout”, “Log a past workout” and “Log a sport or outdoor activity”.
 - Templates now add separate workouts: “My workouts” (Abs + cardio, Legs & glutes 1, Legs & glutes 2, Body Pump) and “Sample workouts”.
+- Today has two buttons: “Start a workout” (pick a saved workout or a free one, with a date: today starts it live with the timer, a past date creates it on that day to fill in) and “Start a sport or outdoor activity” (also with a date).
+- Workout screen: “Mark all as done (as planned)”; per-block “Mark block as done” only shows on blocks with open sets; the run-all timer button only on workouts in progress.
