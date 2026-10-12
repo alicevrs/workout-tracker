@@ -101,8 +101,9 @@ Choices made while building the app, with the reason for each.
 - A day counts as “active” if it has at least one completed session. In the activity mix a day with two different activity types counts once for each.
 
 ## Personal program (“My training week”)
-- Abs: modelled as a Tabata-type block — 4 rounds × 40 s, 0 s rest between rounds, 3 extra sets, 20 s between sets. The four ab exercises are placeholders (crunch, bicycle crunch, plank, Russian twist) until the real ones are known.
+- Abs: modelled as a Tabata-type block — 4 rounds × 40 s, 0 s rest between rounds, 3 extra sets, 20 s between sets. The exercises change from session to session, so the block uses one generic exercise, “Abs (mixed exercises)”.
 - Hip thrust “EMOM 2 × 12” is read as *every 2 minutes for 12 minutes* (6 intervals), which matches the 6 sets described (1 warm-up 60 kg × 15, 4 × 8 at 100 kg, 1 to failure at 100 kg).
 - Bulgarian split squat, cable kickbacks and abduction/adduction use Intervals blocks so each minute is labelled with the leg or the machine.
-- Body Pump: one timed block with the 10 usual tracks of a 55-minute class (warm-up, squats, chest, back, triceps, biceps, lunges, shoulders, core, cool-down) and approximate durations and reps; releases change every quarter, so the content is an approximation. Bar weights are left empty to fill in.
+- Body Pump: one timed block with the 10 usual tracks of a 55-minute class (warm-up, squats, chest, back, triceps, biceps, lunges, shoulders, core, cool-down) and approximate durations and reps; releases change every quarter, so the content is an approximation. Barbell tracks use a 10 kg bar.
 - “Log as done” records blocks exactly as if the timer had run them as planned (same code path as the timer), with rep-based sets counted as 40 s each.
+- Weights in the template: RDL 16 kg, leg press 80 kg, cable kickback 8 kg, Body Pump bar 10 kg, hip thrust 60 kg warm-up / 100 kg working sets, glute bridge and back extension 10 kg.

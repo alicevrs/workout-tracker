@@ -156,5 +156,6 @@
   {"id":"static-lunge","name":"Split Squat (Static Lunge)","category":"strength","equipment":"barbell","tracking":"weight_reps","primaryMuscles":["quads","glutes"],"secondaryMuscles":["hamstrings","adductors"],"isCustom":false},
   {"id":"lying-leg-raise","name":"Lying Leg Raise","category":"bodyweight","equipment":"bodyweight","tracking":"reps","primaryMuscles":["abs"],"secondaryMuscles":["obliques"],"isCustom":false},
   {"id":"flutter-kicks","name":"Flutter Kicks","category":"bodyweight","equipment":"bodyweight","tracking":"time","primaryMuscles":["abs"],"secondaryMuscles":["quads"],"isCustom":false},
-  {"id":"plank-shoulder-tap","name":"Plank Shoulder Tap","category":"bodyweight","equipment":"bodyweight","tracking":"time","primaryMuscles":["abs"],"secondaryMuscles":["obliques","front_delts"],"isCustom":false}
+  {"id":"plank-shoulder-tap","name":"Plank Shoulder Tap","category":"bodyweight","equipment":"bodyweight","tracking":"time","primaryMuscles":["abs"],"secondaryMuscles":["obliques","front_delts"],"isCustom":false},
+  {"id":"abs-mixed","name":"Abs (mixed exercises)","category":"bodyweight","equipment":"bodyweight","tracking":"time","primaryMuscles":["abs"],"secondaryMuscles":["obliques","lower_back"],"isCustom":false,"notes":"Any core exercises: crunches, leg raises, planks, twists…"}
 ]

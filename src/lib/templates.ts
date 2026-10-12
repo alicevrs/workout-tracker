@@ -30,7 +30,7 @@ function absAndWalk(name: string, weekday: number): ProgramDay {
       block(
         'tabata',
         'Abs',
-        ['crunch', 'bicycle-crunch', 'plank', 'russian-twist'].map((id) => entry(id, 'tabata')),
+        [entry('abs-mixed', 'tabata', { note: 'Choose your ab exercises' })],
         { rounds: 4, workSec: 40, restSec: 0, extraSets: 3, restBetweenSetsSec: 20 },
         { note: '4 sets × 4 rounds of 40 s, no rest between rounds, 20 s between sets' },
       ),
@@ -60,7 +60,7 @@ function legsStart(): Block[] {
       [entry('hip-thrust', 'emom', { setTargets: HIP_THRUST_SETS, note: 'Every 2 min: warm-up 60 kg × 15, 4 × 8 at 100 kg, last set to failure (≈ 10)' })],
       { totalMin: 12, intervalSec: 120 },
     ),
-    block('tabata', 'Romanian deadlift', [entry('romanian-deadlift', 'tabata')], { rounds: 4, workSec: 80, restSec: 40, extraSets: 0 }),
+    block('tabata', 'Romanian deadlift', [entry('romanian-deadlift', 'tabata', { targetWeight: 16 })], { rounds: 4, workSec: 80, restSec: 40, extraSets: 0 }),
   ];
 }
 
@@ -78,7 +78,7 @@ function legsA(): ProgramDay {
         { segments: [seg('Right leg', 'work', 60), seg('Left leg', 'work', 60)], repeats: 4 },
         { optional: true, note: '4 minutes per leg, alternating every minute, no rest' },
       ),
-      block('timed_sets', 'Leg press', [entry('leg-press', 'timed_sets', { sets: 4, durationSec: 60, restSec: 30 })]),
+      block('timed_sets', 'Leg press', [entry('leg-press', 'timed_sets', { sets: 4, durationSec: 60, restSec: 30, targetWeight: 80 })]),
       timed('Stretching', 'stretching-routine', 5 * 60),
     ],
   };
@@ -106,7 +106,7 @@ function legsB(): ProgramDay {
       block(
         'intervals',
         'Cable kickback',
-        [entry('cable-kickback', 'intervals')],
+        [entry('cable-kickback', 'intervals', { targetWeight: 8 })],
         { segments: [seg('Right leg', 'work', 60), seg('Switch leg', 'rest', 25), seg('Left leg', 'work', 60), seg('Switch leg', 'rest', 25)], repeats: 5 },
         { note: '10 rounds of 1 min, 25 s to switch leg' },
       ),
@@ -120,8 +120,10 @@ function legsB(): ProgramDay {
  * exercises change with every release, so durations and reps are approximate.
  */
 function bodyPump(): ProgramDay {
+  const BAR_KG = 10;
+  const BAR = new Set(['barbell-warm-up', 'back-squat', 'barbell-bench-press', 'deadlift', 'barbell-row', 'clean-and-press', 'barbell-curl', 'static-lunge', 'overhead-press']);
   const t = (exerciseId: string, seconds: number, reps: number | undefined, restAfter = 0, note?: string) =>
-    entry(exerciseId, 'timed_sets', { sets: 1, durationSec: seconds, reps, restSec: restAfter, note });
+    entry(exerciseId, 'timed_sets', { sets: 1, durationSec: seconds, reps, restSec: restAfter, note, targetWeight: BAR.has(exerciseId) ? BAR_KG : undefined });
   const TRACK_BREAK = 40;
   return {
     id: uid(),

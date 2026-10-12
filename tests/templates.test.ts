@@ -35,7 +35,7 @@ describe('my training week, as the timer runs it', () => {
     const phases = blockPhases(blockOf('Abs + incline walk', 'Abs'), 0).filter((p) => p.kind !== 'prep');
     expect(phases.filter((p) => p.kind === 'work')).toHaveLength(16);
     expect(phases.filter((p) => p.kind === 'rest').map((p) => p.durationSec)).toEqual([20, 20, 20]);
-    expect(phases.slice(0, 4).map((p) => p.exerciseId)).toEqual(['crunch', 'bicycle-crunch', 'plank', 'russian-twist']);
+    expect(new Set(phases.map((p) => p.exerciseId).filter(Boolean))).toEqual(new Set(['abs-mixed']));
     expect(totalPlannedSeconds(phases)).toBe(16 * 40 + 3 * 20);
   });
 
@@ -77,6 +77,16 @@ describe('my training week, as the timer runs it', () => {
     const p = blockPhases(blockOf('Legs & glutes B', 'Cable kickback'), 0).filter((x) => x.kind !== 'prep');
     expect(p.filter((x) => x.kind === 'work')).toHaveLength(10);
     expect(p.filter((x) => x.kind === 'rest')).toHaveLength(9);
+  });
+
+  it('uses the planned weights', () => {
+    const w = (d: string, b: string) => blockPhases(blockOf(d, b), 0).find((p) => p.kind === 'work')?.targetWeight;
+    expect(w('Legs & glutes A', 'Romanian deadlift')).toBe(16);
+    expect(w('Legs & glutes A', 'Leg press')).toBe(80);
+    expect(w('Legs & glutes B', 'Cable kickback')).toBe(8);
+    const pump = blockOf('Body Pump', 'Body Pump class (55 min)').entries;
+    expect(pump.find((e) => e.exerciseId === 'back-squat')?.planned?.targetWeight).toBe(10);
+    expect(pump.find((e) => e.exerciseId === 'push-up')?.planned?.targetWeight).toBeUndefined();
   });
 
   it('Body Pump lasts about 55 minutes', () => {
