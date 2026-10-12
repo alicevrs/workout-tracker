@@ -43,3 +43,17 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Session summary shows the silhouette coloured by the share of work per muscle, plus a ranked muscle list with percentages.
 - History tab grouped by month; “Log past workout”; edit any logged session (sets, plan, date/time, duration, effort, notes); repeat a past workout.
 - Fixed: fast consecutive taps could overwrite each other; all workout edits are now transactional.
+
+## Phase 5 — Analytics, charts and calories (2026-10-12)
+- Analytics screen with one period filter (4 weeks, 3, 6, 12 months, all) and, on a Mac, two charts side by side.
+- Overview: workouts, total time, volume, calories, average duration, weekly streak, most trained muscle, most used exercise.
+- Exercise progress: line chart of estimated 1RM, max weight, volume, total reps, most reps in a set or longest set, per exercise, with the change over the period.
+- Period comparison: this week / month / 30 days / year vs the previous one, or two custom ranges; table with % change and a “running total by day” chart.
+- Totals by week, month or year (volume, time, reps, sets, calories, sessions), per period or as a running total.
+- Training frequency per week or month, and a calendar heatmap of workout days.
+- Muscle distribution per workout, week or month (browse back in time), as bars or donut, with the body silhouette.
+- Calories per workout, week or month (estimated vs imported), running totals, and an optional daily total (BMR + exercise).
+- Every chart has a table view.
+- Calories: MET method with a MET table by block type and effort, cardio METs per exercise, body weight from the weight log nearest to the workout date (fallback: profile weight), Mifflin-St Jeor BMR. Every calorie value shows its source (estimated or imported) and a note that estimates are approximate.
+- Body weight log with a chart (Settings), BMR display and the MET table.
+- Effort (light / moderate / vigorous) per workout.

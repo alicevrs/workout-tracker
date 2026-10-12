@@ -51,3 +51,18 @@ Choices made while building the app, with the reason for each.
 - Primary muscles get 1 × the set, secondary muscles 0.5 ×. Colour intensity is relative to the most-worked muscle of the selection; the percentages are shares of the total.
 - Imported cardio without sets (e.g. a Garmin run) maps the activity type to a catalog exercise and counts one unit per 10 minutes.
 - The silhouette is a simplified drawing made for this app (inline SVG, mirrored halves).
+
+## Calories
+- **kcal = MET × kg × hours.** MET values (`src/lib/calories.ts`, shown in Settings) are approximations from the Compendium of Physical Activities: resistance training 3.5 / 5.0 / 6.0 (light / moderate / vigorous), calisthenics 2.8 / 3.8 / 8.0, circuit (AMRAP, EMOM, For Time) 3.5 / 4.3 / 8.0, intervals (Tabata, intervals) 4.0 / 6.0 / 8.0, stretching 2.3 / 2.3 / 3.0. Cardio exercises carry their own MET (e.g. running 9.8), scaled × 0.75 for light and × 1.3 for vigorous.
+- The block type decides the MET; a block where most exercises are cardio or mobility uses those METs instead.
+- Time per block: blocks run with the timer use their measured time; the rest of the workout time (including rests and warm-up) is shared by the other blocks in proportion to their planned duration.
+- Body weight = the weight-log entry closest to the workout date (before or after); if the log is empty, the profile weight. Without any weight, no estimate is shown (the UI asks for a weight instead of guessing).
+- Imported calories always replace the estimate and are labelled “Imported”.
+- **Daily total** = BMR + exercise calories *above resting* (gross minus 1 MET for the workout time), so the resting part is not counted twice.
+- Age for BMR is calculated from the birth date at each date; if only an age is entered, it is used as is.
+
+## Analytics
+- Charts use one validated categorical palette (blue first, orange second), checked for colour-blind separation and contrast against the dark card surface. Single-measure charts use one colour; two measures with different units are never put on one axis.
+- “This week / month / year” in comparisons runs up to today and is compared with the *whole* previous period. The running-total chart shows whether you are ahead of last period’s pace.
+- The muscle donut shows the top 7 muscles plus “Other”; the bar view lists all of them.
+- Weekly streak = consecutive weeks with at least one workout, counting the current week only once it has a workout.

@@ -1112,3 +1112,27 @@ kbd {
     display: none;
   }
 }
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.data-table th,
+.data-table td {
+  text-align: right;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.data-table th:first-child,
+.data-table td:first-child {
+  text-align: left;
+}
+.data-table th {
+  color: var(--text-dim);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  background: var(--bg-elev);
+}

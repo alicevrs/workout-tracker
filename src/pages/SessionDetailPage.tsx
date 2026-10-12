@@ -13,6 +13,7 @@ import { cloneBlock, FORMAT_INFO } from '../lib/program';
 import { blockToPerformed, createSession, performedToBlock } from '../lib/session';
 import { detectPRs, exerciseHistory, PR_LABEL, sessionMetrics, sessionSummary } from '../lib/stats';
 import { compact, formatWeight } from '../lib/units';
+import { SessionCalories } from '../components/SessionCalories';
 
 export default function SessionDetailPage() {
   const { id = '' } = useParams();
@@ -73,8 +74,12 @@ export default function SessionDetailPage() {
           <Stat label="Duration" value={sum.durationSec ? formatDuration(sum.durationSec) : '–'} />
           <Stat label="Volume" value={sum.volume ? `${compact(unit === 'kg' ? sum.volume : sum.volume / 0.45359237)} ${unit}` : '–'} />
           <Stat label="Sets" value={sum.sets || '–'} sub={sum.reps ? `${sum.reps} reps` : undefined} />
+          <SessionCalories session={session} />
         </div>
 
+        <p className="tiny faint" style={{ marginTop: 6 }}>
+          Calorie estimates are approximate. Imported values come from your device.
+        </p>
         {prs.length > 0 && (
           <section className="card" style={{ borderColor: 'rgba(255,197,66,0.5)' }}>
             <h2 className="mb row">
