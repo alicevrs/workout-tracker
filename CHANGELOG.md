@@ -79,4 +79,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - New look inspired by the Monday Resolution studio website: black background, yellow (#FDD70D) highlights, square corners, uppercase titles with a short yellow rule, uppercase buttons.
 - Fonts: Archivo (titles) and Inter (text), bundled with the app so they work offline.
 - Body map, heatmap and single-measure charts use yellow; two-period comparisons use yellow (current) vs gray (previous).
-- App icon and theme colour updated.
+- App icon and favicon: the Monday Resolution symbol (used with permission).
