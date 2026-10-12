@@ -18,3 +18,11 @@ Choices made while building the app, with the reason for each.
 - Each exercise has an optional `tracking` field (weight × reps, reps, time, time + distance) that decides which inputs the log shows. It is an addition to the brief’s data model.
 - Sex has a third option, “Not set”. The BMR formula then uses the midpoint of the male and female constants (−78).
 - The app asks for persistent storage (`navigator.storage.persist()`) once on first launch; Settings shows the status and can ask again.
+
+## Planning
+- **Mixed workout** = a program day with several blocks of different formats. The timer can run the blocks one after another as one session (Phase 3), so there is no separate “mixed” block type.
+- **Grouping is set per exercise entry.** Consecutive entries with the same grouping (superset or circuit) and the same group label (A–F) form one group. Superset: exercises run back to back, then the rest of the last exercise. Circuit: the group repeats for the number of sets, and each exercise’s rest is used as the transition time.
+- **Drop set weights** are planned from the target weight and the drop %, rounded to 0.5 kg.
+- **Per-session override:** starting a workout copies the day’s blocks into the session (new ids). Editing the workout never changes the program. Completed sets survive later plan edits.
+- Program edits auto-save after a short pause (400 ms) and when leaving the screen.
+- Weekday numbering: 0 = Monday … 6 = Sunday. Weeks start on Monday everywhere in the app.

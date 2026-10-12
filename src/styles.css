@@ -1068,6 +1068,14 @@ kbd {
 .block-card {
   border-left: 4px solid var(--accent);
 }
+@media (max-width: 600px) {
+  .card .card.block-card {
+    padding: 12px 10px;
+  }
+  .card .card.block-card .entry-row {
+    padding: 8px;
+  }
+}
 .drag-handle {
   color: var(--text-faint);
 }

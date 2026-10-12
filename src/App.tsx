@@ -8,6 +8,9 @@ const ExercisesPage = lazy(() => import('./pages/ExercisesPage'));
 const ExerciseDetailPage = lazy(() => import('./pages/ExerciseDetailPage'));
 const ExerciseEditPage = lazy(() => import('./pages/ExerciseEditPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const ProgramsPage = lazy(() => import('./pages/ProgramsPage'));
+const ProgramEditPage = lazy(() => import('./pages/ProgramEditPage'));
+const WorkoutPage = lazy(() => import('./pages/WorkoutPage'));
 
 interface NavItem {
   to: string;
@@ -18,8 +21,9 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { to: '/', label: 'Today', icon: 'home', mobile: true },
-  { to: '/exercises', label: 'Exercises', icon: 'dumbbell', mobile: true },
-  { to: '/settings', label: 'Settings', icon: 'settings', mobile: true },
+  { to: '/programs', label: 'Programs', icon: 'calendar', mobile: true },
+  { to: '/exercises', label: 'Exercises', icon: 'dumbbell', mobile: false },
+  { to: '/settings', label: 'Settings', icon: 'settings', mobile: false },
 ];
 
 export default function App() {
@@ -44,6 +48,9 @@ export default function App() {
             <Route path="/exercises/new" element={<ExerciseEditPage />} />
             <Route path="/exercises/:id" element={<ExerciseDetailPage />} />
             <Route path="/exercises/:id/edit" element={<ExerciseEditPage />} />
+            <Route path="/programs" element={<ProgramsPage />} />
+            <Route path="/programs/:id" element={<ProgramEditPage />} />
+            <Route path="/workout/:id" element={<WorkoutPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<div className="empty">Page not found.</div>} />
           </Routes>
