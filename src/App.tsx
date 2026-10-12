@@ -20,6 +20,7 @@ const TimerPage = lazy(() => import('./pages/TimerPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const SessionDetailPage = lazy(() => import('./pages/SessionDetailPage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
+const ActivityFormPage = lazy(() => import('./pages/ActivityFormPage'));
 
 interface NavItem {
   to: string;
@@ -74,6 +75,8 @@ export default function App() {
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/history/:id" element={<SessionDetailPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/activity/new" element={<ActivityFormPage />} />
+            <Route path="/activity/:id" element={<ActivityFormPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<div className="empty">Page not found.</div>} />
           </Routes>

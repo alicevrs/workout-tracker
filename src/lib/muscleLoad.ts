@@ -3,6 +3,7 @@
 // Each primary muscle of the exercise gets 1 × the set, each secondary muscle 0.5 ×.
 
 import { MUSCLE_IDS, PRIMARY_WEIGHT, SECONDARY_WEIGHT } from '../data/muscles';
+import { resolveSport } from '../data/sports';
 import type { Exercise, MuscleId, Session } from '../db/types';
 import { isDone, resultRounds } from './stats';
 import { sessionDurationSec } from './session';
@@ -13,35 +14,7 @@ export function emptyLoad(): MuscleLoad {
   return Object.fromEntries(MUSCLE_IDS.map((m) => [m, 0])) as MuscleLoad;
 }
 
-/** Imported activities without sets: map the activity type to a catalog exercise. */
-const ACTIVITY_EXERCISE: Record<string, string> = {
-  running: 'running',
-  run: 'running',
-  trail_running: 'running',
-  treadmill: 'treadmill-run',
-  cycling: 'cycling',
-  ride: 'cycling',
-  virtualride: 'stationary-bike',
-  indoor_cycling: 'stationary-bike',
-  walking: 'walking',
-  walk: 'walking',
-  hike: 'incline-walk',
-  hiking: 'incline-walk',
-  rowing: 'rowing-machine',
-  indoor_rowing: 'rowing-machine',
-  swimming: 'swimming',
-  swim: 'swimming',
-  elliptical: 'elliptical',
-  stair_climbing: 'stair-climber',
-  stairstepper: 'stair-climber',
-};
-
-export function exerciseForActivity(activityType: string | undefined): string | undefined {
-  if (!activityType) return undefined;
-  return ACTIVITY_EXERCISE[activityType.toLowerCase().replace(/\s+/g, '_')];
-}
-
-function add(load: MuscleLoad, ex: Exercise | undefined, units: number) {
+function add(load: MuscleLoad, ex: Pick<Exercise, 'primaryMuscles' | 'secondaryMuscles'> | undefined, units: number) {
   if (!ex || units <= 0) return;
   for (const m of ex.primaryMuscles) load[m] += units * PRIMARY_WEIGHT;
   for (const m of ex.secondaryMuscles) load[m] += units * SECONDARY_WEIGHT;
@@ -60,9 +33,10 @@ export function sessionMuscleLoad(s: Session, exercises: Map<string, Exercise>, 
       add(into, ex, units);
     }
   }
-  // Imported cardio without sets: one unit per 10 minutes.
+  // Activities without sets (sports, imports): the sport's muscles, one unit per 10 minutes.
   if (!anySets && s.activityType) {
-    add(into, exercises.get(exerciseForActivity(s.activityType) ?? ''), sessionDurationSec(s) / 600);
+    const sport = resolveSport(s.activityType);
+    if (sport) add(into, { primaryMuscles: sport.primary, secondaryMuscles: sport.secondary }, sessionDurationSec(s) / 600);
   }
   return into;
 }

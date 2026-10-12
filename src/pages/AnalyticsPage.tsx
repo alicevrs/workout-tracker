@@ -37,6 +37,8 @@ import { ageOn, bmrMifflin, netExerciseKcal, weightOn } from '../lib/calories';
 import { addDays, addMonths, DAY_MS, formatClock, formatDuration, formatShortDate, fromDateKey, startOfDay, startOfMonth, startOfWeek, toDateKey, type Grain } from '../lib/dates';
 import { muscleLoad, muscleShares } from '../lib/muscleLoad';
 import { compact, KG_PER_LB } from '../lib/units';
+import { activeDays, activityMix } from '../lib/activities';
+import { GROUP_INFO, type SportGroup } from '../data/sports';
 
 type RangeKey = '4w' | '3m' | '6m' | '12m' | 'all';
 const RANGE_OPTIONS: { value: RangeKey; label: string }[] = [
@@ -77,6 +79,8 @@ function fmtMetric(m: Metric | ProgressMetric, v: number, unit: WeightUnit): str
       return formatClock(v);
     case 'calories':
       return `${compact(v)} kcal`;
+    case 'distance':
+      return `${v >= 100 ? Math.round(v) : Math.round(v * 10) / 10} km`;
     default:
       return compact(v);
   }
@@ -114,11 +118,12 @@ export default function AnalyticsPage() {
         <Segmented<RangeKey> label="Period" value={rangeKey} onChange={setRangeKey} options={RANGE_OPTIONS} />
       </div>
 
-      <Overview sessions={inPeriod} all={sessions} exercises={exercises} unit={unit} kcal={kcal} />
+      <Overview sessions={inPeriod} all={sessions} exercises={exercises} unit={unit} kcal={kcal} from={from} now={now} />
 
       <div className="grid two-wide mt">
         <ExerciseProgress sessions={inPeriod} unit={unit} />
         <PeriodComparison sessions={sessions} unit={unit} kcal={kcal} now={now} />
+        <ActivityMixChart sessions={inPeriod} from={from} now={now} />
         <CumulativeChart sessions={inPeriod} from={from} now={now} unit={unit} kcal={kcal} />
         <Frequency sessions={inPeriod} all={sessions} from={from} now={now} />
         <MuscleDistribution sessions={sessions} now={now} />
@@ -128,14 +133,17 @@ export default function AnalyticsPage() {
   );
 }
 
-function Overview({ sessions, all, exercises, unit, kcal }: { sessions: Session[]; all: Session[]; exercises: ReturnType<typeof useExerciseMap>; unit: WeightUnit; kcal: (s: Session) => number }) {
+function Overview({ sessions, all, exercises, unit, kcal, from, now }: { sessions: Session[]; all: Session[]; exercises: ReturnType<typeof useExerciseMap>; unit: WeightUnit; kcal: (s: Session) => number; from: number; now: number }) {
   const t = periodTotals(sessions, kcal);
   const st = streaks(all);
   const muscle = mostTrainedMuscle(sessions, exercises);
+  const days = activeDays(sessions, from, Math.min(now, startOfDay(now) + DAY_MS - 1));
   const ex = mostUsedExercise(sessions);
   return (
     <div className="stat-tiles">
       <Stat label="Workouts" value={t.sessions} />
+      <Stat label="Active days" value={days.activeDays} sub={`of ${days.days} · ${days.days ? Math.round((days.activeDays / days.days) * 100) : 0}%`} />
+      <Stat label="Distance" value={`${t.distance >= 100 ? Math.round(t.distance) : t.distance.toFixed(1)} km`} />
       <Stat label="Total time" value={formatDuration(t.duration * 60)} />
       <Stat label="Volume" value={`${compact(vol(t.volume, unit))} ${unit}`} sub={`${compact(t.reps)} reps · ${t.sets} sets`} />
       <Stat label="Calories" value={`${compact(t.calories)} kcal`} sub="approximate" />
@@ -218,7 +226,7 @@ function ExerciseProgress({ sessions, unit }: { sessions: Session[]; unit: Weigh
   );
 }
 
-const COMPARE_METRICS: Metric[] = ['sessions', 'duration', 'volume', 'sets', 'reps', 'calories'];
+const COMPARE_METRICS: Metric[] = ['sessions', 'duration', 'distance', 'volume', 'sets', 'reps', 'calories'];
 
 function PeriodComparison({ sessions, unit, kcal, now }: { sessions: Session[]; unit: WeightUnit; kcal: (s: Session) => number; now: number }) {
   const [preset, setPreset] = useState<ComparePreset>('month');
@@ -353,7 +361,7 @@ function fmtPct(p: number | null): string {
   return p === null ? '–' : `${p > 0 ? '+' : ''}${Math.round(p * 10) / 10}%`;
 }
 
-const CUM_METRICS: Metric[] = ['volume', 'duration', 'reps', 'sets', 'calories', 'sessions'];
+const CUM_METRICS: Metric[] = ['volume', 'duration', 'distance', 'reps', 'sets', 'calories', 'sessions'];
 
 function CumulativeChart({ sessions, from, now, unit, kcal }: { sessions: Session[]; from: number; now: number; unit: WeightUnit; kcal: (s: Session) => number }) {
   const [metric, setMetric] = useState<Metric>('volume');
@@ -629,11 +637,11 @@ function CaloriesChart({ sessions, from, now }: { sessions: Session[]; from: num
   if (view === 'session') {
     data = sessions.map((s) => {
       const c = calories(s);
-      return { label: formatShortDate(s.startedAt), estimated: c.source === 'estimated' ? c.kcal ?? 0 : 0, imported: c.source === 'imported' ? c.kcal ?? 0 : 0 };
+      return { label: formatShortDate(s.startedAt), estimated: c.source === 'estimated' ? c.kcal ?? 0 : 0, imported: c.source !== 'estimated' ? c.kcal ?? 0 : 0 };
     });
   } else if (view !== 'daily') {
     const est = bucketize(sessions, view, from, now, (s) => (calories(s).source === 'estimated' ? calories(s).kcal ?? 0 : 0));
-    const imp = bucketize(sessions, view, from, now, (s) => (calories(s).source === 'imported' ? calories(s).kcal ?? 0 : 0));
+    const imp = bucketize(sessions, view, from, now, (s) => (calories(s).source !== 'estimated' ? calories(s).kcal ?? 0 : 0));
     data = est.map((b, i) => ({ label: b.label, estimated: b.value, imported: imp[i].value }));
   }
   if (running && view !== 'daily') {
@@ -736,7 +744,7 @@ function CaloriesChart({ sessions, from, now }: { sessions: Session[]; from: num
                 ) : (
                   <>
                     <Bar dataKey="estimated" name="Estimated" stackId="a" fill={ACCENT} maxBarSize={36} isAnimationActive={false} />
-                    <Bar dataKey="imported" name="Imported" stackId="a" fill={PREVIOUS} radius={[4, 4, 0, 0]} maxBarSize={36} isAnimationActive={false} />
+                    <Bar dataKey="imported" name="Imported or entered" stackId="a" fill={PREVIOUS} radius={[4, 4, 0, 0]} maxBarSize={36} isAnimationActive={false} />
                   </>
                 )}
               </BarChart>
@@ -751,10 +759,61 @@ function CaloriesChart({ sessions, from, now }: { sessions: Session[]; from: num
                   ]
                 : [
                     { label: 'Estimated', color: ACCENT },
-                    { label: 'Imported', color: PREVIOUS },
+                    { label: 'Imported or entered', color: PREVIOUS },
                   ]
             }
           />
+        </>
+      )}
+    </ChartCard>
+  );
+}
+
+const GROUPS = Object.keys(GROUP_INFO) as SportGroup[];
+
+function ActivityMixChart({ sessions, from, now }: { sessions: Session[]; from: number; now: number }) {
+  const [grain, setGrain] = useState<Grain>('week');
+  const data = activityMix(sessions, grain, from, now);
+  const used = GROUPS.filter((g) => data.some((b) => (b[g] as number) > 0));
+  const avg = data.length ? data.reduce((a, b) => a + b.active, 0) / data.length : 0;
+  return (
+    <ChartCard
+      title="Activity mix"
+      table={{ columns: [grain === 'week' ? 'Week of' : 'Month', 'Active days', ...used.map((g) => GROUP_INFO[g].label)], rows: data.map((b) => [b.label, b.active, ...used.map((g) => (b[g] as number) ?? 0)]) }}
+      controls={
+        <Segmented<Grain>
+          label="Group by"
+          value={grain}
+          onChange={setGrain}
+          options={[
+            { value: 'week', label: 'Per week' },
+            { value: 'month', label: 'Per month' },
+          ]}
+        />
+      }
+      footer={<p className="tiny faint mt-s">Days on which each type of activity was done. A day with gym and a hike counts for both, so bars can be taller than the active days.</p>}
+    >
+      <p className="small muted">
+        Average <strong style={{ color: 'var(--text)' }}>{avg.toFixed(1)}</strong> active days per {grain}
+      </p>
+      {used.length === 0 ? (
+        <EmptyState icon="calendar" title="No activities in this period" />
+      ) : (
+        <>
+          <div className="chart-box">
+            <ResponsiveContainer>
+              <BarChart data={data} margin={{ top: 10, right: 12, bottom: 0, left: -20 }}>
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="label" {...AXIS} minTickGap={16} />
+                <YAxis {...AXIS} allowDecimals={false} width={40} />
+                <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} content={<ChartTooltip format={(v) => `${v} ${v === 1 ? 'day' : 'days'}`} />} />
+                {used.map((g, i) => (
+                  <Bar key={g} dataKey={g} name={GROUP_INFO[g].label} stackId="mix" fill={GROUP_INFO[g].color} stroke="#161616" strokeWidth={1} radius={i === used.length - 1 ? [4, 4, 0, 0] : 0} maxBarSize={36} isAnimationActive={false} />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <Legend items={used.map((g) => ({ label: GROUP_INFO[g].label, color: GROUP_INFO[g].color }))} />
         </>
       )}
     </ChartCard>

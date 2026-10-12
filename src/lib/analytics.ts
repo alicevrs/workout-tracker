@@ -6,11 +6,12 @@ import { muscleLoad, muscleShares } from './muscleLoad';
 import { sessionDurationSec } from './session';
 import { exerciseHistory, sessionSets, sessionSummary } from './stats';
 
-export type Metric = 'volume' | 'duration' | 'reps' | 'sets' | 'calories' | 'sessions';
+export type Metric = 'volume' | 'duration' | 'distance' | 'reps' | 'sets' | 'calories' | 'sessions';
 
 export const METRIC_LABEL: Record<Metric, string> = {
   volume: 'Volume',
   duration: 'Time',
+  distance: 'Distance',
   reps: 'Reps',
   sets: 'Sets',
   calories: 'Calories',
@@ -27,6 +28,8 @@ export function metricValue(s: Session, m: Metric, calories?: CalorieFn): number
       return sessionDurationSec(s) / 60; // minutes
     case 'calories':
       return calories?.(s) ?? 0;
+    case 'distance':
+      return (s.distanceM ?? 0) / 1000; // km
     default: {
       const sum = sessionSummary(s);
       return m === 'volume' ? sum.volume : m === 'reps' ? sum.reps : sum.sets;
@@ -65,6 +68,7 @@ export function inRange(sessions: Session[], from: number, to: number): Session[
 export interface PeriodTotals {
   sessions: number;
   duration: number; // minutes
+  distance: number; // km
   volume: number;
   reps: number;
   sets: number;
@@ -73,11 +77,12 @@ export interface PeriodTotals {
 }
 
 export function periodTotals(sessions: Session[], calories?: CalorieFn): PeriodTotals {
-  const t: PeriodTotals = { sessions: 0, duration: 0, volume: 0, reps: 0, sets: 0, calories: 0, avgDuration: 0 };
+  const t: PeriodTotals = { sessions: 0, duration: 0, distance: 0, volume: 0, reps: 0, sets: 0, calories: 0, avgDuration: 0 };
   for (const s of sessions) {
     const sum = sessionSummary(s);
     t.sessions += 1;
     t.duration += sum.durationSec / 60;
+    t.distance += (s.distanceM ?? 0) / 1000;
     t.volume += sum.volume;
     t.reps += sum.reps;
     t.sets += sum.sets;

@@ -3,6 +3,7 @@
 // Compendium of Physical Activities (Ainsworth et al., 2011; Herrmann et al., 2024).
 
 import type { BodyWeight, Exercise, Intensity, PerformedBlock, Profile, Session } from '../db/types';
+import { EFFORT_FACTOR, isGymType, resolveSport, sportMET } from '../data/sports';
 import { ageFromBirthDate, fromDateKey } from './dates';
 import { estimateBlockSeconds } from './program';
 import { performedToBlock, sessionDurationSec } from './session';
@@ -20,31 +21,6 @@ export const MET_TABLE: Record<ActivityKind, { label: string; light: number; mod
 
 /** Cardio exercises carry a moderate MET in the catalog; scale it for effort. */
 export const CARDIO_EFFORT_FACTOR: Record<Intensity, number> = { light: 0.75, moderate: 1, vigorous: 1.3 };
-
-/** Imported activities without exercises: MET by activity type (moderate effort). */
-const ACTIVITY_MET: Record<string, number> = {
-  running: 9.8,
-  run: 9.8,
-  trail_running: 10,
-  cycling: 7.5,
-  ride: 7.5,
-  virtualride: 6.8,
-  indoor_cycling: 6.8,
-  walking: 3.5,
-  walk: 3.5,
-  hiking: 6.0,
-  hike: 6.0,
-  swimming: 7.0,
-  swim: 7.0,
-  rowing: 7.0,
-  elliptical: 5.0,
-  strength_training: 5.0,
-  weighttraining: 5.0,
-  training: 5.0,
-  workout: 5.0,
-  yoga: 2.5,
-  hiit: 8.0,
-};
 
 export function blockKind(b: PerformedBlock, exercises: Map<string, Exercise>): ActivityKind | 'cardio' {
   const cats = b.entries.map((e) => exercises.get(e.exerciseId)?.category);
@@ -76,9 +52,12 @@ export function blockMET(b: PerformedBlock, intensity: Intensity, exercises: Map
   return MET_TABLE[kind][intensity];
 }
 
-export function activityMET(activityType: string | undefined, intensity: Intensity): number {
-  const base = ACTIVITY_MET[(activityType ?? '').toLowerCase().replace(/\s+/g, '_')] ?? 5.0;
-  return base * CARDIO_EFFORT_FACTOR[intensity];
+/** MET for an activity logged without sets (manual entry or import), from its sport. */
+export function activityMET(activityType: string | undefined, intensity: Intensity, hours = 0, distanceM?: number, elevationGainM?: number): number {
+  const sport = resolveSport(activityType);
+  if (sport) return sportMET(sport, { intensity, hours, distanceM, elevationGainM });
+  if (isGymType(activityType)) return MET_TABLE.strength[intensity];
+  return 5.0 * EFFORT_FACTOR[intensity];
 }
 
 /** Body weight on the session date: the log entry nearest in time, else the profile weight. */
@@ -101,7 +80,8 @@ export function weightOn(date: string, log: BodyWeight[], profile: Pick<Profile,
 
 export interface CalorieResult {
   kcal: number | null;
-  source: 'imported' | 'estimated';
+  /** estimated = MET method; imported = from a device/file; manual = typed in by the user. */
+  source: 'imported' | 'estimated' | 'manual';
   /** Weighted average MET used for an estimate. */
   met?: number;
   weightKg?: number;
@@ -125,7 +105,7 @@ export function blockHours(s: Session): number[] {
 }
 
 export function sessionCalories(s: Session, ctx: { profile: Profile; weights: BodyWeight[]; exercises: Map<string, Exercise> }): CalorieResult {
-  if (s.importedCalories !== undefined && s.importedCalories !== null) return { kcal: Math.round(s.importedCalories), source: 'imported' };
+  if (s.importedCalories !== undefined && s.importedCalories !== null) return { kcal: Math.round(s.importedCalories), source: s.calorieSource === 'manual' ? 'manual' : 'imported' };
   const kg = weightOn(s.date, ctx.weights, ctx.profile);
   if (!kg) return { kcal: null, source: 'estimated', missing: 'weight' };
   const durationH = sessionDurationSec(s) / 3600;
@@ -142,7 +122,7 @@ export function sessionCalories(s: Session, ctx: { profile: Profile; weights: Bo
   }
   if (hours <= 0) {
     hours = durationH;
-    metHours = activityMET(s.activityType, s.intensity) * hours;
+    metHours = activityMET(s.activityType, s.intensity, hours, s.distanceM, s.elevationGainM) * hours;
   }
   return { kcal: Math.round(metHours * kg), source: 'estimated', met: metHours / hours, weightKg: kg, hours };
 }

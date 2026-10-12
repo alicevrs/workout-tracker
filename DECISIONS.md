@@ -92,3 +92,10 @@ Choices made while building the app, with the reason for each.
 - Style follows the Monday Resolution website (colours, square shapes, uppercase headings), without copying its logo or images. The gym's own headline font is commercial, so the free Archivo is used instead; fonts are self-hosted (`@fontsource`) because the app must work offline and send nothing to third parties.
 - Timer phase colours stay functional: green = work, blue = rest, white = get ready.
 - With the owner's consent, the app uses the Monday Resolution symbol (yellow circle with an X) as favicon, sidebar logo and app icon. The PNG icons in `public/` were rendered from that SVG on the black background (the earlier dumbbell icon generator was removed).
+
+## Sports and the activity calendar
+- Activities are normal sessions without blocks, with `activityType` = a sport id from `src/data/sports.ts`. Imports keep working because every sport lists the Garmin and Strava type names it matches.
+- Sport METs are moderate-effort values based on the Compendium of Physical Activities. Walking, running and cycling use speed tables when distance and time are given. For foot and snow sports, climbing adds +1 MET per 200 m of gain per hour (max +4). Ski touring uses 7 MET as its base because the logged time includes the descent.
+- Calories typed in by hand are stored like imported ones but labelled “Entered” (`calorieSource: 'manual'`).
+- Calendar colours are by activity group (8 groups + gym in brand yellow), always shown together with text labels.
+- A day counts as “active” if it has at least one completed session. In the activity mix a day with two different activity types counts once for each.

@@ -80,3 +80,12 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Fonts: Archivo (titles) and Inter (text), bundled with the app so they work offline.
 - Body map, heatmap and single-measure charts use yellow; two-period comparisons use yellow (current) vs gray (previous).
 - App icon and favicon: the Monday Resolution symbol (used with permission).
+
+## Sports and activity calendar (2026-10-12)
+- Log any activity by hand (Today → “Log activity”, History → “+ Activity”, or from a day in the calendar): 38 sports in 8 groups — walking, running, trail running, hiking, cycling, mountain biking, swimming, kitesurfing, windsurfing, wakeboarding, surfing, SUP, kayak, downhill skiing, ski touring, cross-country skiing, snowboarding, sport climbing, bouldering, via ferrata, yoga, pilates, padel, tennis and more.
+- Fields: duration, distance and elevation gain (when they make sense for the sport), effort, average/max heart rate, calories from a watch (optional, shown as “Entered”), notes. Live pace/speed and calorie estimate while typing.
+- Calorie estimate per sport: speed-based MET for walking, running and cycling; extra intensity for steep climbs on foot and on skis.
+- Muscle map for activities from the sport’s main muscles.
+- History has a Calendar view: coloured bars per activity type on each day, active days per week, active days in the month and days per activity type; tap a day to see or add activities.
+- Analytics: “Active days” and “Distance” tiles, distance in comparisons and totals, and an “Activity mix” chart (days per activity type per week or month).
+- Garmin and Strava imports are recognised as the matching sport (e.g. Strava “BackcountrySki” → Ski touring) and appear in the calendar.

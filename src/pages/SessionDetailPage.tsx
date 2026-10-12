@@ -14,6 +14,8 @@ import { blockToPerformed, createSession, performedToBlock } from '../lib/sessio
 import { detectPRs, exerciseHistory, PR_LABEL, sessionMetrics, sessionSummary } from '../lib/stats';
 import { compact, formatWeight } from '../lib/units';
 import { SessionCalories } from '../components/SessionCalories';
+import { isActivitySession, paceInfo, sessionActivity } from '../lib/activities';
+import { pad } from '../lib/dates';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { ACCENT, AXIS, ChartTooltip, GRID } from '../components/charts';
 
@@ -36,6 +38,8 @@ export default function SessionDetailPage() {
     );
 
   const sum = sessionSummary(session);
+  const kind = sessionActivity(session);
+  const pace = paceInfo(session.distanceM, sum.durationSec);
   const metrics = sessionMetrics(session);
   const prs = detectPRs(session, all);
   const shares = muscleShares(sessionMuscleLoad(session, exercises));
@@ -59,13 +63,20 @@ export default function SessionDetailPage() {
       <PageHeader
         title={session.title}
         back="/history"
-        subtitle={`${formatDate(session.startedAt)} · ${formatTime(session.startedAt)}`}
+        subtitle={
+          <span>
+            <span style={{ display: 'inline-block', width: 10, height: 10, background: kind.color, borderRadius: 2, marginRight: 6 }} aria-hidden />
+            {kind.label} · {formatDate(session.startedAt)} · {formatTime(session.startedAt)}
+          </span>
+        }
         actions={
           <>
-            <button className="btn" onClick={repeat} aria-label="Repeat this workout">
-              <Icon name="reset" /> <span className="hide-sm">Repeat</span>
-            </button>
-            <Link className="btn primary" to={`/workout/${session.id}`}>
+            {!isActivitySession(session) && (
+              <button className="btn" onClick={repeat} aria-label="Repeat this workout">
+                <Icon name="reset" /> <span className="hide-sm">Repeat</span>
+              </button>
+            )}
+            <Link className="btn primary" to={isActivitySession(session) ? `/activity/${session.id}` : `/workout/${session.id}`}>
               <Icon name="edit" /> Edit
             </Link>
           </>
@@ -74,10 +85,22 @@ export default function SessionDetailPage() {
       <div className="stack">
         <div className="stat-tiles">
           <Stat label="Duration" value={sum.durationSec ? formatDuration(sum.durationSec) : '–'} />
-          {sum.sets === 0 && (session.distanceM || session.hr?.avg) ? (
+          {sum.sets === 0 && session.blocks.length === 0 ? (
             <>
-              <Stat label="Distance" value={session.distanceM ? `${(session.distanceM / 1000).toFixed(2)} km` : '–'} />
-              <Stat label="Avg heart rate" value={session.hr?.avg ? `${Math.round(session.hr.avg)} bpm` : '–'} sub={session.hr?.max ? `max ${session.hr.max}` : undefined} />
+              <Stat
+                label="Distance"
+                value={session.distanceM ? `${(session.distanceM / 1000).toFixed(2)} km` : '–'}
+                sub={
+                  pace.kmh
+                    ? `${pace.kmh.toFixed(1)} km/h${kind.group === 'foot' && pace.minPerKm ? ` · ${Math.floor(pace.minPerKm)}:${pad(Math.round((pace.minPerKm % 1) * 60) % 60)}/km` : ''}`
+                    : undefined
+                }
+              />
+              <Stat
+                label={session.elevationGainM ? 'Elevation gain' : 'Avg heart rate'}
+                value={session.elevationGainM ? `+${Math.round(session.elevationGainM)} m` : session.hr?.avg ? `${Math.round(session.hr.avg)} bpm` : '–'}
+                sub={session.elevationGainM && session.hr?.avg ? `avg HR ${Math.round(session.hr.avg)} bpm` : session.hr?.max ? `max ${session.hr.max}` : undefined}
+              />
             </>
           ) : (
             <>

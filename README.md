@@ -1,6 +1,6 @@
 # Workout Tracker
 
-A personal workout tracker that runs in the browser and installs on your iPhone home screen. Plan weekly programs, run them with a built-in interval timer (Tabata, AMRAP, EMOM, For Time, intervals, sets × reps), log every set, and follow your progress with charts, personal records, a muscle map and calorie estimates.
+A personal workout tracker that runs in the browser and installs on your iPhone home screen. Plan weekly programs, run them with a built-in interval timer (Tabata, AMRAP, EMOM, For Time, intervals, sets × reps), log every set, log other sports (hiking, kitesurfing, ski touring, climbing…) and see them all in an activity calendar, and follow your progress with charts, personal records, a muscle map and calorie estimates.
 
 - **Free:** no paid services, no paid developer accounts.
 - **Private:** all data stays on your device (IndexedDB). Nothing is sent anywhere, except to Strava if you connect it.

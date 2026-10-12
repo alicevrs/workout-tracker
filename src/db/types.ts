@@ -208,10 +208,15 @@ export interface Session {
   endedAt?: number;
   blocks: PerformedBlock[];
   intensity: Intensity;
-  /** Calories from an imported file. Estimated calories are always computed, never stored. */
+  /** Calories from an imported file or typed in by the user. Estimated calories are always computed, never stored. */
   importedCalories?: number;
+  /** Where importedCalories came from: a device/file import (default) or typed in manually. */
+  calorieSource?: 'imported' | 'manual';
+  /** Elevation gain in metres (outdoor activities). */
+  elevationGainM?: number;
   hr?: HeartRateData;
   distanceM?: number;
+  /** Sport id from src/data/sports.ts, or the raw type of an imported activity. */
   activityType?: string;
   source: SessionSource;
   /** Identifiers of imported activities merged into this session (e.g. "strava:123"). */

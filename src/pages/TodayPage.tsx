@@ -108,6 +108,9 @@ export default function TodayPage() {
             <button className="btn" onClick={startEmpty}>
               <Icon name="plus" /> Free workout
             </button>
+            <Link className="btn" to="/activity/new">
+              <Icon name="flag" /> Log activity
+            </Link>
             <Link className="btn" to="/programs">
               <Icon name="calendar" /> Programs
             </Link>

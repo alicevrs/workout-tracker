@@ -3,8 +3,10 @@ import type { Session } from '../db/types';
 import { useCalories } from '../hooks/useCalories';
 import { Stat } from './ui';
 
-export function CalorieSource({ source }: { source: 'imported' | 'estimated' }) {
-  return <span className={`chip ${source === 'imported' ? 'info' : ''}`}>{source === 'imported' ? 'Imported' : 'Estimated'}</span>;
+const SOURCE_LABEL = { imported: 'Imported', manual: 'Entered', estimated: 'Estimated' } as const;
+
+export function CalorieSource({ source }: { source: 'imported' | 'estimated' | 'manual' }) {
+  return <span className={`chip ${source === 'estimated' ? '' : 'info'}`}>{SOURCE_LABEL[source]}</span>;
 }
 
 export function SessionCalories({ session }: { session: Session }) {
