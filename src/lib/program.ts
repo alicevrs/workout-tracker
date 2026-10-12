@@ -144,7 +144,7 @@ export function estimateBlockSeconds(b: Block): number {
     case 'intervals':
       return (p.repeats ?? 1) * (p.segments ?? []).reduce((s, x) => s + x.durationSec, 0);
     default:
-      return b.entries.reduce((s, e) => s + e.sets * ((e.durationSec ?? 40) + e.restSec), 0);
+      return b.entries.reduce((s, e) => s + (e.setTargets?.length || e.sets) * ((e.durationSec ?? 40) + e.restSec), 0);
   }
 }
 
@@ -161,10 +161,13 @@ export function describeBlock(b: Block): string {
       return `${p.targetRounds ? `${p.targetRounds} rounds` : p.targetReps ? `${p.targetReps} reps` : 'For time'}${p.timeCapMin ? ` · cap ${p.timeCapMin} min` : ''}`;
     case 'intervals':
       return `${p.segments?.length ?? 0} segments × ${p.repeats ?? 1}`;
-    case 'timed_sets':
-      return `${b.entries.length} exercise${b.entries.length === 1 ? '' : 's'} · timed sets`;
+    case 'timed_sets': {
+      const clock = (sec = 30) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+      if (b.entries.length > 3) return `${b.entries.length} exercises · ${Math.round(estimateBlockSeconds(b) / 60)} min`;
+      return b.entries.map((e) => `${e.sets} × ${clock(e.durationSec)}${e.restSec ? `, rest ${e.restSec}s` : ''}`).join(' · ') || 'Timed sets';
+    }
     default:
-      return `${b.entries.length} exercise${b.entries.length === 1 ? '' : 's'} · ${b.entries.reduce((s, e) => s + e.sets, 0)} sets`;
+      return `${b.entries.length} exercise${b.entries.length === 1 ? '' : 's'} · ${b.entries.reduce((s, e) => s + (e.setTargets?.length || e.sets), 0)} sets`;
   }
 }
 

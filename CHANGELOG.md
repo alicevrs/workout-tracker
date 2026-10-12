@@ -89,3 +89,13 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - History has a Calendar view: coloured bars per activity type on each day, active days per week, active days in the month and days per activity type; tap a day to see or add activities.
 - Analytics: “Active days” and “Distance” tiles, distance in comparisons and totals, and an “Activity mix” chart (days per activity type per week or month).
 - Garmin and Strava imports are recognised as the matching sport (e.g. Strava “BackcountrySki” → Ski touring) and appear in the calendar.
+
+## Personal program and planning features (2026-10-13)
+- Different targets per set: warm-up sets, pyramids and a last set “to failure” (max reps), also per interval in EMOM blocks. Shown in the timer (“Warm-up”, “Max reps”) and in the log (W = warm-up set).
+- Note per exercise (e.g. “18% incline · 4 km/h”), shown in the log and on the timer.
+- Optional blocks: marked “Optional”, with “Skip today” / “Include” on the workout screen. Skipped blocks are left out of “Run all”, calories and the log.
+- “Log as done” for a whole program day (asks which optional blocks were done and when you finished) and “Mark block as done” on the workout screen — for classes like Body Pump where there is no time to log.
+- Today: “Do another day of your program” to start or log any day, not only today’s.
+- Program templates: “My training week” (Mon/Thu abs + incline walk, Tue/Fri legs & glutes, Wed Body Pump 55 min) and the sample week.
+- New exercises: mobility routine, stretching routine, barbell warm-up, clean and press, split squat, lying leg raise, flutter kicks, plank shoulder tap. Incline walk now uses 8 MET (steep treadmill walking).
+- Progress badges only compare like with like (weighted with weighted, bodyweight/timed with bodyweight/timed).

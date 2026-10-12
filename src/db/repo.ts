@@ -4,7 +4,7 @@ import { db } from './db';
 import type { Exercise, Profile, Settings } from './types';
 
 /** Bump when the bundled exercise catalog changes so existing installs get the update. */
-export const SEED_VERSION = 1;
+export const SEED_VERSION = 2;
 
 export const DEFAULT_PROFILE: Profile = {
   sex: 'unspecified',

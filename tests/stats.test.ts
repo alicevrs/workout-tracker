@@ -81,6 +81,12 @@ describe('personal records and progression', () => {
     expect(h[1].delta?.maxWeight).toBe(5);
   });
 
+  it('does not compare a bodyweight/class session with a weighted one', () => {
+    const light = session('2026-01-15', [block([set('back-squat', undefined, 90, { durationSec: 330 })])]);
+    const h = exerciseHistory('back-squat', [s1, s2, s3, light]);
+    expect(h[3]).toMatchObject({ improved: false, first: false, delta: undefined });
+  });
+
   it('finds the previous session values for an exercise', () => {
     const prev = previousSets('back-squat', all, s3.startedAt, s3.id);
     expect(prev?.session.id).toBe(s2.id);

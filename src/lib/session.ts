@@ -1,4 +1,4 @@
-import type { Block, ExerciseEntry, PerformedBlock, PerformedEntry, Program, ProgramDay, Session, SetRecord } from '../db/types';
+import type { Block, ExerciseEntry, PerformedBlock, PerformedEntry, Program, ProgramDay, Session, SetRecord, SetTarget } from '../db/types';
 import { toDateKey } from './dates';
 import { uid } from './ids';
 import { cloneBlock } from './program';
@@ -24,15 +24,34 @@ export function plannedDropWeights(e: ExerciseEntry): number[] | undefined {
   return out;
 }
 
+/** Effective target of set n (1-based): per-set target if given, otherwise the entry's values. */
+export function setTarget(e: ExerciseEntry, setNumber: number): SetTarget {
+  const t = e.setTargets?.[setNumber - 1];
+  return {
+    reps: t?.toFailure ? t.reps : t?.reps ?? e.reps,
+    weight: t?.weight ?? e.targetWeight,
+    durationSec: t?.durationSec ?? e.durationSec,
+    warmup: t?.warmup,
+    toFailure: t?.toFailure,
+  };
+}
+
+export function entrySets(e: ExerciseEntry): number {
+  return e.setTargets?.length || e.sets;
+}
+
 export function plannedSet(e: ExerciseEntry, setNumber: number): SetRecord {
   const drops = plannedDropWeights(e);
+  const t = setTarget(e, setNumber);
   return {
     exerciseId: e.exerciseId,
     setNumber,
-    reps: e.reps,
-    weight: e.targetWeight,
-    durationSec: e.durationSec,
+    reps: t.reps,
+    weight: t.weight,
+    durationSec: t.durationSec,
     completed: false,
+    warmup: t.warmup || undefined,
+    toFailure: t.toFailure || undefined,
     dropWeights: drops,
     dropReps: drops ? drops.map(() => e.reps ?? 0) : undefined,
   };
@@ -43,7 +62,7 @@ export function entryToPerformed(e: ExerciseEntry, format: Block['format']): Per
     id: e.id,
     exerciseId: e.exerciseId,
     planned: structuredClone(e),
-    sets: hasPlannedSets(format) ? Array.from({ length: e.sets }, (_, i) => plannedSet(e, i + 1)) : [],
+    sets: hasPlannedSets(format) ? Array.from({ length: entrySets(e) }, (_, i) => plannedSet(e, i + 1)) : [],
   };
 }
 
@@ -51,6 +70,7 @@ export function blockToPerformed(b: Block): PerformedBlock {
   return {
     id: b.id,
     name: b.name,
+    optional: b.optional,
     format: b.format,
     params: structuredClone(b.params),
     timer: { ...b.timer },
@@ -63,6 +83,7 @@ export function performedToBlock(pb: PerformedBlock): Block {
   return {
     id: pb.id,
     name: pb.name,
+    optional: pb.optional,
     format: pb.format,
     params: structuredClone(pb.params),
     timer: { ...pb.timer },
@@ -94,16 +115,18 @@ export function applyBlockEdit(pb: PerformedBlock, edited: Block): PerformedBloc
     if (!existing || existing.exerciseId !== plan.exerciseId) return entryToPerformed(plan, edited.format);
     if (!hasPlannedSets(edited.format)) return { ...existing, planned: structuredClone(plan) };
     const sets: SetRecord[] = [];
-    for (let i = 0; i < Math.max(plan.sets, existing.sets.length); i++) {
+    const n = entrySets(plan);
+    for (let i = 0; i < Math.max(n, existing.sets.length); i++) {
       const old = existing.sets[i];
       if (old && (old.completed || old.skipped)) sets.push(old);
-      else if (i < plan.sets) sets.push(plannedSet(plan, i + 1));
+      else if (i < n) sets.push(plannedSet(plan, i + 1));
     }
     return { ...existing, planned: structuredClone(plan), sets: sets.map((s, i) => ({ ...s, setNumber: i + 1 })) };
   });
   return {
     ...pb,
     name: edited.name,
+    optional: edited.optional,
     format: edited.format,
     params: structuredClone(edited.params),
     timer: { ...edited.timer },

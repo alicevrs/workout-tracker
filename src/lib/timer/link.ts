@@ -65,6 +65,8 @@ export function applyCompleted(
           reps: isEmom ? p.targetReps : undefined,
           weight: p.targetWeight,
           durationSec: isEmom ? p.targetDurationSec : elapsedSec,
+          warmup: p.warmup,
+          toFailure: p.toFailure,
           completed: true,
           ...extra,
         });

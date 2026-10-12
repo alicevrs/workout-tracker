@@ -99,3 +99,10 @@ Choices made while building the app, with the reason for each.
 - Calories typed in by hand are stored like imported ones but labelled “Entered” (`calorieSource: 'manual'`).
 - Calendar colours are by activity group (8 groups + gym in brand yellow), always shown together with text labels.
 - A day counts as “active” if it has at least one completed session. In the activity mix a day with two different activity types counts once for each.
+
+## Personal program (“My training week”)
+- Abs: modelled as a Tabata-type block — 4 rounds × 40 s, 0 s rest between rounds, 3 extra sets, 20 s between sets. The four ab exercises are placeholders (crunch, bicycle crunch, plank, Russian twist) until the real ones are known.
+- Hip thrust “EMOM 2 × 12” is read as *every 2 minutes for 12 minutes* (6 intervals), which matches the 6 sets described (1 warm-up 60 kg × 15, 4 × 8 at 100 kg, 1 to failure at 100 kg).
+- Bulgarian split squat, cable kickbacks and abduction/adduction use Intervals blocks so each minute is labelled with the leg or the machine.
+- Body Pump: one timed block with the 10 usual tracks of a 55-minute class (warm-up, squats, chest, back, triceps, biceps, lunges, shoulders, core, cool-down) and approximate durations and reps; releases change every quarter, so the content is an approximation. Bar weights are left empty to fill in.
+- “Log as done” records blocks exactly as if the timer had run them as planned (same code path as the timer), with rep-based sets counted as 40 s each.

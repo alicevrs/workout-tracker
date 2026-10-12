@@ -1,6 +1,6 @@
 import type { BlockFormat, ExerciseEntry, PerformedBlock } from '../../db/types';
 import { groupEntries, tabataSets } from '../program';
-import { plannedDropWeights } from '../session';
+import { entrySets, plannedDropWeights, setTarget } from '../session';
 
 export type PhaseKind = 'prep' | 'work' | 'rest';
 
@@ -31,13 +31,30 @@ export interface Phase {
   /** kg */
   targetWeight?: number;
   targetDurationSec?: number;
+  /** Warm-up set. */
+  warmup?: boolean;
+  /** As many reps as possible. */
+  toFailure?: boolean;
+  /** Entry note, e.g. "18% incline · 4 km/h". */
+  note?: string;
 }
 
 type Base = Pick<Phase, 'blockIndex' | 'blockId' | 'format' | 'sound' | 'vibrate'>;
 
-function entryInfo(e: ExerciseEntry | undefined): Partial<Phase> {
+/** Targets of an entry for its n-th set or interval (1-based). */
+function entryInfo(e: ExerciseEntry | undefined, n = 1): Partial<Phase> {
   if (!e) return {};
-  return { entryId: e.id, exerciseId: e.exerciseId, targetReps: e.reps, targetWeight: e.targetWeight, targetDurationSec: e.durationSec };
+  const t = setTarget(e, n);
+  return {
+    entryId: e.id,
+    exerciseId: e.exerciseId,
+    targetReps: t.reps,
+    targetWeight: t.weight,
+    targetDurationSec: t.durationSec,
+    warmup: t.warmup || undefined,
+    toFailure: t.toFailure || undefined,
+    note: e.note,
+  };
 }
 
 /** Build the phases for one block. */
@@ -70,14 +87,17 @@ export function blockPhases(block: PerformedBlock, blockIndex: number): Phase[] 
     case 'sets_reps':
     case 'timed_sets': {
       const timed = block.format === 'timed_sets';
-      const workDuration = (e: ExerciseEntry) => (timed ? e.durationSec ?? 30 : e.durationSec ?? null);
+      const workDuration = (e: ExerciseEntry, n: number) => {
+        const d = setTarget(e, n).durationSec;
+        return timed ? d ?? 30 : d ?? null;
+      };
       for (const g of groupEntries(entries)) {
         if (g.kind === 'superset' || g.kind === 'circuit') {
-          const rounds = Math.max(...g.entries.map((e) => e.sets));
+          const rounds = Math.max(...g.entries.map(entrySets));
           for (let r = 1; r <= rounds; r++) {
-            const active = g.entries.filter((e) => r <= e.sets);
+            const active = g.entries.filter((e) => r <= entrySets(e));
             active.forEach((e, k) => {
-              out.push(work({ ...entryInfo(e), set: r, totalSets: e.sets, round: r, totalRounds: rounds }, workDuration(e)));
+              out.push(work({ ...entryInfo(e, r), set: r, totalSets: entrySets(e), round: r, totalRounds: rounds }, workDuration(e, r)));
               const last = k === active.length - 1;
               if (g.kind === 'circuit' && !last && e.restSec > 0) out.push(rest(e.restSec, 'Transition'));
             });
@@ -87,9 +107,10 @@ export function blockPhases(block: PerformedBlock, blockIndex: number): Phase[] 
         } else {
           for (const e of g.entries) {
             const drops = plannedDropWeights(e) ?? [];
-            for (let s = 1; s <= e.sets; s++) {
-              out.push(work({ ...entryInfo(e), set: s, totalSets: e.sets }, workDuration(e)));
-              drops.forEach((w, d) => out.push(work({ ...entryInfo(e), set: s, totalSets: e.sets, drop: d + 1, targetWeight: w, label: `Drop ${d + 1}` }, null)));
+            const n = entrySets(e);
+            for (let s = 1; s <= n; s++) {
+              out.push(work({ ...entryInfo(e, s), set: s, totalSets: n }, workDuration(e, s)));
+              drops.forEach((w, d) => out.push(work({ ...entryInfo(e, s), set: s, totalSets: n, drop: d + 1, targetWeight: w, label: `Drop ${d + 1}` }, null)));
               if (e.restSec > 0) out.push(rest(e.restSec));
             }
           }
@@ -116,9 +137,13 @@ export function blockPhases(block: PerformedBlock, blockIndex: number): Phase[] 
     case 'emom': {
       const interval = Math.max(5, p.intervalSec ?? 60);
       const count = Math.max(1, Math.floor(((p.totalMin ?? 10) * 60) / interval));
+      const seen = new Map<string, number>();
       for (let i = 1; i <= count; i++) {
         const e = entries.length ? entries[(i - 1) % entries.length] : undefined;
-        out.push(work({ ...entryInfo(e), interval: i, totalIntervals: count, label: interval === 60 ? `Minute ${i}` : `Interval ${i}` }, interval));
+        const n = e ? (seen.get(e.id) ?? 0) + 1 : 1;
+        if (e) seen.set(e.id, n);
+        const label = interval === 60 ? `Minute ${i}` : `Interval ${i}`;
+        out.push(work({ ...entryInfo(e, n), interval: i, totalIntervals: count, label }, interval));
       }
       break;
     }

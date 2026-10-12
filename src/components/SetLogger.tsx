@@ -113,6 +113,7 @@ export function SetLogger({
           <span className="group-tag">{entry.planned.grouping === 'dropset' ? 'DROP SET' : `${entry.planned.grouping.toUpperCase()} ${entry.planned.groupLabel ?? ''}`}</span>
         )}
       </div>
+      {entry.planned?.note && <div className="small" style={{ color: 'var(--accent)', marginTop: 2 }}>{entry.planned.note}</div>}
       <div className="small faint" style={{ marginTop: 2 }}>
         {prev ? (
           <>
@@ -145,16 +146,16 @@ export function SetLogger({
                 className="btn ghost small set-no"
                 style={{ padding: 0, minHeight: 44 }}
                 aria-label={`Set ${i + 1}: ${s.skipped ? 'unskip' : 'skip'}`}
-                title={s.skipped ? 'Tap to unskip' : 'Tap to skip this set'}
+                title={s.skipped ? 'Tap to unskip' : s.warmup ? 'Warm-up set · tap to skip' : 'Tap to skip this set'}
                 onClick={() => setSet(i, (cur) => ({ skipped: !cur.skipped, completed: false }))}
               >
-                {s.skipped ? '–' : i + 1}
+                {s.skipped ? '–' : s.warmup ? 'W' : i + 1}
               </button>
               {cols.map((c) =>
                 c === 'weight' ? (
                   <CellInput key={c} label={`Set ${i + 1} weight (${unit})`} mode="decimal" value={s.weight !== undefined ? String(toDisplayWeight(s.weight, unit)) : ''} placeholder={p?.weight ? String(toDisplayWeight(p.weight, unit)) : ''} onCommit={(t) => setSet(i, { weight: fromDisplayWeight(num(t), unit) })} />
                 ) : c === 'reps' ? (
-                  <CellInput key={c} label={`Set ${i + 1} reps`} mode="numeric" value={s.reps !== undefined ? String(s.reps) : ''} placeholder={p?.reps ? String(p.reps) : ''} onCommit={(t) => setSet(i, { reps: num(t) })} />
+                  <CellInput key={c} label={`Set ${i + 1} reps`} mode="numeric" value={s.reps !== undefined ? String(s.reps) : ''} placeholder={s.toFailure ? 'max' : p?.reps ? String(p.reps) : ''} onCommit={(t) => setSet(i, { reps: num(t) })} />
                 ) : c === 'time' ? (
                   <CellInput key={c} label={`Set ${i + 1} time (seconds or m:ss)`} mode="text" value={s.durationSec !== undefined ? formatClock(s.durationSec) : ''} placeholder={p?.durationSec ? formatClock(p.durationSec) : 'm:ss'} onCommit={(t) => setSet(i, { durationSec: parseDuration(t) })} />
                 ) : (

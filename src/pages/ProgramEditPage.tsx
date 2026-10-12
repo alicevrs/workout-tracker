@@ -8,7 +8,7 @@ import { useExerciseMap, useProfile } from '../db/repo';
 import type { Block, BlockFormat, Program, ProgramDay } from '../db/types';
 import { formatDuration } from '../lib/dates';
 import { cloneBlock, cloneDay, cloneProgram, describeBlock, estimateBlockSeconds, FORMAT_INFO, FORMATS, newBlock, newDay, WEEKDAYS } from '../lib/program';
-import { createSession } from '../lib/session';
+import { DayActions } from '../components/DayActions';
 
 function move<T>(list: T[], i: number, dir: -1 | 1): T[] {
   const j = i + dir;
@@ -116,12 +116,7 @@ export default function ProgramEditPage() {
             onDelete={() => {
               if (confirm(`Delete day “${day.name}”?`)) update({ ...program, days: program.days.filter((d) => d.id !== day.id) });
             }}
-            onStart={async () => {
-              await flush();
-              const session = createSession({ program, day });
-              await db.sessions.add(session);
-              navigate(`/workout/${session.id}`);
-            }}
+            program={program}
           />
         ))}
 
@@ -144,7 +139,7 @@ function DayEditor({
   onMove,
   onDuplicate,
   onDelete,
-  onStart,
+  program,
 }: {
   day: ProgramDay;
   index: number;
@@ -153,7 +148,7 @@ function DayEditor({
   onMove: (dir: -1 | 1) => void;
   onDuplicate: () => void;
   onDelete: () => void;
-  onStart: () => void;
+  program: Program;
 }) {
   const profile = useProfile();
   const exercises = useExerciseMap();
@@ -182,9 +177,7 @@ function DayEditor({
         </label>
       </div>
       <div className="row wrap mt-s">
-        <button className="btn primary small" onClick={onStart} disabled={day.blocks.length === 0}>
-          <Icon name="play" /> Start workout
-        </button>
+        <DayActions program={program} day={day} />
         {total > 0 && <span className="small muted">≈ {formatDuration(total)}</span>}
         <span className="spacer" />
         <button className="btn icon small ghost" aria-label="Move day up" onClick={() => onMove(-1)} disabled={index === 0}>
@@ -209,13 +202,13 @@ function DayEditor({
               <div className="row">
                 <button
                   className="btn ghost"
-                  style={{ flex: 1, justifyContent: 'flex-start', padding: 0, minWidth: 0, textAlign: 'left', whiteSpace: 'normal' }}
+                  style={{ flex: 1, justifyContent: 'flex-start', padding: 0, minWidth: 0, textAlign: 'left', whiteSpace: 'normal', textTransform: 'none', letterSpacing: 0, fontSize: '1rem' }}
                   aria-expanded={open}
                   onClick={() => setOpenBlock(open ? null : b.id)}
                 >
                   <span style={{ minWidth: 0 }}>
                     <span className="chip primary">{FORMAT_INFO[b.format].short}</span>{' '}
-                    <strong>{b.name ?? FORMAT_INFO[b.format].label}</strong>
+                    {b.optional && <span className="chip">Optional</span>} <strong>{b.name ?? FORMAT_INFO[b.format].label}</strong>
                     <span className="small muted" style={{ display: 'block', fontWeight: 400 }}>
                       {describeBlock(b)}
                       {b.entries.length > 0 && ` · ${b.entries.map((e) => exercises.get(e.exerciseId)?.name ?? '?').join(', ')}`}

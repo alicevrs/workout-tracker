@@ -11,7 +11,8 @@ import { useExerciseMap, useProfile } from '../db/repo';
 import type { BlockFormat, Intensity, PerformedBlock, Session } from '../db/types';
 import { formatClock, formatDate, formatDuration, pad, toDateKey } from '../lib/dates';
 import { describeBlock, estimateBlockSeconds, FORMAT_INFO, FORMATS, newBlock } from '../lib/program';
-import { applyBlockEdit, blockToPerformed, performedToBlock } from '../lib/session';
+import { applyBlockEdit, blockToPerformed, hasPlannedSets, performedToBlock } from '../lib/session';
+import { completeBlocks } from '../lib/quickLog';
 import { previousSets } from '../lib/stats';
 import { formatWeight } from '../lib/units';
 
@@ -101,6 +102,26 @@ export default function WorkoutPage() {
     navigate(inProgress ? '/' : '/history', { replace: true });
   };
 
+  const activeIdx = session.blocks.map((b, i) => (b.skipped ? -1 : i)).filter((i) => i >= 0);
+  const markDone = (bi: number) => {
+    const b = session.blocks[bi];
+    if (b.entries.some((e) => e.sets.some((x) => x.completed)) && !confirm('Some sets are already logged. Mark the rest as done as planned?')) return;
+    updateBlock(b.id, (fresh) => {
+      const all = session.blocks.map((x) => (x.id === fresh.id ? fresh : x));
+      const done = completeBlocks(all, [bi], Date.now()).blocks[bi];
+      // Keep sets already logged; only fill in what was still open.
+      return {
+        ...done,
+        entries: done.entries.map((e, k) => {
+          const before = fresh.entries[k];
+          if (!before || !hasPlannedSets(fresh.format)) return before?.sets.length ? before : e;
+          return { ...e, sets: e.sets.map((x, j) => (before.sets[j]?.completed || before.sets[j]?.skipped ? before.sets[j] : x)) };
+        }),
+      };
+    });
+    toast('Marked as done');
+  };
+
   const durationMin = session.endedAt ? Math.round((session.endedAt - session.startedAt) / 60000) : undefined;
 
   return (
@@ -135,11 +156,11 @@ export default function WorkoutPage() {
             </button>
           </div>
         )}
-        {session.blocks.length > 1 && (
-          <button className="btn primary block" onClick={() => setTimerBlocks(session.blocks.map((_, i) => i))}>
+        {activeIdx.length > 1 && (
+          <button className="btn primary block" onClick={() => setTimerBlocks(activeIdx)}>
             <Icon name="timer" /> Run all blocks with the timer
             <span className="small" style={{ opacity: 0.8 }}>
-              ≈ {formatDuration(session.blocks.reduce((s, b) => s + estimateBlockSeconds(performedToBlock(b)), 0))}
+              ≈ {formatDuration(activeIdx.reduce((s, i) => s + estimateBlockSeconds(performedToBlock(session.blocks[i])), 0))}
             </span>
           </button>
         )}
@@ -149,16 +170,21 @@ export default function WorkoutPage() {
           const open = editing === b.id;
           const label = b.name ?? FORMAT_INFO[b.format].label;
           return (
-            <section key={b.id} className="card block-card" aria-label={label}>
+            <section key={b.id} className="card block-card" aria-label={label} style={b.skipped ? { opacity: 0.5 } : undefined}>
               <div className="card-title">
                 <div style={{ minWidth: 0 }}>
-                  <span className="chip primary">{FORMAT_INFO[b.format].short}</span> <strong>{label}</strong>
+                  <span className="chip primary">{FORMAT_INFO[b.format].short}</span> {b.optional && <span className="chip">Optional</span>} <strong>{label}</strong>
                   <div className="small muted">
                     {describeBlock(performedToBlock(b))}
                     {b.durationSec ? ` · ${formatClock(b.durationSec)} timed` : ''}
                   </div>
                 </div>
-                <div className="row">
+                <div className="row wrap" style={{ justifyContent: 'flex-end' }}>
+                  {b.optional && (
+                    <button className="btn small" onClick={() => updateBlock(b.id, (f) => ({ ...f, skipped: !f.skipped }))} aria-pressed={!b.skipped}>
+                      {b.skipped ? 'Include' : 'Skip today'}
+                    </button>
+                  )}
                   <button className="btn small" aria-expanded={open} onClick={() => setEditing(open ? null : b.id)} aria-label={open ? 'Close plan editor' : `Edit plan of ${label}`}>
                     <Icon name="edit" /> {open ? 'Close' : 'Plan'}
                   </button>
@@ -178,6 +204,8 @@ export default function WorkoutPage() {
                 </div>
               )}
 
+              {b.skipped ? null : (
+              <>
               {(b.format === 'amrap' || b.format === 'for_time') && <ResultFields block={b} onChange={(nb) => updateBlock(b.id, (fresh) => ({ ...fresh, result: nb.result }))} />}
 
               {(b.format === 'amrap' || b.format === 'for_time') && (
@@ -205,6 +233,13 @@ export default function WorkoutPage() {
                 />
               ))}
               {b.entries.length === 0 && !open && <p className="small muted">No exercises. Use Plan to add some, or just run the timer.</p>}
+              {b.entries.length > 0 && b.format !== 'amrap' && b.format !== 'for_time' && (
+                <button className="btn small ghost mt-s" onClick={() => markDone(bi)}>
+                  <Icon name="check" /> Mark block as done (as planned)
+                </button>
+              )}
+              </>
+              )}
             </section>
           );
         })}

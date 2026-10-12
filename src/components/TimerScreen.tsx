@@ -277,8 +277,8 @@ export function TimerScreen({ session, blockIndexes, onClose }: { session: Sessi
   const blockCount = new Set(phases.map((p) => p.blockIndex)).size;
   const blockPos = phase ? [...new Set(phases.map((p) => p.blockIndex))].indexOf(phase.blockIndex) + 1 : 1;
 
-  const target = phase?.kind === 'work' && (phase.targetReps || phase.targetWeight || (phase.targetDurationSec && phase.durationSec === null))
-    ? [phase.targetReps ? `${phase.targetReps} reps` : null, phase.targetWeight ? formatWeight(phase.targetWeight, unit) : null, phase.targetDurationSec && phase.durationSec === null ? `${phase.targetDurationSec}s` : null].filter(Boolean).join(' · ')
+  const target = phase?.kind === 'work' && (phase.targetReps || phase.toFailure || phase.targetWeight || (phase.targetDurationSec && phase.durationSec === null))
+    ? [phase.toFailure ? `Max reps${phase.targetReps ? ` (≥ ${phase.targetReps})` : ''}` : phase.targetReps ? `${phase.targetReps} reps` : null, phase.targetWeight ? formatWeight(phase.targetWeight, unit) : null, phase.targetDurationSec && phase.durationSec === null ? `${phase.targetDurationSec}s` : null].filter(Boolean).join(' · ')
     : '';
 
   const describeNext = () => {
@@ -288,6 +288,9 @@ export function TimerScreen({ session, blockIndexes, onClose }: { session: Sessi
     const bits = [nextExercise?.name ?? nextPhase.label];
     if (nextPhase.set && nextPhase.totalSets && (nextPhase.format === 'sets_reps' || nextPhase.format === 'timed_sets')) bits.push(`set ${nextPhase.set}/${nextPhase.totalSets}`);
     if (nextPhase.drop) bits.push(`drop ${nextPhase.drop}`);
+    if (nextPhase.format === 'emom' && (nextPhase.targetReps || nextPhase.toFailure || nextPhase.targetWeight)) {
+      bits.push([nextPhase.toFailure ? 'max reps' : nextPhase.targetReps ? `${nextPhase.targetReps} reps` : '', nextPhase.targetWeight ? formatWeight(nextPhase.targetWeight, unit) : ''].filter(Boolean).join(' · '));
+    }
     if (nextPhase.durationSec && nextPhase.format !== 'emom') bits.push(formatClock(nextPhase.durationSec));
     return bits.join(' · ');
   };
@@ -323,6 +326,11 @@ export function TimerScreen({ session, blockIndexes, onClose }: { session: Sessi
               <div style={{ textAlign: 'center', color: '#fff', fontSize: 'clamp(1.2rem, 5vw, 2rem)', fontWeight: 700 }}>{exercise.name}</div>
             )}
             {target && <div className="timer-sub">{target}</div>}
+            {phase?.kind === 'work' && phase.note && (
+              <div className="timer-sub" style={{ color: 'var(--accent)' }}>
+                {phase.note}
+              </div>
+            )}
             <div className="timer-clock" role="timer" aria-label={`${Math.round(clockSec)} seconds`}>
               {formatClock(clockSec)}
             </div>
@@ -353,6 +361,7 @@ export function TimerScreen({ session, blockIndexes, onClose }: { session: Sessi
                 </span>
               )}
               {phase?.drop && <span className="pill">Drop {phase.drop}</span>}
+              {phase?.warmup && <span className="pill">Warm-up</span>}
             </div>
 
             {isAmrapLike && status !== 'idle' && (

@@ -54,6 +54,18 @@ export type BlockFormat =
 
 export type Grouping = 'none' | 'superset' | 'circuit' | 'dropset';
 
+/** Target for one specific set, when the sets of an exercise are not all the same. */
+export interface SetTarget {
+  reps?: number;
+  /** kg */
+  weight?: number;
+  durationSec?: number;
+  /** Warm-up (approach) set. */
+  warmup?: boolean;
+  /** As many reps as possible / to failure. */
+  toFailure?: boolean;
+}
+
 export interface ExerciseEntry {
   id: string;
   exerciseId: string;
@@ -71,6 +83,14 @@ export interface ExerciseEntry {
   drops?: number;
   /** Drop set: weight reduction per drop in percent. */
   dropPercent?: number;
+  /**
+   * Different targets per set (warm-up, pyramid, last set to failure…). When present, set n uses
+   * setTargets[n-1] and the number of sets equals its length. In EMOM blocks, the n-th interval
+   * of this exercise uses setTargets[n-1].
+   */
+  setTargets?: SetTarget[];
+  /** Free note shown while training, e.g. "18% incline · 4 km/h". */
+  note?: string;
 }
 
 export interface IntervalSegment {
@@ -113,6 +133,8 @@ export interface BlockParams {
 export interface Block {
   id: string;
   name?: string;
+  /** Optional block: can be skipped on a given day without affecting the rest. */
+  optional?: boolean;
   format: BlockFormat;
   params: BlockParams;
   entries: ExerciseEntry[];
@@ -155,6 +177,8 @@ export interface SetRecord {
   dropWeights?: number[];
   /** Drop sets: reps done at each drop weight. */
   dropReps?: number[];
+  warmup?: boolean;
+  toFailure?: boolean;
 }
 
 export interface PerformedEntry {
@@ -173,6 +197,9 @@ export interface BlockResult {
 export interface PerformedBlock {
   id: string;
   name?: string;
+  optional?: boolean;
+  /** Optional block not done in this session. */
+  skipped?: boolean;
   format: BlockFormat;
   params: BlockParams;
   timer: TimerOptions;

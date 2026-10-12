@@ -1,17 +1,20 @@
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icon';
-import { EmptyState, PageHeader } from '../components/ui';
+import { EmptyState, PageHeader, Sheet } from '../components/ui';
+import { TEMPLATES } from '../lib/templates';
 import { db } from '../db/db';
 import { newProgram, WEEKDAYS } from '../lib/program';
-import { sampleProgram } from '../lib/sampleProgram';
 
 export default function ProgramsPage() {
   const navigate = useNavigate();
   const programs = useLiveQuery(() => db.programs.orderBy('updatedAt').reverse().toArray(), []);
 
-  const create = async (sample = false) => {
-    const p = sample ? sampleProgram() : newProgram();
+  const [picking, setPicking] = useState(false);
+  const create = async (template?: (typeof TEMPLATES)[number]) => {
+    setPicking(false);
+    const p = template ? template.create() : newProgram();
     await db.programs.add(p);
     navigate(`/programs/${p.id}`);
   };
@@ -42,8 +45,8 @@ export default function ProgramsPage() {
                   <button className="btn primary" onClick={() => create()}>
                     Create a program
                   </button>
-                  <button className="btn" onClick={() => create(true)}>
-                    Add a sample week
+                  <button className="btn" onClick={() => setPicking(true)}>
+                    Add from a template
                   </button>
                 </div>
               }
@@ -72,11 +75,26 @@ export default function ProgramsPage() {
           </ul>
         )}
         {programs && programs.length > 0 && (
-          <button className="btn small ghost" onClick={() => create(true)}>
-            Add a sample week
+          <button className="btn small ghost" onClick={() => setPicking(true)}>
+            Add from a template
           </button>
         )}
       </div>
+      <Sheet open={picking} onClose={() => setPicking(false)} title="Add a program">
+        <ul className="list">
+          {TEMPLATES.map((t) => (
+            <li key={t.id}>
+              <button className="list-item" style={{ width: '100%', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', textAlign: 'left', cursor: 'pointer' }} onClick={() => create(t)}>
+                <div className="grow">
+                  <div style={{ fontWeight: 650 }}>{t.name}</div>
+                  <div className="small muted">{t.description}</div>
+                </div>
+                <Icon name="plus" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Sheet>
     </div>
   );
 }

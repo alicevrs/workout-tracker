@@ -7,7 +7,8 @@ import { db } from '../db/db';
 import { saveSettings, useSettings } from '../db/repo';
 import { backupReminderDue } from '../lib/backup';
 import { formatTime } from '../lib/dates';
-import { describeBlock, weekdayIndex } from '../lib/program';
+import { describeBlock, WEEKDAYS, weekdayIndex } from '../lib/program';
+import { DayActions } from '../components/DayActions';
 import { createSession } from '../lib/session';
 
 export default function TodayPage() {
@@ -19,6 +20,7 @@ export default function TodayPage() {
   const oldest = useLiveQuery(() => db.sessions.orderBy('startedAt').first(), []);
   const remind = backupReminderDue(settings, oldest?.startedAt);
   const planned = (programs ?? []).flatMap((p) => p.days.filter((d) => d.weekday === today).map((d) => ({ program: p, day: d })));
+  const otherDays = (programs ?? []).flatMap((p) => p.days.filter((d) => d.weekday !== today && d.blocks.length).map((d) => ({ program: p, day: d })));
 
   const startEmpty = async () => {
     const s = createSession({ title: 'Workout' });
@@ -86,23 +88,33 @@ export default function TodayPage() {
             </p>
           ) : (
             planned.map(({ program, day }) => (
-              <div key={day.id} className="row" style={{ minHeight: 56 }}>
-                <div className="grow" style={{ minWidth: 0 }}>
+              <div key={day.id} className="row wrap" style={{ minHeight: 56 }}>
+                <div className="grow" style={{ minWidth: 0, flex: '1 1 180px' }}>
                   <strong>{day.name}</strong> <span className="small muted">· {program.name}</span>
                   <div className="small faint ellipsis">{day.blocks.map(describeBlock).join(' · ')}</div>
                 </div>
-                <button
-                  className="btn primary small"
-                  onClick={async () => {
-                    const s = createSession({ program, day });
-                    await db.sessions.add(s);
-                    navigate(`/workout/${s.id}`);
-                  }}
-                >
-                  <Icon name="play" /> Start
-                </button>
+                <DayActions program={program} day={day} />
               </div>
             ))
+          )}
+          {otherDays.length > 0 && (
+            <details className="mt-s">
+              <summary className="small muted" style={{ cursor: 'pointer', minHeight: 40, display: 'flex', alignItems: 'center' }}>
+                Do another day of your program
+              </summary>
+              {otherDays.map(({ program, day }) => (
+                <div key={day.id} className="row wrap" style={{ minHeight: 52, borderTop: '1px solid var(--border)' }}>
+                  <div className="grow" style={{ minWidth: 0, flex: '1 1 160px' }}>
+                    <strong>{day.name}</strong>
+                    <div className="small faint ellipsis">
+                      {program.name}
+                      {day.weekday !== undefined ? ` · ${WEEKDAYS[day.weekday]}` : ''}
+                    </div>
+                  </div>
+                  <DayActions program={program} day={day} compact />
+                </div>
+              ))}
+            </details>
           )}
           <div className="row wrap mt">
             <button className="btn" onClick={startEmpty}>

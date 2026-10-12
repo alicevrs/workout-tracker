@@ -96,10 +96,10 @@ export interface CalorieResult {
  */
 export function blockHours(s: Session): number[] {
   const total = sessionDurationSec(s);
-  const measured = s.blocks.map((b) => b.durationSec ?? 0);
+  const measured = s.blocks.map((b) => (b.skipped ? 0 : b.durationSec ?? 0));
   const measuredSum = measured.reduce((a, b) => a + b, 0);
   const rest = Math.max(0, total - measuredSum);
-  const untimed = s.blocks.map((b, i) => (measured[i] ? 0 : Math.max(1, estimateBlockSeconds(performedToBlock(b)))));
+  const untimed = s.blocks.map((b, i) => (measured[i] || b.skipped ? 0 : Math.max(1, estimateBlockSeconds(performedToBlock(b)))));
   const untimedSum = untimed.reduce((a, b) => a + b, 0);
   return s.blocks.map((_, i) => (measured[i] ? measured[i] : untimedSum ? (rest * untimed[i]) / untimedSum : 0) / 3600);
 }

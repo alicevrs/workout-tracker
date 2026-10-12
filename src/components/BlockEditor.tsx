@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useExerciseMap, useProfile } from '../db/repo';
-import type { Block, BlockFormat, BlockParams, ExerciseEntry, Grouping, IntervalSegment, TimerOptions } from '../db/types';
+import type { Block, BlockFormat, BlockParams, ExerciseEntry, Grouping, IntervalSegment, SetTarget, TimerOptions, WeightUnit } from '../db/types';
 import { uid } from '../lib/ids';
 import { defaultParams, FORMAT_INFO, FORMATS, GROUPING_LABEL, newEntry } from '../lib/program';
 import { fromDisplayWeight, toDisplayWeight } from '../lib/units';
@@ -155,6 +155,15 @@ export function BlockEditor({ block, onChange }: { block: Block; onChange: (b: B
                   <NumberField label="or time" suffix="s" value={e.durationSec} onChange={(v) => setEntry(e.id, { durationSec: v })} inputMode="numeric" />
                 )}
               </div>
+              <label className="field mt-s">
+                <span>
+                  Note <span className="faint">(optional, e.g. “18% incline · 4 km/h”)</span>
+                </span>
+                <input value={e.note ?? ''} onChange={(ev) => setEntry(e.id, { note: ev.target.value || undefined })} />
+              </label>
+              {(block.format === 'sets_reps' || block.format === 'timed_sets' || block.format === 'emom') && (
+                <SetTargetsEditor entry={e} unit={unit} perInterval={block.format === 'emom'} onChange={(patch) => setEntry(e.id, patch)} />
+              )}
               {!conditioning && (
                 <div className="form-grid four mt-s">
                   <label className="field">
@@ -233,6 +242,10 @@ export function BlockEditor({ block, onChange }: { block: Block; onChange: (b: B
         </div>
       </details>
 
+      <label className="check-row">
+        <input type="checkbox" checked={!!block.optional} onChange={(e) => onChange({ ...block, optional: e.target.checked || undefined })} />
+        Optional block (do it only when there is time)
+      </label>
       <label className="field">
         Note
         <input value={block.note ?? ''} placeholder="Optional" onChange={(e) => onChange({ ...block, note: e.target.value || undefined })} />
@@ -297,6 +310,56 @@ function SegmentsEditor({ params, onChange }: { params: BlockParams; onChange: (
         </div>
         <span className="small muted">times</span>
       </div>
+    </div>
+  );
+}
+
+/** Per-set targets: warm-up sets, pyramids, a last set to failure, or per-interval targets in EMOM. */
+function SetTargetsEditor({ entry, unit, perInterval, onChange }: { entry: ExerciseEntry; unit: WeightUnit; perInterval: boolean; onChange: (p: Partial<ExerciseEntry>) => void }) {
+  const on = !!entry.setTargets?.length;
+  const rows = entry.setTargets ?? [];
+  const word = perInterval ? 'interval' : 'set';
+  const set = (i: number, patch: Partial<SetTarget>) => onChange({ setTargets: rows.map((r, k) => (k === i ? { ...r, ...patch } : r)) });
+  const toggle = (checked: boolean) => {
+    if (!checked) return onChange({ setTargets: undefined });
+    const n = perInterval ? 4 : Math.max(1, entry.sets);
+    onChange({ setTargets: Array.from({ length: n }, () => ({ reps: entry.reps, weight: entry.targetWeight, durationSec: entry.durationSec })), sets: perInterval ? entry.sets : n });
+  };
+  return (
+    <div className="mt-s">
+      <label className="check-row">
+        <input type="checkbox" checked={on} onChange={(e) => toggle(e.target.checked)} />
+        Different targets per {word} (warm-up, pyramid, last {word} to failure…)
+      </label>
+      {on && (
+        <div className="stack" style={{ marginTop: 4 }}>
+          {rows.map((r, i) => (
+            <div key={i} className="row wrap" style={{ gap: 6, alignItems: 'flex-end' }}>
+              <span className="small muted" style={{ width: 56 }}>
+                {perInterval ? 'Int.' : 'Set'} {i + 1}
+              </span>
+              <div style={{ width: 80 }}>
+                <NumberField label={r.toFailure ? 'Min reps' : 'Reps'} value={r.reps} onChange={(v) => set(i, { reps: v })} inputMode="numeric" />
+              </div>
+              <div style={{ width: 90 }}>
+                <NumberField label={`Weight (${unit})`} value={toDisplayWeight(r.weight, unit)} onChange={(v) => set(i, { weight: fromDisplayWeight(v, unit) })} />
+              </div>
+              <label className="check-row small" style={{ minHeight: 40 }}>
+                <input type="checkbox" checked={!!r.warmup} onChange={(e) => set(i, { warmup: e.target.checked || undefined })} /> Warm-up
+              </label>
+              <label className="check-row small" style={{ minHeight: 40 }}>
+                <input type="checkbox" checked={!!r.toFailure} onChange={(e) => set(i, { toFailure: e.target.checked || undefined })} /> Max reps
+              </label>
+              <button type="button" className="btn icon small ghost" aria-label={`Remove ${word} ${i + 1}`} onClick={() => onChange({ setTargets: rows.filter((_, k) => k !== i), ...(perInterval ? {} : { sets: Math.max(1, rows.length - 1) }) })}>
+                <Icon name="x" />
+              </button>
+            </div>
+          ))}
+          <button type="button" className="btn small" onClick={() => onChange({ setTargets: [...rows, { ...rows[rows.length - 1] }], ...(perInterval ? {} : { sets: rows.length + 1 }) })}>
+            <Icon name="plus" /> Add {word}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

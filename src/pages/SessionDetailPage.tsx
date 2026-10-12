@@ -157,7 +157,7 @@ export default function SessionDetailPage() {
                         {name(m.exerciseId)}
                       </Link>
                       {point?.improved && <span className="chip good">▲ Progress</span>}
-                      {point && !point.delta && <span className="chip">First time</span>}
+                      {point?.first && <span className="chip">First time</span>}
                     </div>
                     <div className="small muted num">
                       {m.sets} {m.sets === 1 ? 'set' : 'sets'} · {m.reps} reps

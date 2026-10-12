@@ -211,6 +211,8 @@ export interface ProgressPoint {
   /** Change vs the previous session with this exercise. */
   delta?: { e1rm: number; maxWeight: number; reps: number; volume: number; maxDuration: number };
   improved: boolean;
+  /** First time this exercise was logged. */
+  first: boolean;
 }
 
 /** Chronological history of one exercise across completed sessions. */
@@ -221,7 +223,9 @@ export function exerciseHistory(exerciseId: string, sessions: Session[]): Progre
     const sets = sessionSets(s).filter((x) => x.exerciseId === exerciseId);
     if (!sets.length) continue;
     const metrics = metricsFromSets(sets).get(exerciseId)!;
-    const prev = out[out.length - 1];
+    // Compare like with like: weighted sessions with weighted ones, bodyweight/timed with the same.
+    const weighted = metrics.maxWeight > 0;
+    const prev = [...out].reverse().find((p) => p.metrics.maxWeight > 0 === weighted);
     const delta = prev
       ? {
           e1rm: metrics.e1rm - prev.metrics.e1rm,
@@ -232,7 +236,7 @@ export function exerciseHistory(exerciseId: string, sessions: Session[]): Progre
         }
       : undefined;
     const improved = !!delta && (delta.e1rm > 0.01 || delta.maxWeight > 0.01 || (Math.abs(delta.maxWeight) < 0.01 && delta.reps > 0) || delta.maxDuration > 0);
-    out.push({ sessionId: s.id, date: s.date, startedAt: s.startedAt, metrics, sets, delta, improved });
+    out.push({ sessionId: s.id, date: s.date, startedAt: s.startedAt, metrics, sets, delta, improved, first: out.length === 0 });
   }
   return out;
 }
