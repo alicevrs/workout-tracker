@@ -1,15 +1,15 @@
 :root {
-  --bg: #0b0d10;
-  --bg-elev: #14171c;
-  --bg-elev-2: #1c2027;
-  --bg-input: #0f1216;
-  --border: #2a2f38;
+  --bg: #0d0d0d;
+  --bg-elev: #161616;
+  --bg-elev-2: #202020;
+  --bg-input: #111111;
+  --border: #2b2b2b;
   --text: #f1f3f5;
-  --text-dim: #a3abb7;
-  --text-faint: #6f7886;
-  --accent: #ff7a1a;
-  --accent-text: #1a0d02;
-  --accent-soft: rgba(255, 122, 26, 0.15);
+  --text-dim: #a6a6a6;
+  --text-faint: #747474;
+  --accent: #fdd70d;
+  --accent-text: #111111;
+  --accent-soft: rgba(253, 215, 13, 0.12);
   --good: #3ddc84;
   --good-soft: rgba(61, 220, 132, 0.14);
   --bad: #ff5c5c;
@@ -18,14 +18,15 @@
   --warn: #ffc542;
   --work: #3ddc84;
   --rest: #5aa9ff;
-  --prep: #ffc542;
-  --radius: 14px;
-  --radius-sm: 10px;
+  --prep: #ffffff;
+  --radius: 2px;
+  --radius-sm: 2px;
   --tap: 48px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --nav-h: 64px;
-  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --display: 'Archivo', 'Inter', -apple-system, sans-serif;
   --mono: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
   color-scheme: dark;
 }
@@ -69,13 +70,18 @@ h4 {
   line-height: 1.2;
 }
 h1 {
-  font-size: 1.6rem;
-  font-weight: 750;
+  font-family: var(--display);
+  font-size: 1.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
   letter-spacing: -0.01em;
 }
 h2 {
-  font-size: 1.2rem;
+  font-family: var(--display);
+  font-size: 1.1rem;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
 }
 h3 {
   font-size: 1rem;
@@ -156,7 +162,7 @@ p {
   z-index: 20;
   display: flex;
   justify-content: space-around;
-  background: rgba(11, 13, 16, 0.94);
+  background: rgba(0, 0, 0, 0.94);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid var(--border);
@@ -381,7 +387,10 @@ button {
   border: 1px solid var(--border);
   background: var(--bg-elev-2);
   color: var(--text);
-  font-weight: 650;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.85rem;
   cursor: pointer;
   white-space: nowrap;
   transition: transform 0.08s ease, background 0.15s ease;
@@ -554,7 +563,7 @@ select {
   align-items: center;
   gap: 4px;
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: 2px;
   background: var(--bg-elev-2);
   border: 1px solid var(--border);
   font-size: 0.8rem;
@@ -563,7 +572,7 @@ select {
 }
 .chip.primary {
   background: var(--accent-soft);
-  border-color: rgba(255, 122, 26, 0.4);
+  border-color: rgba(253, 215, 13, 0.45);
   color: var(--accent);
 }
 .chip.good {
@@ -778,7 +787,7 @@ button.chip[aria-pressed='true'] {
   background: var(--bg-elev-2);
   border: 1px solid var(--border);
   padding: 10px 16px;
-  border-radius: 999px;
+  border-radius: 2px;
   z-index: 60;
   font-weight: 600;
   font-size: 0.9rem;
@@ -811,7 +820,7 @@ button.chip[aria-pressed='true'] {
 .legend-scale {
   height: 8px;
   border-radius: 4px;
-  background: linear-gradient(90deg, #262b33, #7a3a10, #ff7a1a, #ffd166);
+  background: linear-gradient(90deg, #2a2a2a, #6b5a08, #fdd70d, #fff3a8);
 }
 
 /* ---------- Timer ---------- */
@@ -881,7 +890,7 @@ button.chip[aria-pressed='true'] {
 }
 .timer-meta .pill {
   border: 1px solid #333;
-  border-radius: 999px;
+  border-radius: 2px;
   padding: 4px 12px;
   font-size: 0.95rem;
   font-weight: 650;
@@ -1135,4 +1144,54 @@ kbd {
   position: sticky;
   top: 0;
   background: var(--bg-elev);
+}
+
+/* Brand details: thin yellow rule before section titles, square controls. */
+.card > h2:first-child::before,
+.card-title > h2::before,
+.page-header h1::before {
+  content: '';
+  display: inline-block;
+  width: 18px;
+  height: 2px;
+  background: var(--accent);
+  vertical-align: middle;
+  margin-right: 10px;
+  transform: translateY(-2px);
+}
+.page-header h1::before {
+  width: 22px;
+  height: 3px;
+}
+.stat .label,
+.bottom-nav a,
+.sidebar a {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.sidebar a {
+  font-size: 0.82rem;
+}
+.sidebar .brand {
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.stat .value,
+.timer-phase-label {
+  font-family: var(--display);
+}
+.segmented,
+.segmented button,
+.stepper,
+.check-btn,
+.sheet,
+.toast {
+  border-radius: 2px;
+}
+.bottom-nav a {
+  font-size: 0.62rem;
+}
+.block-card {
+  border-left-width: 3px;
 }

@@ -6,7 +6,7 @@ import { useProfile } from '../db/repo';
 import { formatShortDate, fromDateKey, toDateKey } from '../lib/dates';
 import { uid } from '../lib/ids';
 import { fromDisplayWeight, toDisplayWeight } from '../lib/units';
-import { AXIS, ChartTooltip, GRID, SERIES } from './charts';
+import { ACCENT, AXIS, ChartTooltip, GRID } from './charts';
 import { Icon } from './Icon';
 import { NumberField } from './ui';
 
@@ -49,7 +49,7 @@ export function WeightLog() {
               <XAxis dataKey="date" type="number" domain={['dataMin', 'dataMax']} scale="time" tickFormatter={(v) => formatShortDate(v)} {...AXIS} />
               <YAxis domain={['auto', 'auto']} {...AXIS} width={44} />
               <Tooltip content={<ChartTooltip format={(v) => `${v} ${unit}`} labelFormat={(l) => formatShortDate(Number(l))} />} />
-              <Line type="monotone" dataKey="value" name="Body weight" stroke={SERIES[0]} strokeWidth={2} dot={{ r: 4, fill: SERIES[0], stroke: 'var(--bg-elev)', strokeWidth: 2 }} />
+              <Line type="monotone" dataKey="value" name="Body weight" stroke={ACCENT} strokeWidth={2} dot={{ r: 4, fill: ACCENT, stroke: 'var(--bg-elev)', strokeWidth: 2 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>

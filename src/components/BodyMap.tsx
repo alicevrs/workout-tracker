@@ -44,12 +44,12 @@ const BACK: Shape[] = [
   { d: 'M47 200 L54 200 L55 210 L43 210 Z' },
 ];
 
-const BASE = '#262b33';
+const BASE = '#2a2a2a';
 const STOPS: [number, [number, number, number]][] = [
-  [0, [58, 44, 36]],
-  [0.35, [140, 62, 18]],
-  [0.7, [255, 122, 26]],
-  [1, [255, 209, 102]],
+  [0, [60, 54, 24]],
+  [0.35, [140, 118, 10]],
+  [0.7, [253, 215, 13]],
+  [1, [255, 243, 168]],
 ];
 
 export function heatColor(v: number): string {
@@ -64,17 +64,17 @@ export function heatColor(v: number): string {
       return `rgb(${c[0]},${c[1]},${c[2]})`;
     }
   }
-  return 'rgb(255,209,102)';
+  return 'rgb(255,243,168)';
 }
 
 function Figure({ shapes, values, label, pct }: { shapes: Shape[]; values: Partial<Record<MuscleId, number>>; label: string; pct?: Partial<Record<MuscleId, number>> }) {
   const render = (mirror: boolean) =>
     shapes.map((s, i) => {
       const v = s.muscle ? values[s.muscle] ?? 0 : 0;
-      const fill = s.muscle ? heatColor(v) : '#1d2128';
+      const fill = s.muscle ? heatColor(v) : '#1c1c1c';
       const title = s.muscle ? `${MUSCLE_LABEL[s.muscle]}${pct?.[s.muscle] !== undefined ? `: ${Math.round(pct[s.muscle]!)}%` : ''}` : undefined;
       return (
-        <path key={`${mirror ? 'r' : 'l'}${i}`} d={s.d} fill={fill} stroke="#0b0d10" strokeWidth={0.8} strokeLinejoin="round">
+        <path key={`${mirror ? 'r' : 'l'}${i}`} d={s.d} fill={fill} stroke="#0d0d0d" strokeWidth={0.8} strokeLinejoin="round">
           {title && <title>{title}</title>}
         </path>
       );

@@ -3,8 +3,8 @@
 import { deflateSync } from 'node:zlib';
 import { writeFileSync } from 'node:fs';
 
-const BG = [11, 13, 16];
-const ACCENT = [255, 122, 26];
+const BG = [13, 13, 13];
+const ACCENT = [253, 215, 13];
 
 function crc32(buf) {
   let c, crc = 0xffffffff;
@@ -63,5 +63,5 @@ writeFileSync('public/icon-192.png', png(192, regular));
 writeFileSync('public/icon-512.png', png(512, regular));
 writeFileSync('public/apple-touch-icon.png', png(180, regular));
 writeFileSync('public/icon-maskable-512.png', png(512, maskable));
-writeFileSync('public/favicon.svg', `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#0b0d10"/><g fill="#ff7a1a"><rect x="22" y="47" width="56" height="6" rx="1"/><rect x="25" y="30" width="8" height="40" rx="3"/><rect x="67" y="30" width="8" height="40" rx="3"/><rect x="16" y="36" width="7" height="28" rx="2.5"/><rect x="77" y="36" width="7" height="28" rx="2.5"/></g></svg>`);
+writeFileSync('public/favicon.svg', `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#0d0d0d"/><g fill="#fdd70d"><rect x="22" y="47" width="56" height="6" rx="1"/><rect x="25" y="30" width="8" height="40" rx="3"/><rect x="67" y="30" width="8" height="40" rx="3"/><rect x="16" y="36" width="7" height="28" rx="2.5"/><rect x="77" y="36" width="7" height="28" rx="2.5"/></g></svg>`);
 console.log('icons written');

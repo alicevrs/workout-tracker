@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { BodyMap, HeatLegend } from '../components/BodyMap';
-import { AXIS, ChartCard, ChartTooltip, GRID, Legend, OTHER, SEQ, SERIES } from '../components/charts';
+import { ACCENT, AXIS, ChartCard, ChartTooltip, GRID, Legend, OTHER, PREVIOUS, SEQ, SERIES } from '../components/charts';
 import { Icon } from '../components/Icon';
 import { Delta, EmptyState, PageHeader, Segmented, Stat } from '../components/ui';
 import { MUSCLE_LABEL } from '../data/muscles';
@@ -209,7 +209,7 @@ function ExerciseProgress({ sessions, unit }: { sessions: Session[]; unit: Weigh
                 cursor={{ stroke: '#898781', strokeWidth: 1 }}
                 content={<ChartTooltip labelFormat={(l) => formatShortDate(Number(l))} format={(v) => (metric === 'maxDuration' ? formatClock(v) : metric === 'reps' || metric === 'maxReps' ? `${v}` : `${Math.round(v * 10) / 10} ${unit}`)} />}
               />
-              <Line type="monotone" dataKey="value" name={PROGRESS_LABEL[metric]} stroke={SERIES[0]} strokeWidth={2} dot={{ r: 4, fill: SERIES[0], stroke: '#14171c', strokeWidth: 2 }} activeDot={{ r: 6 }} isAnimationActive={false} />
+              <Line type="monotone" dataKey="value" name={PROGRESS_LABEL[metric]} stroke={ACCENT} strokeWidth={2} dot={{ r: 4, fill: ACCENT, stroke: '#161616', strokeWidth: 2 }} activeDot={{ r: 6 }} isAnimationActive={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -291,12 +291,12 @@ function PeriodComparison({ sessions, unit, kcal, now }: { sessions: Session[]; 
             <th />
             <th>
               <span className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 2, background: SERIES[0] }} /> {a.label}
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: ACCENT }} /> {a.label}
               </span>
             </th>
             <th>
               <span className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 2, background: SERIES[1] }} /> {b.label}
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: PREVIOUS }} /> {b.label}
               </span>
             </th>
             <th>Change</th>
@@ -334,15 +334,15 @@ function PeriodComparison({ sessions, unit, kcal, now }: { sessions: Session[]; 
             <XAxis dataKey="day" {...AXIS} tickFormatter={(v) => `Day ${v}`} minTickGap={30} />
             <YAxis {...AXIS} width={48} tickFormatter={(v) => compact(v)} />
             <Tooltip cursor={{ stroke: '#898781', strokeWidth: 1 }} content={<ChartTooltip labelFormat={(l) => `Day ${l}`} format={(v) => fmtMetric(paceMetric, paceMetric === 'volume' ? (unit === 'kg' ? v : v * KG_PER_LB) : v, unit)} />} />
-            <Line type="monotone" dataKey="previous" name={b.label} stroke={SERIES[1]} strokeWidth={2} dot={false} isAnimationActive={false} />
-            <Line type="monotone" dataKey="current" name={a.label} stroke={SERIES[0]} strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={false} />
+            <Line type="monotone" dataKey="previous" name={b.label} stroke={PREVIOUS} strokeWidth={2} dot={false} isAnimationActive={false} />
+            <Line type="monotone" dataKey="current" name={a.label} stroke={ACCENT} strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
       <Legend
         items={[
-          { label: a.label, color: SERIES[0], line: true },
-          { label: b.label, color: SERIES[1], line: true },
+          { label: a.label, color: ACCENT, line: true },
+          { label: b.label, color: PREVIOUS, line: true },
         ]}
       />
     </ChartCard>
@@ -406,7 +406,7 @@ function CumulativeChart({ sessions, from, now, unit, kcal }: { sessions: Sessio
               <XAxis dataKey="label" {...AXIS} minTickGap={16} />
               <YAxis {...AXIS} width={48} tickFormatter={(v) => compact(v)} />
               <Tooltip cursor={{ stroke: '#898781', strokeWidth: 1 }} content={<ChartTooltip format={fmt} />} />
-              <Area type="monotone" dataKey="value" name={METRIC_LABEL[metric]} stroke={SERIES[0]} strokeWidth={2} fill={SERIES[0]} fillOpacity={0.18} isAnimationActive={false} />
+              <Area type="monotone" dataKey="value" name={METRIC_LABEL[metric]} stroke={ACCENT} strokeWidth={2} fill={ACCENT} fillOpacity={0.18} isAnimationActive={false} />
             </AreaChart>
           ) : (
             <BarChart data={data} margin={{ top: 10, right: 12, bottom: 0, left: -6 }}>
@@ -414,7 +414,7 @@ function CumulativeChart({ sessions, from, now, unit, kcal }: { sessions: Sessio
               <XAxis dataKey="label" {...AXIS} minTickGap={16} />
               <YAxis {...AXIS} width={48} tickFormatter={(v) => compact(v)} />
               <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} content={<ChartTooltip format={fmt} />} />
-              <Bar dataKey="value" name={METRIC_LABEL[metric]} fill={SERIES[0]} radius={[4, 4, 0, 0]} maxBarSize={36} isAnimationActive={false} />
+              <Bar dataKey="value" name={METRIC_LABEL[metric]} fill={ACCENT} radius={[4, 4, 0, 0]} maxBarSize={36} isAnimationActive={false} />
             </BarChart>
           )}
         </ResponsiveContainer>
@@ -465,7 +465,7 @@ function Frequency({ sessions, all, from, now }: { sessions: Session[]; all: Ses
             <XAxis dataKey="label" {...AXIS} minTickGap={16} />
             <YAxis {...AXIS} allowDecimals={false} width={40} />
             <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} content={<ChartTooltip format={(v) => `${v} workout${v === 1 ? '' : 's'}`} />} />
-            <Bar dataKey="value" name="Workouts" fill={SERIES[0]} radius={[4, 4, 0, 0]} maxBarSize={36} isAnimationActive={false} />
+            <Bar dataKey="value" name="Workouts" fill={ACCENT} radius={[4, 4, 0, 0]} maxBarSize={36} isAnimationActive={false} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -583,7 +583,7 @@ function MuscleDistribution({ sessions, now }: { sessions: Session[]; now: numbe
                       {MUSCLE_LABEL[s.muscle]}
                     </span>
                     <div style={{ flex: 1, height: 10, background: 'var(--bg-elev-2)', borderRadius: 4 }} title={`${MUSCLE_LABEL[s.muscle]}: ${s.pct.toFixed(1)}%`}>
-                      <div style={{ width: `${s.intensity * 100}%`, height: '100%', background: SERIES[0], borderRadius: 4 }} />
+                      <div style={{ width: `${s.intensity * 100}%`, height: '100%', background: ACCENT, borderRadius: 4 }} />
                     </div>
                     <span className="small num" style={{ width: 40, textAlign: 'right' }}>
                       {Math.round(s.pct)}%
@@ -596,7 +596,7 @@ function MuscleDistribution({ sessions, now }: { sessions: Session[]; now: numbe
                 <div style={{ height: 200 }}>
                   <ResponsiveContainer>
                     <PieChart>
-                      <Pie data={donut} dataKey="value" nameKey="name" innerRadius="55%" outerRadius="90%" paddingAngle={1} stroke="#14171c" strokeWidth={2} isAnimationActive={false}>
+                      <Pie data={donut} dataKey="value" nameKey="name" innerRadius="55%" outerRadius="90%" paddingAngle={1} stroke="#161616" strokeWidth={2} isAnimationActive={false}>
                         {donut.map((d) => (
                           <Cell key={d.name} fill={d.color} />
                         ))}
@@ -731,12 +731,12 @@ function CaloriesChart({ sessions, from, now }: { sessions: Session[]; from: num
                 {view === 'daily' ? (
                   <>
                     <Bar dataKey="bmr" name="BMR" stackId="a" fill={OTHER} maxBarSize={28} isAnimationActive={false} />
-                    <Bar dataKey="activity" name="Exercise" stackId="a" fill={SERIES[0]} radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />
+                    <Bar dataKey="activity" name="Exercise" stackId="a" fill={ACCENT} radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />
                   </>
                 ) : (
                   <>
-                    <Bar dataKey="estimated" name="Estimated" stackId="a" fill={SERIES[0]} maxBarSize={36} isAnimationActive={false} />
-                    <Bar dataKey="imported" name="Imported" stackId="a" fill={SERIES[1]} radius={[4, 4, 0, 0]} maxBarSize={36} isAnimationActive={false} />
+                    <Bar dataKey="estimated" name="Estimated" stackId="a" fill={ACCENT} maxBarSize={36} isAnimationActive={false} />
+                    <Bar dataKey="imported" name="Imported" stackId="a" fill={PREVIOUS} radius={[4, 4, 0, 0]} maxBarSize={36} isAnimationActive={false} />
                   </>
                 )}
               </BarChart>
@@ -747,11 +747,11 @@ function CaloriesChart({ sessions, from, now }: { sessions: Session[]; from: num
               view === 'daily'
                 ? [
                     { label: 'BMR', color: OTHER },
-                    { label: 'Exercise (above resting)', color: SERIES[0] },
+                    { label: 'Exercise (above resting)', color: ACCENT },
                   ]
                 : [
-                    { label: 'Estimated', color: SERIES[0] },
-                    { label: 'Imported', color: SERIES[1] },
+                    { label: 'Estimated', color: ACCENT },
+                    { label: 'Imported', color: PREVIOUS },
                   ]
             }
           />

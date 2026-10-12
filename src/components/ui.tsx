@@ -31,7 +31,7 @@ export function PageHeader({
       )}
       <header className="page-header">
         <div style={{ minWidth: 0 }}>
-          <h1 className="ellipsis">{title}</h1>
+          <h1 style={{ overflowWrap: 'anywhere' }}>{title}</h1>
           {subtitle && <div className="muted small">{subtitle}</div>}
         </div>
         {actions && <div className="actions">{actions}</div>}

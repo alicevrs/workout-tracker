@@ -3,11 +3,15 @@ import { useState, type ReactNode } from 'react';
 // Chart chrome for the dark theme. Categorical slots validated (CVD, contrast) against the
 // card surface #14171c with the dataviz palette validator; keep the order fixed.
 export const SERIES = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'];
-export const OTHER = '#6f7886';
-/** Sequential blue ramp (light → dark) for the heatmap, on a dark surface: low = dark. */
-export const SEQ = ['#1b1f25', '#184f95', '#256abf', '#3987e5', '#86b6ef'];
+export const OTHER = '#6f6f6f';
+/** Brand highlight for single-measure charts. */
+export const ACCENT = '#fdd70d';
+/** Neutral partner for two-period comparisons (current = ACCENT). */
+export const PREVIOUS = '#8a8a8a';
+/** Sequential yellow ramp for the heatmap, on a dark surface: low = dark. */
+export const SEQ = ['#222222', '#5c4f0a', '#9c840c', '#d4b40d', '#fdd70d'];
 
-export const GRID = { stroke: '#2c2c2a', strokeDasharray: '0', vertical: false } as const;
+export const GRID = { stroke: '#2a2a2a', strokeDasharray: '0', vertical: false } as const;
 export const AXIS = {
   stroke: '#383835',
   tick: { fill: '#898781', fontSize: 12 },

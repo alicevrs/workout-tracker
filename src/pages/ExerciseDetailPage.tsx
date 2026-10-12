@@ -70,10 +70,10 @@ export default function ExerciseDetailPage() {
           <BodyMap values={exerciseIntensity(exercise)} compact />
           <div className="row small faint mt-s mb" style={{ justifyContent: 'center', gap: 16 }}>
             <span className="row" style={{ gap: 6 }}>
-              <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgb(255,209,102)' }} /> Primary
+              <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgb(255,243,168)' }} /> Primary
             </span>
             <span className="row" style={{ gap: 6 }}>
-              <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgb(166,76,20)' }} /> Secondary
+              <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgb(153,129,10)' }} /> Secondary
             </span>
           </div>
           <h3 className="small muted">Primary</h3>

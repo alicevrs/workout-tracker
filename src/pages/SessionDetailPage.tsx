@@ -15,7 +15,7 @@ import { detectPRs, exerciseHistory, PR_LABEL, sessionMetrics, sessionSummary } 
 import { compact, formatWeight } from '../lib/units';
 import { SessionCalories } from '../components/SessionCalories';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { AXIS, ChartTooltip, GRID, SERIES } from '../components/charts';
+import { ACCENT, AXIS, ChartTooltip, GRID } from '../components/charts';
 
 export default function SessionDetailPage() {
   const { id = '' } = useParams();
@@ -217,7 +217,7 @@ export default function SessionDetailPage() {
                     <XAxis dataKey="t" type="number" domain={['dataMin', 'dataMax']} tickFormatter={(v) => formatClock(v)} {...AXIS} minTickGap={30} />
                     <YAxis {...AXIS} width={44} domain={['dataMin - 5', 'dataMax + 5']} />
                     <Tooltip cursor={{ stroke: '#898781', strokeWidth: 1 }} content={<ChartTooltip format={(v) => `${v} bpm`} labelFormat={(l) => formatClock(Number(l))} />} />
-                    <Line type="monotone" dataKey="bpm" name="Heart rate" stroke={SERIES[0]} strokeWidth={2} dot={false} isAnimationActive={false} />
+                    <Line type="monotone" dataKey="bpm" name="Heart rate" stroke={ACCENT} strokeWidth={2} dot={false} isAnimationActive={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>

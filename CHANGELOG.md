@@ -74,3 +74,9 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 ## Verification (2026-10-12)
 - 87 unit tests pass (`npm test`): calories and BMR, Epley 1RM, volume and PRs, timer phases and engine, timer → session link, FIT (real binary file), TCX, duplicate matching, backup round trip and migrations, analytics, Strava mapping and rate limits, the Cloudflare Worker.
 - Offline check in headless Chrome with the network switched off: every screen loads and a Tabata timer runs on time. After freezing the page for 40 s (like a locked iPhone) the timer resumed at the exact right phase and second.
+
+## Design update (2026-10-12)
+- New look inspired by the Monday Resolution studio website: black background, yellow (#FDD70D) highlights, square corners, uppercase titles with a short yellow rule, uppercase buttons.
+- Fonts: Archivo (titles) and Inter (text), bundled with the app so they work offline.
+- Body map, heatmap and single-measure charts use yellow; two-period comparisons use yellow (current) vs gray (previous).
+- App icon and theme colour updated.
