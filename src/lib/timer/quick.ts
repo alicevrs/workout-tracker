@@ -1,5 +1,5 @@
 // Quick timers on the Timer tab: a few big settings per format (SmartWOD-style), turned into
-// ordinary blocks so the normal timer engine runs and logs them.
+// ordinary blocks so the normal timer engine runs them. They are plain timers: nothing is logged.
 
 import type { Block, BlockFormat } from '../../db/types';
 import { estimateBlockSeconds, newBlock } from '../program';

@@ -5,7 +5,7 @@ import type { PerformedBlock, Session } from '../db/types';
 import { formatClock } from '../lib/dates';
 import { FORMAT_INFO } from '../lib/program';
 import { performedToBlock } from '../lib/session';
-import { timerAudio, vibrate } from '../lib/timer/audio';
+import { configureAudio, timerAudio, vibrate } from '../lib/timer/audio';
 import * as engine from '../lib/timer/engine';
 import { applyCompleted, type SetOverrides } from '../lib/timer/link';
 import { buildPhases, type Phase } from '../lib/timer/phases';
@@ -95,12 +95,15 @@ export function TimerScreen({
   blockIndexes,
   onClose,
   onComplete,
+  standalone = false,
 }: {
   session: Session;
   blockIndexes: number[];
   onClose: () => void;
   /** Called after “Save” when the run covered the whole workout, to save it as completed. */
   onComplete?: () => void;
+  /** Plain timer from the Timer tab: nothing is logged, the end screen just says well done. */
+  standalone?: boolean;
 }) {
   const exercises = useExerciseMap();
   const profile = useProfile();
@@ -123,13 +126,13 @@ export function TimerScreen({
 
   const sound = !muted;
   const halfway = settings.halfwayCue;
-  timerAudio.volume = settings.soundVolume;
-  timerAudio.setMixWithMusic(settings.mixWithMusic);
+  configureAudio(settings);
 
   const reschedule = useCallback(
     (state: engine.TimerState) => {
       if (!sound) return timerAudio.cancel();
-      timerAudio.schedule(engine.upcomingSounds(phases, state, Date.now(), 4 * 3600_000, { halfway }));
+      const n = Date.now();
+      timerAudio.schedule(engine.upcomingSounds(phases, state, n, 4 * 3600_000, { halfway }), engine.upcomingCues(phases, state, n, 4 * 3600_000, { halfway }), n);
     },
     [phases, sound, halfway],
   );
@@ -148,10 +151,17 @@ export function TimerScreen({
         const p = phases[next.state.index];
         if (next.state.status === 'running' && p?.vibrate) vibrate(p.kind === 'work' ? [120, 60, 120] : 200);
         if (next.state.status === 'finished') vibrate([200, 100, 200, 100, 400]);
-        // Pre-scheduled sounds cover timed phase ends; a tap needs an immediate sound.
-        if (opts.userAction && sound && next.state.status !== 'paused' && prev.state.status !== 'paused') {
-          if (next.state.status === 'finished') timerAudio.play('finish');
-          else if (p?.sound) timerAudio.play(soundForPhase(p));
+        // Pre-scheduled sounds cover timed phase ends; a tap (Done, Skip) needs an immediate sound.
+        // Start is handled in onStart; the get-ready countdown starts silently.
+        if (opts.userAction && sound && next.state.status !== 'paused' && prev.state.status !== 'paused' && prev.state.status !== 'idle') {
+          if (next.state.status === 'finished') {
+            timerAudio.play('finish');
+            timerAudio.say('done');
+          } else if (p?.sound && p.kind !== 'prep') {
+            timerAudio.play(soundForPhase(p));
+            const cue = engine.cueForPhaseStart(p);
+            if (cue) timerAudio.say(cue);
+          }
         }
       }
 
@@ -237,22 +247,39 @@ export function TimerScreen({
   const onStart = () => {
     timerAudio.unlock();
     act((s, n) => engine.start(phases, s, n));
-    if (sound && phases[0]) timerAudio.play(phases[0].kind === 'work' ? 'work' : 'tick');
+    // Like SmartWOD: the get-ready countdown starts silently; the long beep marks the start of work.
+    const first = phases[0];
+    if (sound && first?.sound) {
+      if (first.kind === 'work') timerAudio.play('work');
+      const cue = engine.cueForPhaseStart(first);
+      if (cue) timerAudio.say(cue);
+    }
   };
   const onPause = () => act((s, n) => engine.pause(s, n), false);
   const onResume = () => act((s, n) => engine.resume(s, n), false);
   const onSkip = () => act((s, n) => engine.skip(phases, s, n));
   const onDone = () => act((s, n) => engine.complete(phases, s, n));
   const onFinish = () => {
-    if (status !== 'finished' && !confirm('Stop the workout now? What you did so far is saved.')) return;
+    if (status !== 'finished' && !confirm(standalone ? 'Stop the timer now?' : 'Stop the workout now? What you did so far is saved.')) return;
     act((s, n) => engine.finish(phases, s, n));
   };
-  const onReset = () => {
-    if (!confirm('Restart the timer from the beginning? Sets already logged stay in the log.')) return;
+  const restart = () => {
     timerAudio.cancel();
     void commit({ sig, state: engine.reset(), applied: 0, overrides: {}, rounds: {} });
   };
+  const onReset = () => {
+    if (!confirm(standalone ? 'Restart the timer from the beginning?' : 'Restart the timer from the beginning? Sets already logged stay in the log.')) return;
+    restart();
+  };
   const close = () => {
+    if (standalone) {
+      // A plain timer is not kept: closing it stops it.
+      if ((status === 'running' || status === 'paused') && !confirm('Stop the timer?')) return;
+      clearTimerRun(session.id, blockIndexes);
+      timerAudio.cancel();
+      onClose();
+      return;
+    }
     if (status === 'running') void commit({ ...runRef.current, state: engine.pause(runRef.current.state, Date.now()) });
     if (status === 'finished' || status === 'idle') clearTimerRun(session.id, blockIndexes);
     timerAudio.cancel();
@@ -412,7 +439,32 @@ export function TimerScreen({
         </button>
       </div>
 
-      {status === 'finished' ? (
+      {status === 'finished' && standalone ? (
+        <div className="timer-center">
+          <div className="timer-phase-label">Well done</div>
+          <div className="ring-area ring-done">
+            <BrandRing progress={1} phaseKey="done" complete />
+          </div>
+          <div className="timer-sub">
+            Total time <strong className="num" style={{ color: '#fff', fontSize: '1.6rem', marginLeft: 6 }}>{formatClock(snap.totalElapsedMs / 1000)}</strong>
+          </div>
+          {Object.entries(run.laps ?? {}).map(([b, laps]) =>
+            laps.length ? (
+              <div key={b} className="timer-sub num">
+                {session.blocks[Number(b)]?.name}: {laps.length} round{laps.length === 1 ? '' : 's'}
+              </div>
+            ) : null,
+          )}
+          <div className="timer-end-actions">
+            <button className="btn" onClick={restart}>
+              <Icon name="reset" /> Again
+            </button>
+            <button className="btn primary" onClick={close}>
+              <Icon name="check" /> Close
+            </button>
+          </div>
+        </div>
+      ) : status === 'finished' ? (
         <FinishedView
           session={session}
           blockIndexes={blockIndexes}

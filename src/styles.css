@@ -17,7 +17,7 @@
   --info: #5aa9ff;
   --warn: #ffc542;
   --work: #3ddc84;
-  --rest: #5aa9ff;
+  --rest: #efa3b3;
   --prep: #ffffff;
   --radius: 2px;
   --radius-sm: 2px;
@@ -1045,6 +1045,20 @@ div.ring-wrap {
   font-size: 1.25rem;
   max-width: 520px;
   margin: 0 auto;
+}
+.timer-end-actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 10px;
+  width: 100%;
+  max-width: 520px;
+  margin: 8px auto 0;
+}
+.timer-end-actions .btn {
+  min-height: 60px;
+}
+.qt-home {
+  max-width: 560px;
 }
 .timer-next {
   text-align: center;

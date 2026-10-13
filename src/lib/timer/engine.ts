@@ -130,7 +130,7 @@ export interface ScheduledSound {
 }
 
 export interface SoundOptions {
-  /** Short signal halfway through timed work phases of 20 s or more (not EMOM intervals). */
+  /** Short signal halfway through timed work phases of 20 s or more. */
   halfway?: boolean;
 }
 
@@ -158,13 +158,54 @@ export function upcomingSounds(phases: Phase[], s: TimerState, now: number, hori
     if (p.durationSec === null) break;
     const end = start + p.durationSec * 1000;
     if (p.sound) {
-      if (opts.halfway && p.kind === 'work' && p.format !== 'emom' && p.durationSec >= 20) push(start + (p.durationSec * 1000) / 2, 'half');
+      if (opts.halfway && p.kind === 'work' && p.durationSec >= 20) push(start + (p.durationSec * 1000) / 2, 'half');
       for (const sec of [3, 2, 1]) {
         const at = end - sec * 1000;
         if (at >= start && p.durationSec > sec) push(at, 'tick');
       }
       const next = phases[i + 1];
       push(end, !next ? 'finish' : next.kind === 'work' ? 'work' : 'rest');
+    }
+    start = end;
+  }
+  return out.sort((a, b) => a.at - b.at);
+}
+
+export type VoiceCue = 'get_ready' | 'go' | 'rest' | 'halfway' | 'ten_seconds' | 'last_round' | 'done';
+
+export interface ScheduledCue {
+  at: number;
+  cue: VoiceCue;
+}
+
+/** The spoken cue when phase `p` starts. */
+export function cueForPhaseStart(p: Phase): VoiceCue | null {
+  if (p.kind === 'prep') return p.durationSec !== null && p.durationSec >= 3 ? 'get_ready' : null;
+  if (p.kind === 'rest') return 'rest';
+  const lastRound = (p.format === 'tabata' || p.format === 'intervals') && p.round && p.totalRounds && p.totalRounds > 1 && p.round === p.totalRounds && (p.set ?? 1) === (p.totalSets ?? 1);
+  return lastRound ? 'last_round' : 'go';
+}
+
+/**
+ * Voice cues due from `now` on, like upcomingSounds: what starts next (Go / Rest / Last round /
+ * Get ready), “Halfway” and “Ten seconds” during longer work, and “Workout complete” at the end.
+ */
+export function upcomingCues(phases: Phase[], s: TimerState, now: number, horizonMs = 15 * 60_000, opts: SoundOptions = {}): ScheduledCue[] {
+  if (s.status !== 'running') return [];
+  const out: ScheduledCue[] = [];
+  const push = (at: number, cue: VoiceCue | null) => {
+    if (cue && at > now && at <= now + horizonMs) out.push({ at, cue });
+  };
+  let start = s.phaseStartedAt;
+  for (let i = s.index; i < phases.length; i++) {
+    const p = phases[i];
+    if (start > now + horizonMs || p.durationSec === null) break;
+    const end = start + p.durationSec * 1000;
+    if (p.sound) {
+      if (p.kind === 'work' && opts.halfway && p.durationSec >= 20) push(start + (p.durationSec * 1000) / 2, 'halfway');
+      if (p.kind === 'work' && p.durationSec >= 30) push(end - 10_000, 'ten_seconds');
+      const next = phases[i + 1];
+      push(end, next ? cueForPhaseStart(next) : 'done');
     }
     start = end;
   }

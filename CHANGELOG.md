@@ -124,3 +124,13 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - When the timer ran the whole workout, “Save workout” at the end saves it straight to your history (no more “Resume … timer” leftovers).
 - Workout editor: For Time blocks have an optional “Signal every … min”.
 
+## Timer refinements (2026-10-13)
+- The Timer tab is now just a timer: start it, do the work, close it. Nothing is saved and there is no save question at the end (“Well done”, total time, Again / Close). To track a workout, run it from Workouts. A running timer survives a reload of the app.
+- “Your workouts” removed from the Timer tab.
+- No sound when the get-ready countdown starts: the long beep now marks only the start of work, after the three countdown beeps.
+- The start/end beep is no longer cut short (a phase change used to stop the beep that had just started).
+- Sounds are balanced to the same loudness (the start/end beeps were louder than the halfway signal) and each kind has its own volume in Settings → Timer, with a Test button.
+- Halfway signal also in EMOM intervals.
+- Voice guide (female or male, or off): “Get ready”, “Go!”, “Rest”, “Halfway”, “Ten seconds”, “Last round!”, “Workout complete”. Recorded clips, played like the beeps, so they work offline and with music.
+- Rest is shown in pink.
+

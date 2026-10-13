@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { blockToPerformed } from '../src/lib/session';
-import { initialState, start, upcomingSounds } from '../src/lib/timer/engine';
+import { initialState, start, upcomingCues, upcomingSounds } from '../src/lib/timer/engine';
 import { buildPhases, totalPlannedSeconds } from '../src/lib/timer/phases';
 import { defaultQuick, describeQuick, quickBlocks, quickSeconds } from '../src/lib/timer/quick';
 
@@ -55,7 +55,7 @@ describe('quick timers', () => {
 });
 
 describe('halfway signal', () => {
-  it('adds a short signal halfway through work of 20 s or more, never in EMOM', () => {
+  it('adds a short signal halfway through work of 20 s or more, also in EMOM', () => {
     const tabata = phasesOf(quickBlocks([defaultQuick('tabata')], 0));
     const s = start(tabata, initialState(), 0);
     expect(upcomingSounds(tabata, s, 0).filter((x) => x.kind === 'half')).toHaveLength(0);
@@ -63,6 +63,26 @@ describe('halfway signal', () => {
     expect(half).toHaveLength(8);
     expect(half[0].at).toBe(10 * S);
     const emom = phasesOf(quickBlocks([defaultQuick('emom')], 0));
-    expect(upcomingSounds(emom, start(emom, initialState(), 0), 0, undefined, { halfway: true }).some((x) => x.kind === 'half')).toBe(false);
+    const emomHalf = upcomingSounds(emom, start(emom, initialState(), 0), 0, undefined, { halfway: true }).filter((x) => x.kind === 'half');
+    expect(emomHalf.slice(0, 2).map((x) => x.at)).toEqual([30 * S, 90 * S]);
   });
 });
+
+describe('voice cues', () => {
+  it('says get ready, go, rest, halfway, ten seconds, last round and done at the right moments', () => {
+    const phases = phasesOf(quickBlocks([{ ...defaultQuick('tabata'), rounds: 2, workSec: 30, restSec: 10 }], 10));
+    const startAt = start(phases, initialState(), 0);
+    const cues = upcomingCues(phases, startAt, 0, undefined, { halfway: true });
+    expect(cues).toEqual([
+      { at: 10 * S, cue: 'go' },
+      { at: 25 * S, cue: 'halfway' },
+      { at: 30 * S, cue: 'ten_seconds' },
+      { at: 40 * S, cue: 'rest' },
+      { at: 50 * S, cue: 'last_round' },
+      { at: 65 * S, cue: 'halfway' },
+      { at: 70 * S, cue: 'ten_seconds' },
+      { at: 80 * S, cue: 'done' },
+    ]);
+  });
+});
+

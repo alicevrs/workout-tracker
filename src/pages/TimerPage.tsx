@@ -1,11 +1,9 @@
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useState, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icon';
+import { clearTimerRun, hasActiveRun, TimerScreen } from '../components/TimerScreen';
 import { PageHeader, Sheet } from '../components/ui';
-import { db } from '../db/db';
 import { useProfile } from '../db/repo';
-import { FORMAT_INFO } from '../lib/program';
+import type { Session } from '../db/types';
 import { blockToPerformed, createSession } from '../lib/session';
 import { timerAudio } from '../lib/timer/audio';
 import {
@@ -49,6 +47,25 @@ function loadSaved(): Saved {
     return { timers: {} };
   }
 }
+// The running quick timer is not a logged workout: it lives in memory (and here, so a reload can resume it).
+const ACTIVE = 'quickTimer:active';
+function loadActive(): Session | null {
+  try {
+    const s = JSON.parse(localStorage.getItem(ACTIVE) ?? 'null') as Session | null;
+    return s && hasActiveRun(s.id) ? s : null;
+  } catch {
+    return null;
+  }
+}
+function storeActive(s: Session | null) {
+  try {
+    if (s) localStorage.setItem(ACTIVE, JSON.stringify(s));
+    else localStorage.removeItem(ACTIVE);
+  } catch {
+    /* ignore */
+  }
+}
+
 function storeSaved(s: Saved) {
   try {
     localStorage.setItem(STORE, JSON.stringify(s));
@@ -58,13 +75,11 @@ function storeSaved(s: Saved) {
 }
 
 export default function TimerPage() {
-  const navigate = useNavigate();
   const profile = useProfile();
   const [mode, setMode] = useState<Mode | null>(null);
   const [info, setInfo] = useState<Mode | null>(null);
   const [saved, setSaved] = useState<Saved>(loadSaved);
-  const programs = useLiveQuery(() => db.programs.toArray(), []);
-  const active = useLiveQuery(() => db.sessions.where('status').equals('in_progress').toArray(), []);
+  const [running, setRunning] = useState<Session | null>(loadActive);
 
   const update = (patch: Partial<Saved>) => {
     const next = { ...saved, ...patch };
@@ -79,14 +94,21 @@ export default function TimerPage() {
   const blocks = quickBlocks(items, prepSec, mode === 'mix' ? mix.repeat : 1);
   const total = quickSeconds(blocks);
 
-  const start = async () => {
+  const start = () => {
     if (!mode || !blocks.length) return;
     timerAudio.unlock(); // inside the tap, so iOS allows sound
     const s = createSession({ title: `${QUICK_LABEL[mode]} timer` });
     s.blocks = blocks.map(blockToPerformed);
-    await db.sessions.add(s);
-    navigate(`/workout/${s.id}?run=all`);
+    storeActive(s);
+    setRunning(s);
   };
+  const stop = () => {
+    if (running) clearTimerRun(running.id, running.blocks.map((_, i) => i));
+    storeActive(null);
+    setRunning(null);
+  };
+
+  if (running) return <TimerScreen standalone session={running} blockIndexes={running.blocks.map((_, i) => i)} onClose={stop} />;
 
   if (mode) {
     return (
@@ -125,8 +147,8 @@ export default function TimerPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Timer" subtitle="Pick a format, set it, go. Every timer is saved in your history." />
-      <div className="grid two">
+      <PageHeader title="Timer" subtitle="Pick a format, set it, go." />
+      <div className="qt-home">
         <section className="qt-list" aria-label="Timer formats">
           {MODES.map((m) => (
             <div key={m} className={`qt-card qt-${m}`}>
@@ -141,46 +163,6 @@ export default function TimerPage() {
           ))}
         </section>
 
-        <section className="card">
-          <h2 className="mb">Your workouts</h2>
-          {active && active.length > 0 && (
-            <div className="mb">
-              {active.map((s) => (
-                <Link key={s.id} to={`/workout/${s.id}`} className="row" style={{ minHeight: 48 }}>
-                  <Icon name="play" /> <span className="grow">Resume {s.title}</span>
-                </Link>
-              ))}
-            </div>
-          )}
-          {programs?.length ? (
-            programs.flatMap((p) =>
-              p.days.map((d) => (
-                <div key={d.id} className="row" style={{ minHeight: 52 }}>
-                  <div className="grow" style={{ minWidth: 0 }}>
-                    <strong>{d.name}</strong>
-                    <div className="small faint ellipsis">{d.blocks.map((b) => FORMAT_INFO[b.format].short).join(' + ') || 'No blocks'}</div>
-                  </div>
-                  <button
-                    className="btn small"
-                    disabled={!d.blocks.length}
-                    onClick={async () => {
-                      timerAudio.unlock();
-                      const s = createSession({ program: p, day: d });
-                      await db.sessions.add(s);
-                      navigate(`/workout/${s.id}?run=all`);
-                    }}
-                  >
-                    <Icon name="timer" /> Run
-                  </button>
-                </div>
-              )),
-            )
-          ) : (
-            <p className="small muted">
-              No saved workouts yet. <Link to="/workouts">Create one</Link> to run its blocks back to back.
-            </p>
-          )}
-        </section>
       </div>
       <InfoSheet mode={info} onClose={() => setInfo(null)} />
     </div>

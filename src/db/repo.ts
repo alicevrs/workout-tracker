@@ -18,6 +18,8 @@ export const DEFAULT_SETTINGS: Settings = {
   backgroundAudio: true,
   mixWithMusic: true,
   halfwayCue: true,
+  voice: 'female',
+  soundLevels: { countdown: 1, start: 1, signal: 1, voice: 1 },
   stravaEnabled: false,
 };
 

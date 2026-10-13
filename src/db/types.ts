@@ -286,6 +286,10 @@ export interface Settings {
   mixWithMusic: boolean;
   /** Short signal halfway through timed work phases. */
   halfwayCue: boolean;
+  /** Spoken cues (recorded voice). */
+  voice: 'off' | 'female' | 'male';
+  /** Volume per sound group, 0…1, on top of soundVolume. */
+  soundLevels: { countdown: number; start: number; signal: number; voice: number };
   stravaEnabled: boolean;
 }
 
