@@ -19,7 +19,7 @@ const CATEGORIES: { value: ExerciseCategory | 'all'; label: string }[] = [
   { value: 'mobility', label: 'Mobility' },
 ];
 
-/** Library of exercise blocks (ready-made parts of a workout). */
+/** Library of training blocks (ready-made parts of a workout). */
 export default function ExerciseTemplatesPage() {
   const navigate = useNavigate();
   const toast = useToast();
@@ -53,22 +53,22 @@ export default function ExerciseTemplatesPage() {
     if (!t) return;
     const copy = duplicateTemplate(t);
     await db.blockTemplates.add(copy);
-    toast('Exercise block duplicated');
+    toast('Training block duplicated');
     navigate(`/workouts/blocks/${copy.id}`);
   };
 
   return (
     <div className="page">
       <PageHeader
-        title="Exercise blocks"
+        title="Training blocks"
         back="/workouts"
         actions={
-          <InfoButton title="Exercise blocks">
+          <InfoButton title="Training blocks">
             <p style={{ margin: 0 }}>
               Structured pieces of a workout built from catalogue exercises: one exercise or several combined (in sequence, alternating or as a circuit), counted by reps or with a
               timer, with weights. Example: “Abduction / adduction”, “Hip thrust EMOM 2 × 12”.
             </p>
-            <p style={{ margin: 0 }}>Add them to workout templates. Change a block once and every workout that uses it follows from the next session.</p>
+            <p style={{ margin: 0 }}>Add them to workouts. Change a block once and every workout that uses it follows from the next session.</p>
             <p style={{ margin: 0 }}>The copy icon makes a duplicate to adapt.</p>
           </InfoButton>
         }
@@ -79,7 +79,7 @@ export default function ExerciseTemplatesPage() {
         </button>
       </div>
       <div className="stack">
-        <SearchField value={query} onChange={setQuery} label="Search exercise blocks" />
+        <SearchField value={query} onChange={setQuery} label="Search training blocks" />
         <div className="scroll-x" role="group" aria-label="Category">
           {CATEGORIES.map((c) => (
             <button key={c.value} className="chip" aria-pressed={category === c.value} onClick={() => setCategory(c.value)}>
@@ -101,7 +101,7 @@ export default function ExerciseTemplatesPage() {
         <LibraryList
           items={items}
           onDuplicate={duplicate}
-          empty={query || category !== 'all' || muscle ? 'No block matches.' : 'No exercise blocks yet. You can also save any part of a workout as a block.'}
+          empty={query || category !== 'all' || muscle ? 'No block matches.' : 'No training blocks yet. You can also save any part of a workout as a block.'}
         />
       </div>
     </div>

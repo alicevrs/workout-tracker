@@ -7,8 +7,8 @@ import { db } from '../db/db';
 type Level = 'workouts' | 'blocks' | 'exercises';
 
 const LEVELS: { id: Level; label: string; to: string; pink?: boolean }[] = [
-  { id: 'workouts', label: 'Workout templates', to: '/workouts/templates' },
-  { id: 'blocks', label: 'Exercise blocks', to: '/workouts/blocks' },
+  { id: 'workouts', label: 'Workouts', to: '/workouts/templates' },
+  { id: 'blocks', label: 'Training blocks', to: '/workouts/blocks' },
   { id: 'exercises', label: 'Exercises', to: '/exercises', pink: true },
 ];
 
@@ -31,10 +31,10 @@ export default function WorkoutsPage() {
               <strong>Exercises</strong>: the catalogue (single movements, muscles, history).
             </p>
             <p style={{ margin: 0 }}>
-              <strong>Exercise blocks</strong>: one or more exercises, already set with reps or a timer and weights.
+              <strong>Training blocks</strong>: one or more exercises, already set with reps or a timer and weights.
             </p>
             <p style={{ margin: 0 }}>
-              <strong>Workout templates</strong>: whole workouts made of blocks, started from Home.
+              <strong>Workouts</strong>: whole workouts made of blocks, started from Home.
             </p>
           </InfoButton>
         }

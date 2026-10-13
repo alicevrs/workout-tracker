@@ -17,6 +17,7 @@ import {
   hasStructure,
   isAdvanced,
   NEW_BLOCK_NAME,
+  OLD_BLOCK_NAME,
   paramsFromQuick,
   quickFromParams,
   restOf,
@@ -53,7 +54,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
   );
 }
 
-/** Create or edit an exercise block, step by step. Saved automatically; linked workouts follow. */
+/** Create or edit an training block, step by step. Saved automatically; linked workouts follow. */
 export default function ExerciseTemplateEditPage() {
   const { id = '' } = useParams();
   const [params] = useSearchParams();
@@ -111,8 +112,8 @@ export default function ExerciseTemplateEditPage() {
   if (tpl === null)
     return (
       <div className="page">
-        <PageHeader title="Exercise block" back={back} />
-        <EmptyState title="Exercise block not found" />
+        <PageHeader title="Training block" back={back} />
+        <EmptyState title="Training block not found" />
       </div>
     );
 
@@ -121,22 +122,22 @@ export default function ExerciseTemplateEditPage() {
   const structured = hasStructure(b.format);
   const total = estimateBlockSeconds(b);
   const autoName = (block: Block) => block.entries.map((e) => exercises.get(e.exerciseId)?.name ?? '').filter(Boolean).join(' / ');
-  const nameIsAuto = tpl.name === NEW_BLOCK_NAME || tpl.name === autoName(b);
+  const nameIsAuto = tpl.name === NEW_BLOCK_NAME || tpl.name === OLD_BLOCK_NAME || tpl.name === autoName(b);
   const setEntry = (entryId: string, patch: Partial<ExerciseEntry>) => setBlock({ ...b, entries: b.entries.map((e) => (e.id === entryId ? { ...e, ...patch } : e)) });
   const changeEntries = (block: Block) => update({ block, ...(nameIsAuto ? { name: autoName(block) || NEW_BLOCK_NAME } : {}) });
 
   return (
     <div className="page">
       <PageHeader
-        title={tpl.name || 'Exercise block'}
+        title={tpl.name || 'Training block'}
         back={back}
         subtitle={total ? `≈ ${formatDuration(total)}` : undefined}
         actions={
-          <InfoButton title="Exercise blocks">
+          <InfoButton title="Training blocks">
             <p style={{ margin: 0 }}>A block is a ready-made piece of a workout. Build it in order:</p>
             <p style={{ margin: 0 }}>
               <strong>1.</strong> pick the exercises from the catalogue; <strong>2.</strong> with more than one, choose how they are combined; <strong>3.</strong> count by reps
-              (sets, reps, rest) or by time with one of the timers; <strong>4.</strong> add reps and weights; then notes and whether it is optional.
+              (sets, reps, rest) or by time with one of the timers; <strong>4.</strong> add reps and weights; then notes if you like.
             </p>
             <p style={{ margin: 0 }}>Workouts that use this block follow every change from their next session. Workouts already done stay as they were.</p>
           </InfoButton>
@@ -273,15 +274,11 @@ export default function ExerciseTemplateEditPage() {
           Notes
           <textarea value={b.note ?? ''} placeholder="Optional" onChange={(e) => setBlock({ ...b, note: e.target.value || undefined })} />
         </label>
-        <label className="check-row">
-          <input type="checkbox" checked={!!b.optional} onChange={(e) => setBlock({ ...b, optional: e.target.checked || undefined })} />
-          Optional
-        </label>
 
         <details className="advanced" open={isAdvanced(b)}>
           <summary>Advanced settings</summary>
           {isAdvanced(b) && <p className="small muted">This block uses settings the simple form above cannot show (e.g. drop sets or custom intervals). Edit them here.</p>}
-          <BlockEditor hideName block={b} onChange={setBlock} />
+          <BlockEditor hideName hideOptional block={b} onChange={setBlock} />
         </details>
 
         <div className="big-buttons" style={{ paddingTop: 0 }}>
@@ -291,7 +288,7 @@ export default function ExerciseTemplateEditPage() {
               await flush();
               const copy = duplicateTemplate(tpl);
               await db.blockTemplates.add(copy);
-              toast('Exercise block duplicated');
+              toast('Training block duplicated');
               navigate(`/workouts/blocks/${copy.id}`);
             }}
           >

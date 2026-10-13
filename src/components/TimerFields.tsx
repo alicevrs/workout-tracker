@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { EVERY_OPTIONS, MINUTE_OPTIONS, quickClock, REST_OPTIONS, ROUND_OPTIONS, SECOND_OPTIONS, SET_OPTIONS, SIGNAL_OPTIONS, type QuickTimer } from '../lib/timer/quick';
 import { Icon } from './Icon';
 
-// Big boxed values in sentences (“[8] Rounds · [0:20] Work”), shared by the Timer tab and exercise blocks.
+// Big boxed values in sentences (“[8] Rounds · [0:20] Work”), shared by the Timer tab and training blocks.
 
 /** A big boxed value; tapping it opens the native picker (a wheel on iPhone). */
 export function Pick({ value, options, format, onChange, label, small }: { value: number; options: number[]; format: (v: number) => string; onChange: (v: number) => void; label: string; small?: boolean }) {

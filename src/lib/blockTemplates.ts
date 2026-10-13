@@ -1,6 +1,6 @@
-// Exercise blocks (stored as “block templates”): ready-made pieces of a workout built from one or
+// Training blocks (stored as “block templates”): ready-made pieces of a workout built from one or
 // more catalogue exercises, with how they are combined, how they are counted (reps or a timer),
-// weights, notes and an optional flag.
+// weights and notes. Shown in the app as “Training blocks”.
 //
 // Workout parts can be *linked* to a block (`Block.templateId`). Saving a block updates every
 // linked part in the workout templates, so the next workout uses the new version. Logged
@@ -12,7 +12,9 @@ import { uid } from './ids';
 import { cloneBlock, defaultParams, FORMAT_INFO, newBlock, newEntry } from './program';
 import type { QuickTimer } from './timer/quick';
 
-export const NEW_BLOCK_NAME = 'New exercise block';
+export const NEW_BLOCK_NAME = 'New training block';
+/** Earlier default name, still treated as “not named yet”. */
+export const OLD_BLOCK_NAME = 'New exercise block';
 
 export function newBlockTemplate(format: BlockFormat = 'sets_reps', prepSec = 10, name = NEW_BLOCK_NAME): BlockTemplate {
   const now = Date.now();

@@ -47,10 +47,10 @@ export default function WorkoutTemplatesPage() {
   return (
     <div className="page">
       <PageHeader
-        title="Workout templates"
+        title="Workouts"
         back="/workouts"
         actions={
-          <InfoButton title="Workout templates">
+          <InfoButton title="Workouts">
             <p style={{ margin: 0 }}>Whole workouts, ready to start from Home → Start a workout.</p>
             <p style={{ margin: 0 }}>Open one to change it. The copy icon makes a duplicate to adapt.</p>
           </InfoButton>
@@ -62,7 +62,7 @@ export default function WorkoutTemplatesPage() {
         </button>
       </div>
       {(workouts?.length ?? 0) > 6 && <SearchField value={query} onChange={setQuery} label="Search workouts" />}
-      <LibraryList items={items} onDuplicate={duplicate} empty={query ? 'No workout matches.' : 'No workout templates yet.'} />
+      <LibraryList items={items} onDuplicate={duplicate} empty={query ? 'No workout matches.' : 'No workouts yet.'} />
       <div className="row" style={{ justifyContent: 'center' }}>
         <button className="btn small ghost" onClick={() => setSamples(true)}>
           <Icon name="plus" /> Add sample workouts

@@ -13,7 +13,7 @@ import { Sheet, useToast } from './ui';
 
 /**
  * The parts of a workout as big buttons: hold and drag to reorder, × to remove. Parts linked to an
- * exercise block open that block (changes there apply to every workout using it); older unlinked
+ * training block open that block (changes there apply to every workout using it); older unlinked
  * parts expand an editor here and can be saved as a block.
  */
 export function BlockList({ blocks, onChange, backTo }: { blocks: Block[]; onChange: (blocks: Block[]) => void; backTo: string }) {
@@ -77,7 +77,7 @@ export function BlockList({ blocks, onChange, backTo }: { blocks: Block[]; onCha
                   <span className="mix-pill-name">
                     {b.name ?? FORMAT_INFO[b.format].label}
                     {b.optional && <span className="lib-badge dark">Optional</span>}
-                    {b.templateId && <Icon name="link" size={14} title="Exercise block: changes apply to every workout that uses it" />}
+                    {b.templateId && <Icon name="link" size={14} title="Training block: changes apply to every workout that uses it" />}
                   </span>
                   <span className="mix-pill-desc">
                     {FORMAT_INFO[b.format].short} · {describeBlock(b)}
@@ -117,10 +117,10 @@ export function BlockList({ blocks, onChange, backTo }: { blocks: Block[]; onCha
                         await db.blockTemplates.add(t);
                         setBlock({ ...linkedBlock(t, b.id) });
                         setOpenBlock(null);
-                        toast('Saved as exercise block and linked');
+                        toast('Saved as training block and linked');
                       }}
                     >
-                      <Icon name="plus" /> Save as exercise block
+                      <Icon name="plus" /> Save as training block
                     </button>
                   </div>
                 </div>
@@ -139,9 +139,9 @@ export function BlockList({ blocks, onChange, backTo }: { blocks: Block[]; onCha
         </button>
       </div>
 
-      <Sheet open={adding} onClose={() => setAdding(false)} title="Add an exercise block">
+      <Sheet open={adding} onClose={() => setAdding(false)} title="Add an training block">
         {templates.length === 0 ? (
-          <p className="small muted">No exercise blocks yet. Use New block, or create them in Workouts → Exercise blocks.</p>
+          <p className="small muted">No training blocks yet. Use New block, or create them in Workouts → Training blocks.</p>
         ) : (
           <ul className="lib-list">
             {templates.map((t) => (

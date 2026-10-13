@@ -172,4 +172,6 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Exercise blocks list: filters by category (All, Strength, Bodyweight, Cardio, Mobility) and muscle group under the search.
 - Workouts page: one short ⓘ that explains Exercises, Exercise blocks and Workout templates; more detail in the ⓘ of each page.
 - The “new version” banner appears only on Home, at the bottom just above the tab bar.
+- Renamed again: **Training blocks** (instead of Exercise blocks) and **Workouts** (instead of Workout templates).
+- The Optional tick was removed from training blocks: to skip a block, remove it from the workout while you do it.
 
