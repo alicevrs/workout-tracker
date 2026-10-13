@@ -139,3 +139,10 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Timer home: smaller centered buttons, yellow for AMRAP / For Time / EMOM / Tabata and pink for Mix, with the ⓘ beside each one; the format names are now smaller than the page title.
 - Between sets of AMRAP / EMOM / For Time the heading reads “Set rest”.
 
+## Home, Mix and voice polish (2026-10-13)
+- The Today tab is now **Home**: two big centered buttons, “Start a workout” (yellow) and “Start an activity” (pink), above any workout in progress. The weekly backup reminder is no longer shown (backups stay in Settings).
+- Every page title has a small Monday Resolution symbol instead of the yellow dash.
+- The “new version” banner is pink with a dark Update button.
+- Mix setup: timers are big centered buttons like on the Timer home (yellow; Rest pink; Work white) with an × on the right to remove them. Tap one to edit it; hold it for a moment and drag it up or down to reorder (the arrows are gone).
+- The voice always says “Well done!” at the end. Fixed: a voice cue that starts a few tenths after its beep could be dropped when the phase changed (this could also silence “Rest”, “Round 2” and the others).
+

@@ -30,7 +30,7 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { to: '/', label: 'Today', icon: 'home', mobile: true },
+  { to: '/', label: 'Home', icon: 'home', mobile: true },
   { to: '/workouts', label: 'Workouts', icon: 'dumbbell', mobile: true },
   { to: '/timer', label: 'Timer', icon: 'timer', mobile: true },
   { to: '/history', label: 'History', icon: 'history', mobile: true },

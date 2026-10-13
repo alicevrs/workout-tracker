@@ -19,12 +19,12 @@ export function UpdatePrompt() {
 
   if (!needRefresh && !offlineReady) return null;
   return (
-    <div className="banner info mb" role="status">
+    <div className="banner update mb" role="status">
       <div className="grow">
         {needRefresh ? 'A new version of the app is available.' : 'The app is ready to work offline.'}
       </div>
       {needRefresh ? (
-        <button className="btn small primary" onClick={() => updateServiceWorker(true)}>
+        <button className="btn small update-btn" onClick={() => updateServiceWorker(true)}>
           Update
         </button>
       ) : null}

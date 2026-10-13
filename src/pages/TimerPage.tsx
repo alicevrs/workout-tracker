@@ -1,11 +1,11 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Icon } from '../components/Icon';
 import { clearTimerRun, hasActiveRun, TimerScreen } from '../components/TimerScreen';
 import { PageHeader, Sheet } from '../components/ui';
 import { useProfile } from '../db/repo';
 import type { Session } from '../db/types';
 import { blockToPerformed, createSession } from '../lib/session';
-import { timerAudio } from '../lib/timer/audio';
+import { timerAudio, vibrate } from '../lib/timer/audio';
 import {
   defaultMix,
   defaultQuick,
@@ -326,46 +326,143 @@ const MIX_ADD: MixItemKind[] = ['amrap', 'emom', 'tabata', 'for_time', 'work', '
 
 function MixEditor({ mix, onChange }: { mix: MixConfig; onChange: (m: MixConfig) => void }) {
   const [open, setOpen] = useState<number | null>(null);
-  const setItems = (items: QuickTimer[]) => onChange({ ...mix, items });
-  const move = (i: number, d: -1 | 1) => {
-    const items = [...mix.items];
-    [items[i], items[i + d]] = [items[i + d], items[i]];
-    setItems(items);
-    setOpen(null);
+  const [drag, setDrag] = useState<{ index: number; offset: number } | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const mixRef = useRef(mix);
+  mixRef.current = mix;
+  const press = useRef<{ timer: number; startY: number; index: number; dragging: boolean } | null>(null);
+  const justDragged = useRef(false);
+
+  const setItems = (items: QuickTimer[]) => onChange({ ...mixRef.current, items });
+  const swap = (i: number, j: number) => {
+    const items = [...mixRef.current.items];
+    [items[i], items[j]] = [items[j], items[i]];
+    mixRef.current = { ...mixRef.current, items };
+    onChange(mixRef.current);
   };
+  const rowHeight = (i: number) => {
+    const el = listRef.current?.querySelector<HTMLElement>(`[data-mix-index="${i}"]`);
+    return el ? el.getBoundingClientRect().height + 10 : 0;
+  };
+
+  // Hold a button for a moment, then drag it up or down.
+  const beginDrag = () => {
+    const st = press.current;
+    if (!st) return;
+    st.dragging = true;
+    setOpen(null);
+    vibrate(30);
+    setDrag({ index: st.index, offset: 0 });
+    const onMove = (e: PointerEvent) => {
+      let offset = e.clientY - st.startY;
+      const n = mixRef.current.items.length;
+      if (offset > 0 && st.index < n - 1 && offset > rowHeight(st.index + 1) / 2) {
+        const h = rowHeight(st.index + 1);
+        swap(st.index, st.index + 1);
+        st.index += 1;
+        st.startY += h;
+        offset -= h;
+      } else if (offset < 0 && st.index > 0 && -offset > rowHeight(st.index - 1) / 2) {
+        const h = rowHeight(st.index - 1);
+        swap(st.index, st.index - 1);
+        st.index -= 1;
+        st.startY -= h;
+        offset += h;
+      }
+      setDrag({ index: st.index, offset });
+    };
+    const noScroll = (e: TouchEvent) => e.preventDefault();
+    const end = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+      document.removeEventListener('touchmove', noScroll);
+      press.current = null;
+      justDragged.current = true;
+      setTimeout(() => (justDragged.current = false), 50);
+      setDrag(null);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+    document.addEventListener('touchmove', noScroll, { passive: false });
+  };
+  const onPointerDown = (e: React.PointerEvent, i: number) => {
+    if (e.button !== 0) return;
+    press.current = { timer: window.setTimeout(beginDrag, 350), startY: e.clientY, index: i, dragging: false };
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const st = press.current;
+    if (st && !st.dragging && Math.abs(e.clientY - st.startY) > 8) {
+      clearTimeout(st.timer); // the finger is scrolling, not holding
+      press.current = null;
+    }
+  };
+  const onPointerUp = () => {
+    const st = press.current;
+    if (st && !st.dragging) {
+      clearTimeout(st.timer);
+      press.current = null;
+    }
+  };
+
   return (
     <div className="stack">
       <p className="sentence-lead" style={{ marginBottom: 0 }}>
         Chain timers into one flow
       </p>
-      {mix.items.length === 0 && <p className="small muted">Add a timer, work or rest below.</p>}
-      {mix.items.map((q, i) => (
-        <div key={i} className={`mix-item mix-${q.kind}`}>
-          <div className="row">
-            <button className="mix-item-main grow" onClick={() => setOpen(open === i ? null : i)} aria-expanded={open === i}>
-              <strong>{q.kind === 'work' && q.label ? q.label : QUICK_LABEL[q.kind]}</strong>
-              <span className="small faint">{describeQuick(q)}</span>
-            </button>
-            <button className="btn icon small ghost" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move up">
-              <Icon name="up" />
-            </button>
-            <button className="btn icon small ghost" onClick={() => move(i, 1)} disabled={i === mix.items.length - 1} aria-label="Move down">
-              <Icon name="down" />
-            </button>
-            <button
-              className="btn icon small ghost"
-              onClick={() => {
-                setItems(mix.items.filter((_, k) => k !== i));
-                setOpen(null);
-              }}
-              aria-label="Remove"
-            >
-              <Icon name="trash" />
-            </button>
-          </div>
-          {open === i && <TimerFields compact q={q} onChange={(n) => setItems(mix.items.map((x, k) => (k === i ? n : x)))} />}
-        </div>
-      ))}
+      <p className="tiny faint" style={{ textAlign: 'center', margin: 0 }}>
+        {mix.items.length ? 'Tap to edit · hold and drag to reorder' : 'Add a timer, work or rest below.'}
+      </p>
+      <div className="mix-list" ref={listRef}>
+        {mix.items.map((q, i) => {
+          const dragging = drag?.index === i;
+          return (
+            <div key={i} data-mix-index={i} className={`mix-row${dragging ? ' dragging' : ''}`} style={dragging ? { transform: `translateY(${drag.offset}px)` } : undefined}>
+              <div
+                role="button"
+                tabIndex={0}
+                aria-expanded={open === i}
+                className={`mix-pill mix-${q.kind}`}
+                onPointerDown={(e) => onPointerDown(e, i)}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+                onContextMenu={(e) => e.preventDefault()}
+                onClick={() => !justDragged.current && setOpen(open === i ? null : i)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setOpen(open === i ? null : i);
+                  } else if (e.altKey && e.key === 'ArrowUp' && i > 0) swap(i, i - 1);
+                  else if (e.altKey && e.key === 'ArrowDown' && i < mix.items.length - 1) swap(i, i + 1);
+                }}
+              >
+                <span className="mix-pill-text">
+                  <span className="mix-pill-name">{q.kind === 'work' && q.label ? q.label : QUICK_LABEL[q.kind]}</span>
+                  <span className="mix-pill-desc">{describeQuick(q)}</span>
+                </span>
+                <button
+                  className="mix-pill-x"
+                  aria-label="Remove"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setItems(mix.items.filter((_, k) => k !== i));
+                    setOpen(null);
+                  }}
+                >
+                  <Icon name="x" />
+                </button>
+              </div>
+              {open === i && (
+                <div className="mix-fields">
+                  <TimerFields compact q={q} onChange={(n) => setItems(mix.items.map((x, k) => (k === i ? n : x)))} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
       <div className="mix-add">
         {MIX_ADD.map((k) => (
           <button

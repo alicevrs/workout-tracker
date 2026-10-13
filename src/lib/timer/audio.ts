@@ -54,7 +54,8 @@ const cueDelay = (c: VoiceCue) => (c === 'done' ? 1.3 : c === 'ten_seconds' || c
 
 interface Playing {
   node: AudioScheduledSourceNode;
-  start: number;
+  /** The moment the sound belongs to (a voice cue starts a little after it). */
+  due: number;
 }
 
 class TimerAudio {
@@ -142,8 +143,8 @@ class TimerAudio {
     }
   }
 
-  private track(node: AudioScheduledSourceNode, start: number) {
-    const entry = { node, start };
+  private track(node: AudioScheduledSourceNode, due: number) {
+    const entry = { node, due };
     node.onended = () => {
       this.scheduled = this.scheduled.filter((p) => p !== entry);
     };
@@ -172,7 +173,7 @@ class TimerAudio {
     }
   }
 
-  private speak(cue: VoiceCue, when: number) {
+  private speak(cue: VoiceCue, when: number, due = when) {
     if (!this.ctx || !this.gain || this.voice === 'off') return;
     const buf = this.buffers.get(`${this.voice}-${cue}`);
     if (!buf) return;
@@ -184,7 +185,7 @@ class TimerAudio {
     g.gain.value = Math.min(2, level * 1.4);
     src.connect(g).connect(this.gain);
     src.start(when);
-    this.track(src, when);
+    this.track(src, due);
   }
 
   /** Play a sound right now. */
@@ -193,10 +194,11 @@ class TimerAudio {
     this.tone(kind, this.ctx.currentTime + 0.01);
   }
 
-  /** Say a cue right now. */
+  /** Say a cue now (after its usual short delay behind the beep). */
   say(cue: VoiceCue): void {
     if (!this.ctx) return;
-    this.speak(cue, this.ctx.currentTime + 0.01);
+    const t = this.ctx.currentTime + 0.01;
+    this.speak(cue, t + cueDelay(cue), t);
   }
 
   /** Replace all pending sounds with this schedule (wall-clock times in ms). Sounds already playing finish. */
@@ -210,21 +212,22 @@ class TimerAudio {
       this.tone(s.kind, base + Math.max(0.01, offset));
     }
     for (const c of cues) {
-      const offset = (c.at - now) / 1000 + cueDelay(c.cue);
+      const offset = (c.at - now) / 1000;
       if (offset < -0.05) continue;
-      this.speak(c.cue, base + Math.max(0.01, offset));
+      this.speak(c.cue, base + Math.max(0.01, offset) + cueDelay(c.cue), base + Math.max(0.01, offset));
     }
   }
 
   /**
-   * Stop scheduled sounds. By default a sound that has already started keeps playing to the end
-   * (a phase change reschedules right when its beep starts; cutting it made the beep sound clipped).
+   * Stop scheduled sounds. By default a sound whose moment has come keeps playing to the end:
+   * a phase change reschedules right when its beep starts (cutting it clipped the beep), and its
+   * voice cue, which starts a few tenths later, must not be dropped either.
    */
   cancel(all = true): void {
     const t = this.ctx?.currentTime ?? 0;
     const keep: Playing[] = [];
     for (const p of this.scheduled) {
-      if (!all && p.start <= t + 0.02) {
+      if (!all && p.due <= t + 0.02) {
         keep.push(p);
         continue;
       }

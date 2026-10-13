@@ -684,6 +684,21 @@ button.chip[aria-pressed='true'] {
   border-color: rgba(90, 169, 255, 0.45);
   background: rgba(90, 169, 255, 0.08);
 }
+.banner.update {
+  border: 0;
+  background: var(--rest);
+  color: #111;
+  align-items: center;
+  font-weight: 600;
+}
+.banner.update .btn {
+  color: #111;
+}
+.banner.update .update-btn {
+  background: #111;
+  color: var(--rest);
+  border-color: #111;
+}
 .banner .grow {
   flex: 1;
   min-width: 0;
@@ -1189,9 +1204,16 @@ div.ring-wrap {
   width: 100%;
   justify-content: center;
 }
+/* Big centered buttons (Home, Timer, Mix): yellow, or pink as the second colour. */
+.big-btn,
 .qt-card-main {
-  grid-column: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 260px;
   min-height: 54px;
+  padding: 0 16px;
   background: var(--accent);
   color: #111;
   border: 0;
@@ -1201,13 +1223,27 @@ div.ring-wrap {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  text-align: center;
   cursor: pointer;
+  text-decoration: none;
 }
+.qt-card-main {
+  grid-column: 2;
+}
+.big-btn.pink,
 .qt-mix .qt-card-main {
   background: var(--rest);
 }
+.big-btn:active,
 .qt-card-main:active {
   filter: brightness(0.88);
+}
+.big-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 0 8px;
 }
 .qt-card-info {
   grid-column: 3;
@@ -1389,44 +1425,104 @@ div.ring-wrap {
   color: var(--accent);
   font-weight: 700;
 }
-.mix-item {
+.mix-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.mix-row {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mix-row.dragging {
+  position: relative;
+  z-index: 2;
+  transition: none;
+}
+.mix-row.dragging .mix-pill {
+  transform: scale(1.04);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+.mix-pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 58px;
+  padding: 6px 52px;
+  background: var(--accent);
+  color: #111;
+  border-radius: 2px;
+  cursor: pointer;
+  text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition: transform 0.12s ease;
+}
+.mix-pill:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.mix-pill.mix-rest {
+  background: var(--rest);
+}
+.mix-pill.mix-work {
+  background: #fff;
+}
+.mix-pill-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.mix-pill-name {
+  font-family: var(--display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 1.05rem;
+}
+.mix-pill-desc {
+  font-size: 0.78rem;
+  opacity: 0.75;
+}
+.mix-pill-x {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: 0;
+  color: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.mix-fields {
   border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
   background: var(--bg-elev);
-  padding: 4px 4px 4px 0;
 }
-.mix-work {
-  border-left-color: #fff;
-}
-.mix-rest {
-  border-left-color: var(--rest);
-}
-.mix-item .sentences,
+.mix-fields .sentences,
 .mix-repeat {
   padding: 8px 8px 12px;
   font-size: 1.05rem;
   column-gap: 10px;
-}
-.mix-item-main {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  background: none;
-  border: 0;
-  color: var(--text);
-  text-align: left;
-  padding: 8px 12px;
-  font: inherit;
-  cursor: pointer;
-  min-width: 0;
 }
 .mix-label {
   max-width: 180px;
   font-size: 16px;
 }
 .mix-add {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
 }
 
@@ -1609,8 +1705,7 @@ kbd {
 
 /* Brand details: thin yellow rule before section titles, square controls. */
 .card > h2:first-child::before,
-.card-title > h2::before,
-.page-header h1::before {
+.card-title > h2::before {
   content: '';
   display: inline-block;
   width: 18px;
@@ -1621,8 +1716,13 @@ kbd {
   transform: translateY(-2px);
 }
 .page-header h1::before {
-  width: 22px;
-  height: 3px;
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 10px;
+  vertical-align: -0.12em;
+  background: url('/favicon-mr.svg') center / contain no-repeat;
 }
 .stat .label,
 .bottom-nav a,
@@ -1731,7 +1831,6 @@ kbd {
     font-size: 1.4rem;
   }
   .page-header h1::before {
-    width: 14px;
     margin-right: 8px;
   }
 }

@@ -74,7 +74,7 @@ Each device keeps its own data. To copy everything from one to the other:
 2. **On the Mac:** open the app → Settings → **Import backup** → pick the `workout-backup-YYYY-MM-DD.json` file.
 3. Choose **Replace data on this device** (the Mac becomes an exact copy) or **Merge** (keeps what is already on the Mac; when a workout exists on both, the most recently edited version wins).
 
-The other direction works the same way. The Today screen reminds you to make a backup once a week.
+The other direction works the same way. The Home screen reminds you to make a backup once a week.
 
 Backups contain workouts, programs, your own exercises, the weight log, profile and settings. They never contain Strava passwords or tokens.
 
