@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { Pick, TimerFields } from '../components/TimerFields';
 import { clearTimerRun, hasActiveRun, TimerScreen } from '../components/TimerScreen';
+import { InfoButton } from '../components/Library';
 import { PageHeader, Sheet } from '../components/ui';
 import { useProfile } from '../db/repo';
 import type { Session } from '../db/types';
@@ -143,23 +144,36 @@ export default function TimerPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Timer" subtitle="Pick a format, set it, go." />
-      <div className="qt-home">
-        <section className="qt-list" aria-label="Timer formats">
-          {MODES.map((m) => (
-            <div key={m} className={`qt-card qt-${m}`}>
-              <button className="qt-card-main" onClick={() => setMode(m)} aria-label={`${QUICK_LABEL[m]}: ${TIMER_INFO[m].tagline}`}>
-                {QUICK_LABEL[m]}
-              </button>
-              <button className="qt-card-info" onClick={() => setInfo(m)} aria-label={`How ${QUICK_LABEL[m]} works`}>
-                <Icon name="info" />
-              </button>
-            </div>
-          ))}
-        </section>
-
-      </div>
-      <InfoSheet mode={info} onClose={() => setInfo(null)} />
+      <PageHeader
+        title="Timer"
+        subtitle="Pick a format, set it, go."
+        actions={
+          <InfoButton title="Timers">
+            <p style={{ margin: 0 }}>
+              <strong>AMRAP</strong>: as many rounds as possible in a set time.
+            </p>
+            <p style={{ margin: 0 }}>
+              <strong>For Time</strong>: a fixed amount of work as fast as possible; the clock counts up.
+            </p>
+            <p style={{ margin: 0 }}>
+              <strong>EMOM</strong>: work at the start of every interval, rest for what is left of it.
+            </p>
+            <p style={{ margin: 0 }}>
+              <strong>Tabata</strong>: rounds of work and rest of fixed length.
+            </p>
+            <p style={{ margin: 0 }}>
+              <strong>Mix</strong>: several timers, work and rest periods in one flow.
+            </p>
+          </InfoButton>
+        }
+      />
+      <section className="qt-list" aria-label="Timer formats">
+        {MODES.map((m) => (
+          <button key={m} className={`big-btn${m === 'mix' ? ' pink' : ''}`} onClick={() => setMode(m)} aria-label={`${QUICK_LABEL[m]}: ${TIMER_INFO[m].tagline}`}>
+            {QUICK_LABEL[m]}
+          </button>
+        ))}
+      </section>
     </div>
   );
 }
