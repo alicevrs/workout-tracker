@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
+import { InfoButton, LibraryList, SearchField } from '../components/Library';
 import { EmptyState, PageHeader } from '../components/ui';
 import { MUSCLES, MUSCLE_LABEL } from '../data/muscles';
 import { useExercises } from '../db/repo';
@@ -12,7 +13,7 @@ const CATEGORIES: { value: ExerciseCategory | 'all' | 'custom'; label: string }[
   { value: 'bodyweight', label: 'Bodyweight' },
   { value: 'cardio', label: 'Cardio' },
   { value: 'mobility', label: 'Mobility' },
-  { value: 'custom', label: 'My exercises' },
+  { value: 'custom', label: 'Mine' },
 ];
 
 export default function ExercisesPage() {
@@ -36,18 +37,22 @@ export default function ExercisesPage() {
     <div className="page">
       <PageHeader
         title="Exercises"
+        back="/workouts"
         subtitle={exercises ? `${exercises.length} exercises` : undefined}
         actions={
-          <Link className="btn primary" to="/exercises/new">
-            <Icon name="plus" /> New
-          </Link>
+          <InfoButton title="Exercises">
+            <p style={{ margin: 0 }}>The exercise catalogue. Open an exercise to see the muscles it works, your best values and its history.</p>
+            <p style={{ margin: 0 }}>Built-in exercises can be duplicated to make your own version.</p>
+          </InfoButton>
         }
       />
+      <div className="big-buttons" style={{ paddingTop: 8 }}>
+        <Link className="big-btn" to="/exercises/new">
+          <Icon name="plus" /> New exercise
+        </Link>
+      </div>
       <div className="stack">
-        <label className="field">
-          <span className="sr-only">Search exercises</span>
-          <input type="search" placeholder="Search by name or equipment" value={query} onChange={(e) => setQuery(e.target.value)} />
-        </label>
+        <SearchField value={query} onChange={setQuery} label="Search exercises by name or equipment" />
         <div className="scroll-x" role="group" aria-label="Category">
           {CATEGORIES.map((c) => (
             <button key={c.value} className="chip" aria-pressed={category === c.value} onClick={() => setCategory(c.value)}>
@@ -67,29 +72,19 @@ export default function ExercisesPage() {
           </select>
         </label>
         {exercises && filtered.length === 0 ? (
-          <div className="card">
-            <EmptyState icon="search" title={category === 'custom' && !query ? 'No custom exercises yet' : 'No exercises match'}>
-              {category === 'custom' ? 'Create your own exercise with the New button.' : 'Try a different search or filter.'}
-            </EmptyState>
-          </div>
+          <EmptyState icon="search" title={category === 'custom' && !query ? 'No custom exercises yet' : 'No exercises match'}>
+            {category === 'custom' ? 'Create your own exercise with New exercise.' : 'Try a different search or filter.'}
+          </EmptyState>
         ) : (
-          <ul className="list list-card">
-            {filtered.map((e) => (
-              <li key={e.id}>
-                <Link className="list-item" to={`/exercises/${e.id}`}>
-                  <div className="grow">
-                    <div className="ellipsis" style={{ fontWeight: 600 }}>
-                      {e.name} {e.isCustom && <span className="chip primary tiny">Custom</span>}
-                    </div>
-                    <div className="small muted ellipsis">
-                      {e.primaryMuscles.map((m) => MUSCLE_LABEL[m]).join(', ')} · {e.equipment}
-                    </div>
-                  </div>
-                  <Icon name="forward" size={18} />
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <LibraryList
+            items={filtered.map((e) => ({
+              id: e.id,
+              name: e.name,
+              to: `/exercises/${e.id}`,
+              badge: e.isCustom ? 'Mine' : undefined,
+              sub: `${e.primaryMuscles.map((m) => MUSCLE_LABEL[m]).join(', ')} · ${e.equipment}`,
+            }))}
+          />
         )}
       </div>
     </div>

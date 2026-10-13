@@ -8,7 +8,7 @@
 
 import type { WorkoutDB } from '../db/db';
 import { DEFAULT_PROFILE, DEFAULT_SETTINGS } from '../db/repo';
-import type { BodyWeight, Exercise, Profile, Program, Session, Settings } from '../db/types';
+import type { BlockTemplate, BodyWeight, Exercise, Profile, Program, Session, Settings } from '../db/types';
 
 export const BACKUP_APP_ID = 'workout-tracker';
 export const BACKUP_SCHEMA_VERSION = 1;
@@ -16,6 +16,8 @@ export const BACKUP_SCHEMA_VERSION = 1;
 export interface BackupData {
   exercises: Exercise[]; // custom exercises only; the built-in catalog ships with the app
   programs: Program[];
+  /** Exercise templates (added later in format 1; missing in older files). */
+  blockTemplates: BlockTemplate[];
   sessions: Session[];
   bodyWeights: BodyWeight[];
   profile: Profile;
@@ -38,9 +40,10 @@ export type Migration = (file: AnyRecord) => AnyRecord;
 export const MIGRATIONS: Record<number, Migration> = {};
 
 export async function createBackup(db: WorkoutDB, now = new Date()): Promise<BackupFile> {
-  const [exercises, programs, sessions, bodyWeights, profileRow, settingsRow] = await Promise.all([
+  const [exercises, programs, blockTemplates, sessions, bodyWeights, profileRow, settingsRow] = await Promise.all([
     db.exercises.filter((e) => e.isCustom).toArray(),
     db.programs.toArray(),
+    db.blockTemplates.toArray(),
     db.sessions.toArray(),
     db.bodyWeights.toArray(),
     db.kv.get('profile'),
@@ -58,6 +61,7 @@ export async function createBackup(db: WorkoutDB, now = new Date()): Promise<Bac
     data: {
       exercises,
       programs,
+      blockTemplates,
       sessions,
       bodyWeights,
       profile: { ...DEFAULT_PROFILE, ...((profileRow?.value as Partial<Profile>) ?? {}) },
@@ -129,6 +133,7 @@ function normalize(file: AnyRecord): BackupFile {
     data: {
       exercises: list<Exercise>('exercises', (e) => typeof e.id === 'string' && typeof e.name === 'string').map((e) => ({ ...e, isCustom: true })),
       programs: list<Program>('programs', (p) => typeof p.id === 'string' && Array.isArray(p.days)),
+      blockTemplates: list<BlockTemplate>('blockTemplates', (t) => typeof t.id === 'string' && isObj(t.block)),
       sessions,
       bodyWeights: list<BodyWeight>('bodyWeights', (w) => typeof w.id === 'string' && typeof w.weightKg === 'number'),
       profile: { ...DEFAULT_PROFILE, ...(isObj(data.profile) ? (data.profile as Partial<Profile>) : {}) },
@@ -159,10 +164,12 @@ export function summarize(file: BackupFile): RestoreSummary {
  */
 export async function restoreBackup(db: WorkoutDB, file: BackupFile, mode: 'replace' | 'merge'): Promise<void> {
   const d = file.data;
-  await db.transaction('rw', [db.exercises, db.programs, db.sessions, db.bodyWeights, db.kv], async () => {
+  await db.transaction('rw', [db.exercises, db.programs, db.blockTemplates, db.sessions, db.bodyWeights, db.kv], async () => {
     if (mode === 'replace') {
       await db.exercises.filter((e) => e.isCustom).delete();
       await db.programs.clear();
+      await db.blockTemplates.clear();
+      await db.blockTemplates.bulkPut(d.blockTemplates);
       await db.sessions.clear();
       await db.bodyWeights.clear();
       await db.exercises.bulkPut(d.exercises);
@@ -179,6 +186,7 @@ export async function restoreBackup(db: WorkoutDB, file: BackupFile, mode: 'repl
       };
       await db.exercises.bulkPut(d.exercises);
       await newer(db.programs, d.programs);
+      await newer(db.blockTemplates, d.blockTemplates);
       await newer(db.sessions, d.sessions);
       await db.bodyWeights.bulkPut(d.bodyWeights);
       const cur = await db.kv.get('profile');

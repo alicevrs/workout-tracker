@@ -16,6 +16,9 @@ const ExerciseEditPage = lazy(() => import('./pages/ExerciseEditPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const WorkoutsPage = lazy(() => import('./pages/WorkoutsPage'));
 const WorkoutEditPage = lazy(() => import('./pages/WorkoutEditPage'));
+const WorkoutTemplatesPage = lazy(() => import('./pages/WorkoutTemplatesPage'));
+const ExerciseTemplatesPage = lazy(() => import('./pages/ExerciseTemplatesPage'));
+const ExerciseTemplateEditPage = lazy(() => import('./pages/ExerciseTemplateEditPage'));
 const WorkoutPage = lazy(() => import('./pages/WorkoutPage'));
 const TimerPage = lazy(() => import('./pages/TimerPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
@@ -36,9 +39,15 @@ const NAV: NavItem[] = [
   { to: '/timer', label: 'Timer', icon: 'timer', mobile: true },
   { to: '/history', label: 'History', icon: 'history', mobile: true },
   { to: '/analytics', label: 'Analytics', icon: 'chart', mobile: true },
-  { to: '/exercises', label: 'Exercises', icon: 'list', mobile: false },
   { to: '/settings', label: 'Settings', icon: 'settings', mobile: false },
 ];
+
+/** The exercise catalogue lives inside Workouts, so it lights up the Workouts tab too. */
+function navActive(to: string, path: string): boolean {
+  if (to === '/') return path === '/';
+  if (to === '/workouts') return path.startsWith('/workouts') || path.startsWith('/exercises');
+  return path === to || path.startsWith(`${to}/`);
+}
 
 export default function App() {
   const location = useLocation();
@@ -49,7 +58,7 @@ export default function App() {
           <img src="favicon-mr.svg" alt="" width={28} height={28} /> Workout Tracker
         </div>
         {NAV.map((n) => (
-          <NavLink key={n.to} to={n.to} end={n.to === '/'}>
+          <NavLink key={n.to} to={n.to} className={() => (navActive(n.to, location.pathname) ? 'active' : '')}>
             <Icon name={n.icon} /> {n.label}
           </NavLink>
         ))}
@@ -70,6 +79,9 @@ export default function App() {
             <Route path="/exercises/:id" element={<ExerciseDetailPage />} />
             <Route path="/exercises/:id/edit" element={<ExerciseEditPage />} />
             <Route path="/workouts" element={<WorkoutsPage />} />
+            <Route path="/workouts/templates" element={<WorkoutTemplatesPage />} />
+            <Route path="/workouts/exercise-templates" element={<ExerciseTemplatesPage />} />
+            <Route path="/workouts/exercise-templates/:id" element={<ExerciseTemplateEditPage />} />
             <Route path="/workouts/:id" element={<WorkoutEditPage />} />
             <Route path="/programs" element={<Navigate to="/workouts" replace />} />
             <Route path="/programs/:id" element={<ProgramRedirect />} />
@@ -88,7 +100,7 @@ export default function App() {
       </main>
       <nav className="bottom-nav" aria-label="Main">
         {NAV.filter((n) => n.mobile).map((n) => (
-          <NavLink key={n.to} to={n.to} end={n.to === '/'}>
+          <NavLink key={n.to} to={n.to} className={() => (navActive(n.to, location.pathname) ? 'active' : '')}>
             <Icon name={n.icon} />
             <span>{n.label}</span>
           </NavLink>

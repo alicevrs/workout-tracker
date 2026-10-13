@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { useDragReorder } from '../hooks/useDragReorder';
 import { useExerciseMap, useProfile } from '../db/repo';
 import type { Block, BlockFormat, BlockParams, ExerciseEntry, Grouping, IntervalSegment, SetTarget, TimerOptions, WeightUnit } from '../db/types';
 import { uid } from '../lib/ids';
@@ -10,7 +11,7 @@ import { NumberField } from './ui';
 
 const CONDITIONING: BlockFormat[] = ['tabata', 'amrap', 'emom', 'for_time', 'intervals'];
 
-export function BlockEditor({ block, onChange }: { block: Block; onChange: (b: Block) => void }) {
+export function BlockEditor({ block, onChange, hideName }: { block: Block; onChange: (b: Block) => void; hideName?: boolean }) {
   const profile = useProfile();
   const exercises = useExerciseMap();
   const [picking, setPicking] = useState<null | { replace?: string }>(null);
@@ -20,13 +21,19 @@ export function BlockEditor({ block, onChange }: { block: Block; onChange: (b: B
   const setTimer = (patch: Partial<TimerOptions>) => onChange({ ...block, timer: { ...block.timer, ...patch } });
   const setEntry = (id: string, patch: Partial<ExerciseEntry>) =>
     onChange({ ...block, entries: block.entries.map((e) => (e.id === id ? { ...e, ...patch } : e)) });
+  const blockRef = useRef(block);
+  blockRef.current = block;
   const moveEntry = (i: number, dir: -1 | 1) => {
-    const entries = [...block.entries];
+    const cur = blockRef.current;
+    const entries = [...cur.entries];
     const j = i + dir;
     if (j < 0 || j >= entries.length) return;
     [entries[i], entries[j]] = [entries[j], entries[i]];
-    onChange({ ...block, entries });
+    blockRef.current = { ...cur, entries };
+    onChange(blockRef.current);
   };
+  const entriesRef = useRef<HTMLDivElement>(null);
+  const { drag, handle, rowStyle, wasDragged } = useDragReorder(entriesRef, block.entries.length, (from, to) => moveEntry(from, to > from ? 1 : -1));
   const changeFormat = (format: BlockFormat) => {
     const wasCond = CONDITIONING.includes(block.format);
     const isCond = CONDITIONING.includes(format);
@@ -60,10 +67,12 @@ export function BlockEditor({ block, onChange }: { block: Block; onChange: (b: B
             ))}
           </select>
         </label>
-        <label className="field">
-          Name
-          <input value={block.name ?? ''} placeholder={FORMAT_INFO[block.format].label} onChange={(e) => onChange({ ...block, name: e.target.value || undefined })} />
-        </label>
+        {!hideName && (
+          <label className="field">
+            Name
+            <input value={block.name ?? ''} placeholder={FORMAT_INFO[block.format].label} onChange={(e) => onChange({ ...block, name: e.target.value || undefined })} />
+          </label>
+        )}
         <p className="full small faint" style={{ margin: 0 }}>
           {FORMAT_INFO[block.format].description}
         </p>
@@ -112,11 +121,13 @@ export function BlockEditor({ block, onChange }: { block: Block; onChange: (b: B
             {block.format === 'intervals' ? 'Optional: add exercises to label the work segments.' : 'No exercises yet.'}
           </p>
         )}
+        {block.entries.length > 1 && <p className="tiny faint" style={{ margin: '0 0 6px' }}>Hold an exercise name and drag to reorder.</p>}
+        <div ref={entriesRef} className="entry-list">
         {block.entries.map((e, i) => {
           const ex = exercises.get(e.exerciseId);
           return (
-            <div key={e.id} className="entry-row">
-              <div className="row">
+            <div key={e.id} data-drag-index={i} className={`entry-row${drag?.index === i ? ' dragging' : ''}`} style={rowStyle(i)}>
+              <div className="row entry-head" {...handle(i)}>
                 {e.grouping !== 'none' && (
                   <span className="group-tag">
                     {e.grouping === 'dropset' ? 'DROP' : `${e.grouping === 'superset' ? 'SS' : 'C'} ${e.groupLabel ?? ''}`}
@@ -127,20 +138,24 @@ export function BlockEditor({ block, onChange }: { block: Block; onChange: (b: B
                   className="btn ghost small"
                   style={{ justifyContent: 'flex-start', padding: 0, flex: 1, minWidth: 0, whiteSpace: 'normal', textAlign: 'left', lineHeight: 1.25 }}
                   aria-label={`Change exercise ${ex?.name ?? ''}`}
-                  onClick={() => setPicking({ replace: e.id })}
+                  onClick={() => !wasDragged() && setPicking({ replace: e.id })}
+                  onKeyDown={(ev) => {
+                    if (ev.altKey && ev.key === 'ArrowUp') moveEntry(i, -1);
+                    else if (ev.altKey && ev.key === 'ArrowDown') moveEntry(i, 1);
+                  }}
                 >
                   <span style={{ fontWeight: 650 }}>
                     {ex?.name ?? 'Unknown exercise'}
                   </span>
                 </button>
-                <button type="button" className="btn icon small ghost" aria-label="Move up" onClick={() => moveEntry(i, -1)} disabled={i === 0}>
-                  <Icon name="up" />
-                </button>
-                <button type="button" className="btn icon small ghost" aria-label="Move down" onClick={() => moveEntry(i, 1)} disabled={i === block.entries.length - 1}>
-                  <Icon name="down" />
-                </button>
-                <button type="button" className="btn icon small ghost" aria-label={`Remove ${ex?.name ?? 'exercise'}`} onClick={() => onChange({ ...block, entries: block.entries.filter((x) => x.id !== e.id) })}>
-                  <Icon name="trash" />
+                <button
+                  type="button"
+                  className="btn icon small ghost"
+                  aria-label={`Remove ${ex?.name ?? 'exercise'}`}
+                  onPointerDown={(ev) => ev.stopPropagation()}
+                  onClick={() => onChange({ ...block, entries: block.entries.filter((x) => x.id !== e.id) })}
+                >
+                  <Icon name="x" />
                 </button>
               </div>
               <div className="form-grid four mt-s">
@@ -214,6 +229,7 @@ export function BlockEditor({ block, onChange }: { block: Block; onChange: (b: B
             </div>
           );
         })}
+        </div>
         {!conditioning && block.entries.some((e) => e.grouping === 'superset' || e.grouping === 'circuit') && (
           <p className="tiny faint mt-s">
             Superset: exercises in the same group run back to back, then the rest of the last exercise. Circuit: the group repeats for the number of sets, using each exercise’s rest as transition.

@@ -146,3 +146,12 @@ Choices made while building the app, with the reason for each.
 - **Past dates without a time:** a workout or activity on a past day is saved at 12:00; today's activity defaults to one hour ago. Editing an existing activity's date keeps its original time (imports have exact times).
 - **Sport picker:** a search box plus native `<select>` lists (wheels on iPhone): “Activity category” (sport groups, gym excluded) and “Activity” (alphabetical, filtered by category), stacked. Selecting a sport sets the type; changing the type does not clear the search.
 
+## Workouts library (three levels)
+- **Exercises** = the existing catalogue (`/exercises`, routes unchanged; the Workouts tab is highlighted there too).
+- **Exercise templates** = a new table `blockTemplates` (Dexie version 2): `{ id, name, block }`, where `block` is an ordinary `Block`. A template is therefore anything a workout part can be (sets × reps with per-set targets, supersets, EMOM, Tabata, intervals…). Inserting one copies the block with fresh ids (`blockFromTemplate`), so later edits to the template never change existing workouts, and vice versa (“Save as exercise template” copies too).
+- **Workout templates** = the existing single-day `Program`s, unchanged in storage. In the UI the blocks are called “parts”.
+- Backups: `data.blockTemplates` added to format 1 (optional, missing = none), so no schema bump was needed; older app versions ignore the key.
+- Starting and logging (the old per-workout Start / Log buttons, `DayActions`) were removed from Workouts: the user starts everything from Home.
+- Reordering everywhere (Mix, workout parts, exercises inside a part) uses one hook, `useDragReorder` (hold 350 ms, then drag; Alt + ↑/↓ with a keyboard).
+- The iPhone sometimes lays out a home-screen app shorter than the screen at launch, leaving a strip under the fixed bottom bar. The bar now has a 200 px extension below it in its own colour, so any such gap is covered.
+

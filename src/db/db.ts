@@ -1,9 +1,10 @@
 import Dexie, { type Table } from 'dexie';
-import type { BodyWeight, Exercise, KV, Program, Session } from './types';
+import type { BlockTemplate, BodyWeight, Exercise, KV, Program, Session } from './types';
 
 export class WorkoutDB extends Dexie {
   exercises!: Table<Exercise, string>;
   programs!: Table<Program, string>;
+  blockTemplates!: Table<BlockTemplate, string>;
   sessions!: Table<Session, string>;
   bodyWeights!: Table<BodyWeight, string>;
   kv!: Table<KV, string>;
@@ -17,6 +18,8 @@ export class WorkoutDB extends Dexie {
       bodyWeights: 'id, date',
       kv: 'key',
     });
+    // v2: exercise templates (ready-made blocks).
+    this.version(2).stores({ blockTemplates: 'id, name, updatedAt' });
   }
 }
 

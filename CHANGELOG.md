@@ -156,3 +156,12 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Activity picker: the lists are one under the other and are called “Activity category” and “Activity”; the search bar shows only a magnifying glass.
 - The “new version” banner is black with a yellow border and yellow buttons.
 
+## Workouts library: exercises, exercise templates, workout templates (2026-10-13)
+- **Workouts** is now the place to prepare everything, with three big buttons (and an ⓘ each): **Workout templates**, **Exercise templates** and **Exercises** (the catalogue with muscles and history). Workouts are started from Home.
+- **Exercise templates** (new): ready-made parts of a workout — one or more exercises with their format (sets × reps, EMOM, Tabata…), sets, reps, weights, rest and timer. Create them from scratch, or save any part of a workout with “Save as exercise template”.
+- **Workout templates**: add parts “From template” (one tap) or as a “New part” in any format. Parts are big buttons like the Timer's Mix: tap to edit, hold and drag to reorder, × to remove. Exercises inside a part are reordered the same way.
+- Everything can be duplicated: copy icon in each list, Duplicate on each page, Duplicate on each part.
+- Same look as Home and Timer everywhere in Workouts: big centered buttons, plain lists, search with a magnifying glass, ⓘ explanations. The “Start / Log” buttons were removed from Workouts (use Home → Start a workout, also for past days).
+- Exercise templates are included in backups (older backup files still import).
+- Fixed: sometimes an empty strip appeared under the bottom bar when the app opened on iPhone; the bar now covers it.
+

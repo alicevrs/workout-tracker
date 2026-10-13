@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { BlockList } from '../components/BlockList';
-import { DayActions } from '../components/DayActions';
 import { Icon } from '../components/Icon';
 import { EmptyState, PageHeader, useToast } from '../components/ui';
 import { db } from '../db/db';
@@ -37,7 +36,7 @@ export default function WorkoutEditPage() {
   if (workout === null)
     return (
       <div className="page">
-        <PageHeader title="Workout" back="/workouts" />
+        <PageHeader title="Workout" back="/workouts/templates" />
         <EmptyState title="Workout not found" />
       </div>
     );
@@ -55,55 +54,43 @@ export default function WorkoutEditPage() {
 
   return (
     <div className="page">
-      <PageHeader
-        title={workout.name || 'Workout'}
-        back="/workouts"
-        subtitle={total ? `≈ ${formatDuration(total)}` : undefined}
-        actions={
+      <PageHeader title={workout.name || 'Workout'} back="/workouts/templates" subtitle={total ? `≈ ${formatDuration(total)}` : undefined} />
+      <div className="stack">
+        <label className="field">
+          Name
+          <input value={workout.name} onChange={(e) => update({ name: e.target.value })} />
+        </label>
+        <label className="field">
+          Notes
+          <input value={workout.notes ?? ''} placeholder="Optional" onChange={(e) => update({ notes: e.target.value || undefined })} />
+        </label>
+        <BlockList blocks={day.blocks} onChange={(blocks) => update({}, { blocks })} />
+        <div className="big-buttons" style={{ paddingTop: 0 }}>
           <button
-            className="btn"
+            className="btn small"
             onClick={async () => {
               await flush();
               const copy = cloneProgram(workout);
+              copy.days = copy.days.map((d) => ({ ...d, name: copy.name }));
               await db.programs.add(copy);
               toast('Workout duplicated');
               navigate(`/workouts/${copy.id}`);
             }}
           >
-            <Icon name="copy" /> Duplicate
+            <Icon name="copy" /> Duplicate workout
           </button>
-        }
-      />
-      <div className="stack">
-        <section className="card form-grid">
-          <label className="field full">
-            Name
-            <input value={workout.name} onChange={(e) => update({ name: e.target.value })} />
-          </label>
-          <label className="field full">
-            Notes
-            <input value={workout.notes ?? ''} onChange={(e) => update({ notes: e.target.value || undefined })} />
-          </label>
-          <div className="full row wrap">
-            <DayActions program={workout} day={day} />
-          </div>
-        </section>
-        <section className="card">
-          <h2>Blocks</h2>
-          {day.blocks.length === 0 && <p className="small muted mt-s">No blocks yet. Add the first one below.</p>}
-          <BlockList blocks={day.blocks} onChange={(blocks) => update({}, { blocks })} />
-        </section>
-        <button
-          className="btn danger"
-          onClick={async () => {
-            if (!confirm(`Delete “${workout.name}”? Logged sessions are kept.`)) return;
-            pending.current = null;
-            await db.programs.delete(workout.id);
-            navigate('/workouts');
-          }}
-        >
-          <Icon name="trash" /> Delete workout
-        </button>
+          <button
+            className="btn ghost small"
+            onClick={async () => {
+              if (!confirm(`Delete “${workout.name}”? Logged sessions are kept.`)) return;
+              pending.current = null;
+              await db.programs.delete(workout.id);
+              navigate('/workouts/templates');
+            }}
+          >
+            <Icon name="trash" /> Delete workout
+          </button>
+        </div>
       </div>
     </div>
   );

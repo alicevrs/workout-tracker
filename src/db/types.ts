@@ -166,6 +166,16 @@ export interface Program {
   updatedAt: number;
 }
 
+/** Exercise template: a ready-made block (exercises with sets, reps, weights, timer) to drop into workouts. */
+export interface BlockTemplate {
+  id: string;
+  name: string;
+  block: Block;
+  notes?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 // ---------- Logging ----------
 
 export interface SetRecord {
