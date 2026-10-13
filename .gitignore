@@ -11,3 +11,4 @@ dev-dist
 /Strava export_*/
 /*.zip
 tests/_local/
+/CLAUDE.md
