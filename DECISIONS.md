@@ -153,7 +153,7 @@ Choices made while building the app, with the reason for each.
 - Backups: `data.blockTemplates` added to format 1 (optional, missing = none), so no schema bump was needed; older app versions ignore the key.
 - Starting and logging (the old per-workout Start / Log buttons, `DayActions`) were removed from Workouts: the user starts everything from Home.
 - Reordering everywhere (Mix, workout parts, exercises inside a part) uses one hook, `useDragReorder` (hold 350 ms, then drag; Alt + ↑/↓ with a keyboard).
-- The iPhone sometimes lays out a home-screen app shorter than the screen at launch, leaving a strip under the fixed bottom bar. The bar now has a 200 px extension below it in its own colour, so any such gap is covered.
+- The iPhone sometimes lays out a home-screen app shorter than the screen at launch, leaving a strip under the fixed bottom bar (also under the fixed opening screen). Fixed elements are not painted there, only the root (canvas) background is, so the extension under the bar did not help. Final fix: the page background (`--bg`, `html`, theme colour, manifest) is pure black like the tab bar and the splash, so the gap cannot be seen.
 
 ## Exercise blocks: simple editor and linking
 - Renamed “Exercise templates” to **Training blocks** (the user's choice; “Exercise blocks” in between) and “Workout templates” to **Workouts**. Storage name stays `blockTemplates`; routes are `/workouts/blocks` (old `/workouts/exercise-templates` redirects).

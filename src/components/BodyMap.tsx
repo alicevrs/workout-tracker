@@ -74,7 +74,7 @@ function Figure({ shapes, values, label, pct }: { shapes: Shape[]; values: Parti
       const fill = s.muscle ? heatColor(v) : '#1c1c1c';
       const title = s.muscle ? `${MUSCLE_LABEL[s.muscle]}${pct?.[s.muscle] !== undefined ? `: ${Math.round(pct[s.muscle]!)}%` : ''}` : undefined;
       return (
-        <path key={`${mirror ? 'r' : 'l'}${i}`} d={s.d} fill={fill} stroke="#0d0d0d" strokeWidth={0.8} strokeLinejoin="round">
+        <path key={`${mirror ? 'r' : 'l'}${i}`} d={s.d} fill={fill} stroke="#000" strokeWidth={0.8} strokeLinejoin="round">
           {title && <title>{title}</title>}
         </path>
       );

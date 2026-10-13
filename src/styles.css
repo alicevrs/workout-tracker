@@ -1,5 +1,5 @@
 :root {
-  --bg: #0d0d0d;
+  --bg: #000000;
   --bg-elev: #161616;
   --bg-elev-2: #202020;
   --bg-input: #111111;
@@ -53,6 +53,11 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* iPhone home-screen apps are sometimes laid out shorter than the screen at launch; whatever lies
+   below the layout is painted with the root background, so it must be the same black as the tab bar. */
+html {
+  background: #000;
+}
 #root {
   min-height: 100dvh;
 }

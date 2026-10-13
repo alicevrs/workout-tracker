@@ -176,4 +176,5 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - The Optional tick was removed from training blocks: to skip a block, remove it from the workout while you do it.
 - Removed example texts from the app (hints, placeholders and ⓘ texts) and the explanation in brackets after “Different targets per set”.
 - Training blocks: “Count by → Time” offers only the Timer tab's timers (AMRAP, For Time, EMOM, Tabata). “Timed sets” is no longer offered for new blocks; blocks that already use it keep working.
+- Fixed for good: the grey strip under the tab bar (and under the opening logo) on iPhone. The app background is now pure black, the same as the tab bar and the opening screen, so the space iPhone sometimes leaves below the app is invisible.
 
