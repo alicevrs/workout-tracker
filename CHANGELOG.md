@@ -113,3 +113,14 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 ## Strava archive import (2026-10-13)
 - Import the free Strava export (“Download your account” .zip, or its activities.csv) in Settings → Import activities: every activity becomes a session with its sport, time, distance, elevation, calories, heart rate and description. Uses the same ids as the Strava API (`strava:<id>`), so nothing is duplicated, and merges with workouts logged in the app.
 - Note: Strava now gives API access (automatic sync) only to subscribers; the archive import works with a free account.
+
+## New timer (2026-10-13)
+- **Timer tab redesigned** after interval-timer apps for the gym: five big formats — AMRAP, For Time, EMOM, Tabata and Mix — each with a ⓘ button that explains how it works.
+- **Simple setup:** a few big boxes per format (e.g. “[8] Rounds · [0:20] Work · [0:10] Rest”, “Every [2:00] for [12] min”); tapping a box opens the iPhone picker wheel. Optional sets with a rest between them for every format, “Signal every N min” for For Time, a get-ready countdown and the total time on the Start button. The last settings of each format are remembered on the device.
+- **Mix:** chain AMRAP, EMOM, Tabata, For Time, single work periods (with a label, e.g. Plank) and rests into one flow, reorder them and repeat the whole flow.
+- **Running screen:** the Monday Resolution circle draws itself as the time runs (yellow = work, blue = rest, white = get ready) and the full symbol with the X appears when you finish. Tap the circle to start, pause or resume; big “10 … 1” get-ready countdown and “GO”; “3/8 · Work” style heading; round counter with the last round time for AMRAP and For Time; “Show workout” lists every step with ✓ for those done and the round splits; Skip, Restart and Stop are small at the bottom.
+- **Sounds like a gym timer:** three low beeps in the last 3 seconds, a long high beep when work or rest starts, a short double beep halfway through work periods of 20 s or more (can be turned off) and a short signal for For Time interval signals.
+- **Music keeps playing:** by default the beeps now play on top of Spotify or Apple Music instead of pausing them (Settings → Timer → “Play with music”). On iPhone the beeps then follow the Ring/Silent switch.
+- When the timer ran the whole workout, “Save workout” at the end saves it straight to your history (no more “Resume … timer” leftovers).
+- Workout editor: For Time blocks have an optional “Signal every … min”.
+

@@ -11,8 +11,9 @@ import { applyCompleted, type SetOverrides } from '../lib/timer/link';
 import { buildPhases, type Phase } from '../lib/timer/phases';
 import { keepScreenOn } from '../lib/timer/wakeLock';
 import { formatWeight, fromDisplayWeight, toDisplayWeight } from '../lib/units';
+import { BrandRing } from './BrandRing';
 import { Icon } from './Icon';
-import { NumberField } from './ui';
+import { NumberField, Sheet } from './ui';
 
 interface Run {
   sig: string;
@@ -21,6 +22,8 @@ interface Run {
   overrides: SetOverrides;
   /** AMRAP / For Time round counter per block index. */
   rounds: Record<number, number>;
+  /** Phase time (ms) at each round-counter tap, per block index. */
+  laps?: Record<number, number[]>;
 }
 
 const storageKey = (sessionId: string, blocks: number[]) => `timer:${sessionId}:${blocks.join(',')}`;
@@ -73,7 +76,32 @@ function soundForPhase(p: Phase | undefined): engine.SoundKind {
   return p.kind === 'work' ? 'work' : 'rest';
 }
 
-export function TimerScreen({ session, blockIndexes, onClose }: { session: Session; blockIndexes: number[]; onClose: () => void }) {
+/** Line above the ring, e.g. “3/8 · Work”, “Minute 4/10”, “12 min AMRAP”. */
+function headingFor(p: Phase | undefined): string {
+  if (!p) return '';
+  if (p.kind === 'prep') return 'Get ready';
+  if (p.format === 'amrap' && p.kind === 'work') return p.durationSec ? `${Math.round(p.durationSec / 60)} min AMRAP` : 'AMRAP';
+  if (p.format === 'for_time' && p.kind === 'work') return p.durationSec ? `For time · cap ${formatClock(p.durationSec)}` : 'For time';
+  if (p.format === 'emom' && p.kind === 'work' && p.interval) return `${p.label.replace(/ \d+$/, '')} ${p.interval}/${p.totalIntervals}`;
+  if ((p.format === 'tabata' || p.format === 'intervals') && p.round && p.totalRounds) {
+    return p.totalRounds > 1 ? `${p.round}/${p.totalRounds} · ${p.label}` : p.label;
+  }
+  if (p.kind === 'work' && p.set && p.totalSets && (p.format === 'sets_reps' || p.format === 'timed_sets')) return `${p.label === 'Work' ? 'Set' : p.label} ${p.set}/${p.totalSets}`;
+  return p.label;
+}
+
+export function TimerScreen({
+  session,
+  blockIndexes,
+  onClose,
+  onComplete,
+}: {
+  session: Session;
+  blockIndexes: number[];
+  onClose: () => void;
+  /** Called after “Save” when the run covered the whole workout, to save it as completed. */
+  onComplete?: () => void;
+}) {
   const exercises = useExerciseMap();
   const profile = useProfile();
   const settings = useSettings();
@@ -89,18 +117,21 @@ export function TimerScreen({ session, blockIndexes, onClose }: { session: Sessi
   const [run, setRun] = useState<Run>(() => loadRun(key, sig) ?? { sig, state: engine.initialState(), applied: 0, overrides: {}, rounds: {} });
   const [now, setNow] = useState(() => Date.now());
   const [muted, setMuted] = useState(false);
+  const [showList, setShowList] = useState(false);
   const runRef = useRef(run);
   runRef.current = run;
 
   const sound = !muted;
+  const halfway = settings.halfwayCue;
   timerAudio.volume = settings.soundVolume;
+  timerAudio.setMixWithMusic(settings.mixWithMusic);
 
   const reschedule = useCallback(
     (state: engine.TimerState) => {
       if (!sound) return timerAudio.cancel();
-      timerAudio.schedule(engine.upcomingSounds(phases, state, Date.now(), 4 * 3600_000));
+      timerAudio.schedule(engine.upcomingSounds(phases, state, Date.now(), 4 * 3600_000, { halfway }));
     },
-    [phases, sound],
+    [phases, sound, halfway],
   );
 
   /** Persist the run, write newly completed sets to the session, and handle sound/vibration on phase changes. */
@@ -173,7 +204,7 @@ export function TimerScreen({ session, blockIndexes, onClose }: { session: Sessi
   useEffect(() => {
     void keepScreenOn(running);
     timerAudio.setKeepAlive(running && settings.backgroundAudio);
-  }, [running, settings.backgroundAudio]);
+  }, [running, settings.backgroundAudio, settings.mixWithMusic]);
   useEffect(
     () => () => {
       void keepScreenOn(false);
@@ -183,7 +214,7 @@ export function TimerScreen({ session, blockIndexes, onClose }: { session: Sessi
     [],
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => reschedule(runRef.current.state), [muted]);
+  useEffect(() => reschedule(runRef.current.state), [muted, halfway]);
 
   const t = Date.now();
   const snap = engine.snapshot(phases, run.state, t);
@@ -195,6 +226,7 @@ export function TimerScreen({ session, blockIndexes, onClose }: { session: Sessi
   const nextExercise = nextPhase?.exerciseId ? exercises.get(nextPhase.exerciseId) : undefined;
   const manual = status !== 'idle' && status !== 'finished' && phase?.kind === 'work' && phase.durationSec === null;
   const isAmrapLike = phase && (phase.format === 'amrap' || phase.format === 'for_time') && phase.kind === 'work';
+  const started = status === 'running' || status === 'paused';
 
   // --- actions ---
   const act = (fn: (s: engine.TimerState, n: number) => engine.TimerState, userAction = true) => {
@@ -212,11 +244,11 @@ export function TimerScreen({ session, blockIndexes, onClose }: { session: Sessi
   const onSkip = () => act((s, n) => engine.skip(phases, s, n));
   const onDone = () => act((s, n) => engine.complete(phases, s, n));
   const onFinish = () => {
-    if (status !== 'finished' && !confirm('Finish the timer now?')) return;
+    if (status !== 'finished' && !confirm('Stop the workout now? What you did so far is saved.')) return;
     act((s, n) => engine.finish(phases, s, n));
   };
   const onReset = () => {
-    if (!confirm('Reset the timer? Sets already logged stay in the log.')) return;
+    if (!confirm('Restart the timer from the beginning? Sets already logged stay in the log.')) return;
     timerAudio.cancel();
     void commit({ sig, state: engine.reset(), applied: 0, overrides: {}, rounds: {} });
   };
@@ -226,6 +258,12 @@ export function TimerScreen({ session, blockIndexes, onClose }: { session: Sessi
     timerAudio.cancel();
     onClose();
   };
+  /** Tap on the ring: start, pause or resume. */
+  const onRing = () => {
+    if (status === 'idle') onStart();
+    else if (status === 'running') onPause();
+    else if (status === 'paused') onResume();
+  };
 
   const setOverride = (patch: Partial<{ reps: number; weight: number }>) => {
     const idx = runRef.current.state.index;
@@ -234,26 +272,36 @@ export function TimerScreen({ session, blockIndexes, onClose }: { session: Sessi
     setRun(next);
     saveRun(key, next);
   };
-  const roundsHere = phase ? run.rounds[phase.blockIndex] ?? 0 : 0;
-  const setRounds = (rounds: number) => {
+  const bi = phase?.blockIndex ?? -1;
+  const roundsHere = phase ? run.rounds[bi] ?? 0 : 0;
+  const lapsHere = run.laps?.[bi] ?? [];
+  const lastRoundMs = lapsHere.length ? lapsHere[lapsHere.length - 1] - (lapsHere[lapsHere.length - 2] ?? 0) : null;
+  const changeRounds = (delta: 1 | -1) => {
     if (!phase) return;
-    const next = { ...runRef.current, rounds: { ...runRef.current.rounds, [phase.blockIndex]: Math.max(0, rounds) } };
+    const laps = [...lapsHere];
+    if (delta === 1) laps.push(snap.elapsedMs);
+    else laps.pop();
+    const next = {
+      ...runRef.current,
+      rounds: { ...runRef.current.rounds, [bi]: Math.max(0, roundsHere + delta) },
+      laps: { ...runRef.current.laps, [bi]: laps },
+    };
     runRef.current = next;
     setRun(next);
     saveRun(key, next);
+    if (delta === 1) vibrate(60);
   };
 
   // Keyboard shortcuts (Mac): Space start/pause, Enter done, → skip, Esc close.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === 'INPUT') return;
+      if (showList) return;
       if (e.key === ' ') {
         e.preventDefault();
-        if (status === 'idle') onStart();
-        else if (status === 'running') onPause();
-        else if (status === 'paused') onResume();
+        onRing();
       } else if (e.key === 'Enter' && manual) onDone();
-      else if (e.key === 'ArrowRight' && (status === 'running' || status === 'paused')) onSkip();
+      else if (e.key === 'ArrowRight' && started) onSkip();
       else if (e.key === 'Escape') close();
     };
     window.addEventListener('keydown', onKey);
@@ -267,24 +315,76 @@ export function TimerScreen({ session, blockIndexes, onClose }: { session: Sessi
   const qlReps = ov.reps ?? (phase?.drop ? currentSet?.dropReps?.[phase.drop - 1] : currentSet?.reps) ?? phase?.targetReps;
   const qlWeight = ov.weight ?? (phase?.drop ? currentSet?.dropWeights?.[phase.drop - 1] : currentSet?.weight) ?? phase?.targetWeight;
 
-  const phaseClass = status === 'finished' ? 'phase-done' : phase?.kind === 'work' ? 'phase-work' : phase?.kind === 'rest' ? 'phase-rest' : 'phase-prep';
-  const clockSec =
-    status === 'idle'
-      ? phase?.durationSec ?? 0
-      : phase?.countUp || snap.remainingMs === null
-        ? snap.elapsedMs / 1000
-        : Math.ceil(snap.remainingMs / 1000);
-  const blockCount = new Set(phases.map((p) => p.blockIndex)).size;
-  const blockPos = phase ? [...new Set(phases.map((p) => p.blockIndex))].indexOf(phase.blockIndex) + 1 : 1;
+  const firstMain = phases.find((p) => p.kind !== 'prep') ?? phases[0];
+  const shownPhase = status === 'idle' ? firstMain : phase;
+  const phaseClass =
+    status === 'finished' ? 'phase-done' : status === 'idle' ? 'phase-prep' : phase?.kind === 'work' ? 'phase-work' : phase?.kind === 'rest' ? 'phase-rest' : 'phase-prep';
+  const clockSec = phase?.countUp || snap.remainingMs === null ? snap.elapsedMs / 1000 : Math.ceil(snap.remainingMs / 1000);
+  const blockList = [...new Set(phases.map((p) => p.blockIndex))];
+  const blockPos = phase ? blockList.indexOf(phase.blockIndex) + 1 : 1;
+  const shownBlock = shownPhase ? session.blocks[shownPhase.blockIndex] : undefined;
+  const title = shownBlock
+    ? `${shownBlock.name ?? FORMAT_INFO[shownBlock.format].label}${shownPhase?.format === 'tabata' && (shownPhase.totalSets ?? 1) > 1 ? ` ${shownPhase.set} of ${shownPhase.totalSets}` : ''}`
+    : 'Timer';
 
-  const target = phase?.kind === 'work' && (phase.targetReps || phase.toFailure || phase.targetWeight || (phase.targetDurationSec && phase.durationSec === null))
-    ? [phase.toFailure ? `Max reps${phase.targetReps ? ` (≥ ${phase.targetReps})` : ''}` : phase.targetReps ? `${phase.targetReps} reps` : null, phase.targetWeight ? formatWeight(phase.targetWeight, unit) : null, phase.targetDurationSec && phase.durationSec === null ? `${phase.targetDurationSec}s` : null].filter(Boolean).join(' · ')
-    : '';
+  const prevPhase = phases[run.state.index - 1];
+  const justStarted = status === 'running' && snap.elapsedMs < 1000;
+  // Ring: timed phases fill up; an open For Time redraws the symbol every minute.
+  const ringProgress =
+    status === 'idle' ? 0 : phase?.durationSec ? snap.progress : phase?.format === 'for_time' ? (snap.elapsedMs % 60_000) / 60_000 : 0;
+  const ringKey = phase?.durationSec || phase?.format !== 'for_time' ? run.state.index : `${run.state.index}:${Math.floor(snap.elapsedMs / 60_000)}`;
+
+  let ringContent;
+  if (status === 'idle') {
+    ringContent = (
+      <>
+        <Icon name="play" size={88} />
+        <span className="ring-hint">tap to start</span>
+      </>
+    );
+  } else if (status === 'paused') {
+    ringContent = (
+      <>
+        <span className="ring-small num">{phase?.kind === 'prep' ? clockSec : formatClock(clockSec)}</span>
+        <Icon name="pause" size={84} />
+        <span className="ring-hint">tap to resume</span>
+      </>
+    );
+  } else if (phase?.kind === 'prep') {
+    ringContent = <span className="ring-count num">{clockSec}</span>;
+  } else if (justStarted && phase?.kind === 'work' && prevPhase?.kind === 'prep') {
+    ringContent = <span className="ring-word">GO</span>;
+  } else if (justStarted && phase?.kind === 'rest' && (phase.durationSec ?? 0) > 3) {
+    ringContent = <span className="ring-word">REST</span>;
+  } else if (manual && phase?.format !== 'for_time') {
+    ringContent = (
+      <>
+        <span className="ring-clock num">{formatClock(clockSec)}</span>
+        <span className="ring-hint">tap Done when finished</span>
+      </>
+    );
+  } else {
+    ringContent = <span className="ring-clock num">{formatClock(clockSec)}</span>;
+  }
+
+  const target =
+    phase?.kind === 'work' && (phase.targetReps || phase.toFailure || phase.targetWeight || (phase.targetDurationSec && phase.durationSec === null))
+      ? [
+          phase.toFailure ? `Max reps${phase.targetReps ? ` (≥ ${phase.targetReps})` : ''}` : phase.targetReps ? `${phase.targetReps} reps` : null,
+          phase.targetWeight ? formatWeight(phase.targetWeight, unit) : null,
+          phase.targetDurationSec && phase.durationSec === null ? `${phase.targetDurationSec}s` : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      : '';
 
   const describeNext = () => {
-    if (!nextPhase) return 'Last phase';
+    if (!nextPhase) return 'Finish';
     if (nextPhase.kind === 'rest') return `${nextPhase.label} ${nextPhase.durationSec ? formatClock(nextPhase.durationSec) : ''}`;
-    if (nextPhase.kind === 'prep') return `Next block: ${session.blocks[nextPhase.blockIndex]?.name ?? FORMAT_INFO[nextPhase.format].label}`;
+    if (nextPhase.kind === 'prep' || nextPhase.blockIndex !== phase?.blockIndex) {
+      const nb = session.blocks[nextPhase.blockIndex];
+      if (nextPhase.kind === 'prep' || !nextExercise) return nb?.name ?? FORMAT_INFO[nextPhase.format].label;
+    }
     const bits = [nextExercise?.name ?? nextPhase.label];
     if (nextPhase.set && nextPhase.totalSets && (nextPhase.format === 'sets_reps' || nextPhase.format === 'timed_sets')) bits.push(`set ${nextPhase.set}/${nextPhase.totalSets}`);
     if (nextPhase.drop) bits.push(`drop ${nextPhase.drop}`);
@@ -296,92 +396,67 @@ export function TimerScreen({ session, blockIndexes, onClose }: { session: Sessi
   };
 
   return (
-    <div className="timer-screen" role="dialog" aria-modal="true" aria-label="Workout timer">
+    <div className={`timer-screen ${phaseClass}`} role="dialog" aria-modal="true" aria-label="Workout timer">
       <div className="timer-top">
-        <button className="btn icon ghost" style={{ color: '#fff' }} onClick={close} aria-label={status === 'running' ? 'Pause and close timer' : 'Close timer'}>
-          <Icon name="x" />
+        <button className="btn icon ghost" onClick={close} aria-label={status === 'running' ? 'Pause and close timer' : 'Close timer'}>
+          <Icon name="back" />
         </button>
-        <div className="small" style={{ color: '#9aa1ab', textAlign: 'center' }}>
-          {block ? block.name ?? FORMAT_INFO[block.format].label : ''}
-          {blockCount > 1 && ` · block ${blockPos}/${blockCount}`}
-          <div className="num" style={{ color: '#fff', fontWeight: 650 }}>
-            Total {formatClock(snap.totalElapsedMs / 1000)}
+        <div className="timer-title">
+          <div className="ellipsis">{title}</div>
+          <div className="timer-title-sub num">
+            {blockList.length > 1 && `Part ${blockPos}/${blockList.length} · `}Total {formatClock(snap.totalElapsedMs / 1000)}
           </div>
         </div>
-        <button className="btn icon ghost" style={{ color: '#fff' }} onClick={() => setMuted(!muted)} aria-label={muted ? 'Turn sound on' : 'Mute sound'} aria-pressed={muted}>
+        <button className="btn icon ghost" onClick={() => setMuted(!muted)} aria-label={muted ? 'Turn sound on' : 'Mute sound'} aria-pressed={muted}>
           <Icon name={muted ? 'mute' : 'volume'} />
         </button>
       </div>
 
       {status === 'finished' ? (
-        <FinishedView session={session} blockIndexes={blockIndexes} rounds={run.rounds} onDone={close} totalSec={snap.totalElapsedMs / 1000} />
+        <FinishedView
+          session={session}
+          blockIndexes={blockIndexes}
+          rounds={run.rounds}
+          totalSec={snap.totalElapsedMs / 1000}
+          completesWorkout={!!onComplete && blockIndexes.length === session.blocks.length}
+          onDone={(complete) => {
+            close();
+            if (complete) onComplete?.();
+          }}
+        />
       ) : (
         <>
-          <div className={`timer-center ${phaseClass}`}>
+          <div className="timer-center">
             <div className="timer-phase-label" aria-live="polite">
-              {status === 'idle' ? 'Ready' : phase?.label}
-              {status === 'paused' && ' · paused'}
+              {headingFor(shownPhase)}
             </div>
-            {phase?.kind === 'work' && exercise && (
-              <div style={{ textAlign: 'center', color: '#fff', fontSize: 'clamp(1.2rem, 5vw, 2rem)', fontWeight: 700 }}>{exercise.name}</div>
+            {lastRoundMs !== null && isAmrapLike && <div className="timer-sub num">Last round {formatClock(lastRoundMs / 1000)}</div>}
+            {shownPhase?.kind === 'work' && (status === 'idle' ? shownPhase.exerciseId : exercise) && (
+              <div className="timer-exercise">{(status === 'idle' ? exercises.get(shownPhase.exerciseId ?? '') : exercise)?.name}</div>
             )}
             {target && <div className="timer-sub">{target}</div>}
-            {phase?.kind === 'work' && phase.note && (
+            {phase?.kind === 'work' && phase.note && status !== 'idle' && (
               <div className="timer-sub" style={{ color: 'var(--accent)' }}>
                 {phase.note}
               </div>
             )}
-            <div className="timer-clock" role="timer" aria-label={`${Math.round(clockSec)} seconds`}>
-              {formatClock(clockSec)}
-            </div>
-            {phase?.durationSec ? (
-              <div className="timer-progress" aria-hidden>
-                <div style={{ width: `${(status === 'idle' ? 0 : snap.progress) * 100}%` }} />
-              </div>
-            ) : null}
-            {isAmrapLike && status !== 'idle' && (
-              <div className="timer-sub">
-                {phase.format === 'amrap' ? `Elapsed ${formatClock(snap.elapsedMs / 1000)}` : phase.durationSec ? `Time cap ${formatClock(phase.durationSec)}` : 'Tap Finish when done'}
-              </div>
-            )}
-            <div className="timer-meta" style={{ color: '#fff' }}>
-              {phase?.set && phase.totalSets && (phase.format !== 'tabata' || phase.totalSets > 1) && (
-                <span className="pill">
-                  Set {phase.set}/{phase.totalSets}
-                </span>
-              )}
-              {phase?.round && phase.totalRounds && phase.format !== 'sets_reps' && phase.format !== 'timed_sets' && (
-                <span className="pill">
-                  Round {phase.round}/{phase.totalRounds}
-                </span>
-              )}
-              {phase?.interval && (
-                <span className="pill">
-                  Interval {phase.interval}/{phase.totalIntervals}
-                </span>
-              )}
-              {phase?.drop && <span className="pill">Drop {phase.drop}</span>}
-              {phase?.warmup && <span className="pill">Warm-up</span>}
-            </div>
 
-            {isAmrapLike && status !== 'idle' && (
-              <div className="row" style={{ justifyContent: 'center', gap: 16 }}>
-                <button className="btn" style={{ background: '#15171b', color: '#fff', minWidth: 64 }} onClick={() => setRounds(roundsHere - 1)} aria-label="Remove a round">
-                  −
+            <div className="ring-area">
+              <BrandRing
+                progress={ringProgress}
+                phaseKey={ringKey}
+                onClick={onRing}
+                label={status === 'idle' ? 'Start timer' : status === 'running' ? 'Pause timer' : 'Resume timer'}
+              >
+                {ringContent}
+              </BrandRing>
+              {isAmrapLike && started && (
+                <button className="round-counter" onClick={() => changeRounds(1)} aria-label={`Round counter: ${roundsHere}. Add a round`}>
+                  <span className="round-counter-btn num">{roundsHere ? roundsHere : <Icon name="plus" size={30} />}</span>
+                  <span className="round-counter-label">round counter</span>
                 </button>
-                <div style={{ textAlign: 'center', color: '#fff' }}>
-                  <div style={{ fontSize: '2.2rem', fontWeight: 800 }} className="num">
-                    {roundsHere}
-                  </div>
-                  <div className="tiny" style={{ color: '#9aa1ab' }}>
-                    rounds
-                  </div>
-                </div>
-                <button className="btn primary" style={{ minWidth: 96, minHeight: 64, fontSize: '1.1rem' }} onClick={() => setRounds(roundsHere + 1)}>
-                  +1 round
-                </button>
-              </div>
-            )}
+              )}
+            </div>
 
             {manual && phase.format !== 'for_time' && (
               <div className="quick-log">
@@ -389,61 +464,138 @@ export function TimerScreen({ session, blockIndexes, onClose }: { session: Sessi
                 <NumberField label={`Weight (${unit})`} value={toDisplayWeight(qlWeight, unit)} onChange={(v) => setOverride({ weight: fromDisplayWeight(v, unit) })} stepper step={unit === 'kg' ? 2.5 : 5} />
               </div>
             )}
-            {phase?.format === 'emom' && phase.kind === 'work' && status !== 'idle' && (
+            {phase?.format === 'emom' && phase.kind === 'work' && started && (phase.entryId || phase.targetReps) && (
               <div className="quick-log" style={{ gridTemplateColumns: '1fr' }}>
                 <NumberField label="Reps this interval (optional)" value={qlReps} onChange={(v) => setOverride({ reps: v })} stepper inputMode="numeric" />
               </div>
             )}
-            {status !== 'idle' && (
+            {manual && (
+              <button className="btn good block timer-done" onClick={onDone}>
+                <Icon name="check" /> {phase.format === 'for_time' ? 'Finish' : 'Done'}
+              </button>
+            )}
+            {started && (
               <div className="timer-next">
-                Next: <strong style={{ color: '#fff' }}>{describeNext()}</strong>
+                Next: <strong>{describeNext()}</strong>
               </div>
             )}
           </div>
 
-          {manual && (
-            <button className="btn good block" style={{ minHeight: 72, fontSize: '1.3rem', marginTop: 12 }} onClick={onDone}>
-              <Icon name="check" /> {phase.format === 'for_time' ? 'Finish' : 'Done'}
+          <div className="timer-bottom">
+            <button className="timer-show" onClick={() => setShowList(true)}>
+              <Icon name="up" />
+              Show workout
             </button>
-          )}
-
-          <div className="timer-controls">
-            {status === 'idle' ? (
-              <button className="btn primary" style={{ gridColumn: '1 / -1', minHeight: 76, fontSize: '1.3rem', flexDirection: 'row' }} onClick={onStart}>
-                <Icon name="play" /> Start
-              </button>
-            ) : (
-              <>
-                {status === 'running' ? (
-                  <button className="btn" onClick={onPause}>
-                    <Icon name="pause" /> Pause
-                  </button>
-                ) : (
-                  <button className="btn primary" onClick={onResume}>
-                    <Icon name="play" /> Resume
-                  </button>
-                )}
-                <button className="btn" onClick={onSkip}>
+            {started && (
+              <div className="timer-actions">
+                <button className="btn ghost small" onClick={onSkip}>
                   <Icon name="skip" /> Skip
                 </button>
-                <button className="btn" onClick={onReset}>
-                  <Icon name="reset" /> Reset
+                <button className="btn ghost small" onClick={onReset}>
+                  <Icon name="reset" /> Restart
                 </button>
-                <button className="btn" onClick={onFinish}>
-                  <Icon name="flag" /> Finish
+                <button className="btn ghost small" onClick={onFinish}>
+                  <Icon name="stop" /> Stop
                 </button>
-              </>
+              </div>
             )}
           </div>
         </>
       )}
+
+      <Sheet open={showList} onClose={() => setShowList(false)} title="Workout">
+        <WorkoutList
+          phases={phases}
+          current={status === 'finished' ? phases.length : status === 'idle' ? -1 : run.state.index}
+          names={(p) => (p.exerciseId ? exercises.get(p.exerciseId)?.name : undefined)}
+          blockName={(i) => session.blocks[i]?.name ?? FORMAT_INFO[session.blocks[i]?.format ?? 'tabata'].label}
+          laps={run.laps ?? {}}
+          onUndoRound={isAmrapLike && roundsHere > 0 ? () => changeRounds(-1) : undefined}
+        />
+      </Sheet>
+    </div>
+  );
+}
+
+/** The plan as a vertical list: done ✓, current ●, upcoming ○. Long phases lists are trimmed around the current one. */
+function WorkoutList({
+  phases,
+  current,
+  names,
+  blockName,
+  laps,
+  onUndoRound,
+}: {
+  phases: Phase[];
+  current: number;
+  names: (p: Phase) => string | undefined;
+  blockName: (blockIndex: number) => string;
+  laps: Record<number, number[]>;
+  onUndoRound?: () => void;
+}) {
+  const from = Math.max(0, current - 20);
+  const to = Math.min(phases.length, Math.max(current, 0) + 60);
+  const rows = phases.slice(from, to).map((p, k) => ({ p, i: from + k }));
+  return (
+    <div className="wl">
+      {from > 0 && <div className="small faint">… {from} earlier steps</div>}
+      {rows.map(({ p, i }) => {
+        const newBlock = i === 0 || phases[i - 1].blockIndex !== p.blockIndex;
+        const state = i < current ? 'done' : i === current ? 'now' : 'next';
+        const lap = laps[p.blockIndex];
+        return (
+          <div key={i}>
+            {newBlock && <div className="wl-block">{blockName(p.blockIndex)}</div>}
+            <div className={`wl-row wl-${state} wl-${p.kind}`}>
+              <span className="wl-dot" aria-hidden>
+                {state === 'done' ? <Icon name="check" size={14} /> : null}
+              </span>
+              <span className="grow">
+                {headingFor(p)}
+                {names(p) && <span className="faint"> · {names(p)}</span>}
+              </span>
+              <span className="num faint">{p.durationSec ? formatClock(p.durationSec) : p.kind === 'work' ? 'open' : ''}</span>
+            </div>
+            {state === 'now' && lap && lap.length > 0 && (
+              <div className="wl-laps">
+                {lap.map((ms, r) => (
+                  <div key={r} className="row between small num">
+                    <span>Round {r + 1}</span>
+                    <span>{formatClock((ms - (lap[r - 1] ?? 0)) / 1000)}</span>
+                  </div>
+                ))}
+                {onUndoRound && (
+                  <button className="btn small mt" onClick={onUndoRound}>
+                    <Icon name="minus" /> Remove last round
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {to < phases.length && <div className="small faint">… {phases.length - to} more steps</div>}
     </div>
   );
 }
 
 type ResultEdit = { rounds?: number; reps?: number; timeSec?: number };
 
-function FinishedView({ session, blockIndexes, rounds, onDone, totalSec }: { session: Session; blockIndexes: number[]; rounds: Record<number, number>; onDone: () => void; totalSec: number }) {
+function FinishedView({
+  session,
+  blockIndexes,
+  rounds,
+  onDone,
+  totalSec,
+  completesWorkout,
+}: {
+  session: Session;
+  blockIndexes: number[];
+  rounds: Record<number, number>;
+  onDone: (complete: boolean) => void;
+  totalSec: number;
+  completesWorkout: boolean;
+}) {
   const resultBlocks = blockIndexes.filter((i) => ['amrap', 'for_time'].includes(session.blocks[i]?.format));
   // Only user edits live here; defaults come from the (live) session and the round counter.
   const [edits, setEdits] = useState<Record<number, ResultEdit>>({});
@@ -462,14 +614,17 @@ function FinishedView({ session, blockIndexes, rounds, onDone, totalSec }: { ses
         await db.sessions.update(session.id, { blocks, updatedAt: Date.now() });
       });
     }
-    onDone();
+    onDone(completesWorkout);
   };
 
   return (
-    <div className="timer-center phase-done">
-      <div className="timer-phase-label">Done</div>
-      <div className="timer-clock" style={{ fontSize: 'clamp(3.5rem, 18vw, 9rem)' }}>
-        {formatClock(totalSec)}
+    <div className="timer-center">
+      <div className="timer-phase-label">Well done</div>
+      <div className="ring-area ring-done">
+        <BrandRing progress={1} phaseKey="done" complete />
+      </div>
+      <div className="timer-sub">
+        Total time <strong className="num" style={{ color: '#fff', fontSize: '1.6rem', marginLeft: 6 }}>{formatClock(totalSec)}</strong>
       </div>
       {resultBlocks.map((i) => {
         const b = session.blocks[i];
@@ -480,15 +635,13 @@ function FinishedView({ session, blockIndexes, rounds, onDone, totalSec }: { ses
             <div style={{ gridColumn: '1 / -1', fontWeight: 700 }}>{b.name ?? FORMAT_INFO[b.format].label} result</div>
             <NumberField label="Rounds" value={v.rounds} onChange={(x) => set({ rounds: x })} stepper inputMode="numeric" />
             <NumberField label="Extra reps" value={v.reps} onChange={(x) => set({ reps: x })} stepper inputMode="numeric" />
-            {b.format === 'for_time' && (
-              <NumberField label="Time (seconds)" value={v.timeSec} onChange={(x) => set({ timeSec: x })} inputMode="numeric" />
-            )}
+            {b.format === 'for_time' && <NumberField label="Time (seconds)" value={v.timeSec} onChange={(x) => set({ timeSec: x })} inputMode="numeric" />}
           </div>
         );
       })}
-      <p className="timer-sub">Logged sets are saved in the workout. You can edit them there.</p>
+      <p className="timer-sub">{completesWorkout ? 'The workout goes to your history; you can edit it there.' : 'Logged sets are saved in the workout. You can edit them there.'}</p>
       <button className="btn primary block" style={{ minHeight: 64, maxWidth: 520, margin: '0 auto' }} onClick={save}>
-        <Icon name="check" /> Save and close
+        <Icon name="check" /> {completesWorkout ? 'Save workout' : 'Save and close'}
       </button>
     </div>
   );

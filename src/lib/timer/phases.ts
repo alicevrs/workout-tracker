@@ -37,6 +37,8 @@ export interface Phase {
   toFailure?: boolean;
   /** Entry note, e.g. "18% incline · 4 km/h". */
   note?: string;
+  /** Short signal every N seconds while this phase runs (For Time). */
+  signalEverySec?: number;
 }
 
 type Base = Pick<Phase, 'blockIndex' | 'blockId' | 'format' | 'sound' | 'vibrate'>;
@@ -81,6 +83,7 @@ export function blockPhases(block: PerformedBlock, blockIndex: number): Phase[] 
     ...extra,
   });
 
+  if ((t.restBeforeSec ?? 0) > 0) out.push({ ...base, kind: 'rest', label: t.restLabel || 'Rest', durationSec: t.restBeforeSec ?? 0, countUp: false });
   if (t.prepSec > 0) out.push({ ...base, kind: 'prep', label: 'Get ready', durationSec: t.prepSec, countUp: false });
 
   switch (block.format) {
@@ -148,7 +151,7 @@ export function blockPhases(block: PerformedBlock, blockIndex: number): Phase[] 
       break;
     }
     case 'for_time':
-      out.push(work({ label: 'For time' }, p.timeCapMin ? p.timeCapMin * 60 : null, true));
+      out.push(work({ label: 'For time', signalEverySec: p.signalEverySec || undefined }, p.timeCapMin ? p.timeCapMin * 60 : null, true));
       break;
     case 'intervals': {
       const segs = p.segments ?? [];

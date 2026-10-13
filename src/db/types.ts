@@ -104,6 +104,8 @@ export interface IntervalSegment {
 export interface TimerOptions {
   /** Get-ready countdown before the block starts. */
   prepSec: number;
+  /** Rest before the block (used between chained quick timers, e.g. sets of EMOMs). */
+  restBeforeSec?: number;
   workLabel: string;
   restLabel: string;
   sound: boolean;
@@ -124,6 +126,8 @@ export interface BlockParams {
   intervalSec?: number;
   // for time
   targetRounds?: number;
+  /** Short signal every N seconds while the clock runs (For Time). */
+  signalEverySec?: number;
   targetReps?: number;
   // intervals
   segments?: IntervalSegment[];
@@ -278,6 +282,10 @@ export interface Settings {
   persistRequested?: boolean;
   soundVolume: number;
   backgroundAudio: boolean;
+  /** Timer beeps mix with music from other apps (Spotify…) instead of pausing it. */
+  mixWithMusic: boolean;
+  /** Short signal halfway through timed work phases. */
+  halfwayCue: boolean;
   stravaEnabled: boolean;
 }
 

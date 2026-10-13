@@ -90,7 +90,7 @@ Choices made while building the app, with the reason for each.
 
 ## Design
 - Style follows the Monday Resolution website (colours, square shapes, uppercase headings), without copying its logo or images. The gym's own headline font is commercial, so the free Archivo is used instead; fonts are self-hosted (`@fontsource`) because the app must work offline and send nothing to third parties.
-- Timer phase colours stay functional: green = work, blue = rest, white = get ready.
+- Timer phase colours: **yellow (brand) = work**, blue = rest, white = get ready. Work used to be green; it became yellow when the timer ring turned into the Monday Resolution circle, so the symbol draws itself in its own colour.
 - With the owner's consent, the app uses the Monday Resolution symbol (yellow circle with an X) as favicon, sidebar logo and app icon. The PNG icons in `public/` were rendered from that SVG on the black background (the earlier dumbbell icon generator was removed).
 
 ## Sports and the activity calendar
@@ -115,3 +115,15 @@ Choices made while building the app, with the reason for each.
 ## Strava without a subscription
 - Strava restricts its API to paying subscribers, so the free route is the account archive. Only `activities.csv` is read (with `fflate`, a small zip library): it already has the summary values, and parsing hundreds of original files on a phone would be slow. Strava writes dates in UTC and repeats some column names; the first “Elapsed Time” is seconds and the second “Distance” is metres.
 - Activities where someone else tagged the user are in the archive only if the tag was accepted on Strava.
+
+## Timer redesign (SmartWOD-style)
+- Model: the user's reference video of SmartWOD (setup with a few big values, tap-the-circle start/pause, round counter, workout list, beeps). Only the concept is reused; layout, colours and texts are the app's own, following the Monday Resolution style.
+- **Quick timers are ordinary blocks.** `src/lib/timer/quick.ts` turns the Timer-tab settings into blocks, so the existing engine, logging, calories and history work unchanged. Sets of AMRAP / EMOM / For Time become repeated blocks with a new `timer.restBeforeSec` (a rest phase before the block); Tabata keeps its own extra sets. In a Mix only the first block has a get-ready countdown; a Rest item becomes the rest before the next block and a trailing rest is dropped. “Repeat” duplicates the blocks.
+- **Pickers are native `<select>` elements** styled as big boxes: on iPhone they open the system wheel (as in the reference app), on a Mac a list. Fixed value lists (seconds in 5 s steps up to 1 min, then 15 s and 30 s steps; minutes 1–60 then by 10).
+- The last settings per format and the get-ready time are remembered in `localStorage` (a per-device convenience, not workout data).
+- **Ring:** the brush circle from the logo is used as an SVG mask target: a thick circle stroke revealed clockwise from the brush's tail (top-left, −125°) uncovers the real logo shape, so the progress looks hand-painted. A faint copy is the track, the X stays very faint behind the digits and appears fully only on the finished screen. An open-ended For Time redraws the circle every minute.
+- **Sounds** were measured from the reference video: 440 Hz beeps of about 0.5 s at −3, −2, −1 s and a 1040 Hz beep of about 0.75 s at every phase change (also at the end, a little longer), and a short 1400 Hz chirp halfway. The app uses the same pitches. Halfway is skipped for EMOM intervals and work shorter than 20 s. No voice: speech synthesis on iPhone is unreliable in the background and talks over music.
+- **Music (Spotify) and the iPhone audio session:** Safari's `navigator.audioSession.type = "playback"` (used before) is exclusive, so iOS paused Spotify. Default is now `"ambient"`, which mixes with other apps' audio. Trade-off, explained in Settings: in ambient mode the beeps follow the Ring/Silent switch and the silent keep-alive audio is not used. Turning “Play with music” off restores the old loud, exclusive mode. Web apps cannot lower (“duck”) other apps' music, so there is no ducking option.
+- Round counter: each tap stores the AMRAP/For Time phase time, giving “Last round” and the splits in “Show workout”; the total still goes to the block result as before. “Remove last round” in the list undoes a wrong tap.
+- When a timer run covered every block of a workout in progress, “Save workout” on the finished screen marks it completed (same as Finish workout). Partial runs still return to the workout screen.
+

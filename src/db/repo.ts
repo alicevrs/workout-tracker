@@ -16,6 +16,8 @@ export const DEFAULT_PROFILE: Profile = {
 export const DEFAULT_SETTINGS: Settings = {
   soundVolume: 0.8,
   backgroundAudio: true,
+  mixWithMusic: true,
+  halfwayCue: true,
   stravaEnabled: false,
 };
 

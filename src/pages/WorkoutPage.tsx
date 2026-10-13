@@ -337,7 +337,7 @@ export default function WorkoutPage() {
         </button>
       </div>
 
-      {timerBlocks && <TimerScreen session={session} blockIndexes={timerBlocks} onClose={() => setTimerBlocks(null)} />}
+      {timerBlocks && <TimerScreen session={session} blockIndexes={timerBlocks} onClose={() => setTimerBlocks(null)} onComplete={inProgress ? finish : undefined} />}
     </div>
   );
 }

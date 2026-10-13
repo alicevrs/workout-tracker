@@ -1,16 +1,34 @@
 // Timer sounds with the Web Audio API. Beeps are scheduled ahead on the audio clock, so they
 // play on time even when JavaScript timers are throttled (screen locked, app in background).
 // iOS only allows audio after a user gesture: call unlock() from a tap handler.
+//
+// Sound set (modelled on gym interval timers): a low beep in each of the last 3 seconds, a long
+// high beep when the next phase starts, a short chirp halfway and for interval signals.
+// Music: with mixWithMusic the Safari audio session is "ambient", so Spotify & co. keep playing
+// and the beeps play on top. "playback" is louder (ignores the silent switch, survives the lock
+// screen better) but iOS pauses other apps' music.
 
 import type { ScheduledSound, SoundKind } from './engine';
 
 type AudioSessionNavigator = Navigator & { audioSession?: { type: string } };
 
-const TONES: Record<SoundKind, { freq: number; dur: number; repeat?: number; gap?: number; step?: number }> = {
-  tick: { freq: 880, dur: 0.12 },
-  work: { freq: 1320, dur: 0.45 },
-  rest: { freq: 660, dur: 0.16, repeat: 2, gap: 0.08 },
-  finish: { freq: 990, dur: 0.18, repeat: 3, gap: 0.06, step: 1.26 },
+interface Tone {
+  freq: number;
+  dur: number;
+  repeat?: number;
+  gap?: number;
+  step?: number;
+  wave?: OscillatorType;
+  level?: number;
+}
+
+const TONES: Record<SoundKind, Tone> = {
+  tick: { freq: 440, dur: 0.5, wave: 'square', level: 0.3 },
+  work: { freq: 1040, dur: 0.75, wave: 'square', level: 0.3 },
+  rest: { freq: 1040, dur: 0.75, wave: 'square', level: 0.3 },
+  finish: { freq: 1040, dur: 1.3, wave: 'square', level: 0.3 },
+  half: { freq: 1400, dur: 0.1, repeat: 2, gap: 0.06, wave: 'sine', level: 0.55 },
+  signal: { freq: 1400, dur: 0.12, repeat: 3, gap: 0.06, wave: 'sine', level: 0.55 },
 };
 
 class TimerAudio {
@@ -19,16 +37,28 @@ class TimerAudio {
   private scheduled: OscillatorNode[] = [];
   private keepAliveNode: AudioBufferSourceNode | null = null;
   volume = 0.8;
+  /** true: mix with other apps' music (ambient session). false: exclusive "playback" session. */
+  mixWithMusic = true;
 
-  /** Must be called from a user gesture (tap) at least once. */
-  unlock(): void {
+  private applySession(): void {
     try {
       const nav = navigator as AudioSessionNavigator;
-      // Safari 16.4+: play through the silent switch and keep playing with the screen locked.
-      if (nav.audioSession) nav.audioSession.type = 'playback';
+      // Safari 16.4+. "ambient" mixes with Spotify; "playback" pauses it but ignores the silent switch.
+      if (nav.audioSession) nav.audioSession.type = this.mixWithMusic ? 'ambient' : 'playback';
     } catch {
       /* not supported */
     }
+  }
+
+  setMixWithMusic(on: boolean): void {
+    if (this.mixWithMusic === on) return;
+    this.mixWithMusic = on;
+    this.applySession();
+  }
+
+  /** Must be called from a user gesture (tap) at least once. */
+  unlock(): void {
+    this.applySession();
     if (!this.ctx) {
       const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!Ctor) return;
@@ -67,12 +97,12 @@ class TimerAudio {
       const start = when + i * (t.dur + (t.gap ?? 0));
       const osc = this.ctx.createOscillator();
       const env = this.ctx.createGain();
-      osc.type = kind === 'tick' ? 'sine' : 'square';
+      osc.type = t.wave ?? 'square';
       osc.frequency.value = t.freq * Math.pow(t.step ?? 1, i);
-      const peak = this.volume * (kind === 'tick' ? 0.5 : 0.35);
+      const peak = Math.max(0.0002, this.volume * (t.level ?? 0.3));
       env.gain.setValueAtTime(0.0001, start);
-      env.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), start + 0.01);
-      env.gain.setValueAtTime(Math.max(0.0002, peak), start + t.dur - 0.03);
+      env.gain.exponentialRampToValueAtTime(peak, start + 0.01);
+      env.gain.setValueAtTime(peak, start + t.dur * 0.7);
       env.gain.exponentialRampToValueAtTime(0.0001, start + t.dur);
       osc.connect(env).connect(this.gain);
       osc.start(start);
@@ -118,6 +148,8 @@ class TimerAudio {
   /** Loop near-silence so iOS keeps the audio session (and the scheduled beeps) alive in the background. */
   setKeepAlive(on: boolean): void {
     if (!this.ctx) return;
+    // Silent looping audio would make iOS treat the page as a music player; never with mixing.
+    if (this.mixWithMusic) on = false;
     if (on && !this.keepAliveNode) {
       const buf = this.ctx.createBuffer(1, this.ctx.sampleRate, this.ctx.sampleRate);
       const data = buf.getChannelData(0);

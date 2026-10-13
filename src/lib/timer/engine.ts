@@ -122,38 +122,53 @@ export function snapshot(phases: Phase[], s: TimerState, now: number): Snapshot 
   return { phase, next: phases[s.index + 1], index: s.index, elapsedMs, remainingMs, progress, totalElapsedMs };
 }
 
-export type SoundKind = 'tick' | 'work' | 'rest' | 'finish';
+export type SoundKind = 'tick' | 'work' | 'rest' | 'finish' | 'half' | 'signal';
 
 export interface ScheduledSound {
   at: number;
   kind: SoundKind;
 }
 
+export interface SoundOptions {
+  /** Short signal halfway through timed work phases of 20 s or more (not EMOM intervals). */
+  halfway?: boolean;
+}
+
 /**
- * Sounds due from `now` on: a tick in each of the last 3 seconds of every timed phase and a
- * distinct sound when the next phase starts. Stops at the first open-ended phase, whose end
- * time is unknown. Used to pre-schedule audio so beeps play on time even if the page is throttled.
+ * Sounds due from `now` on: a low beep in each of the last 3 seconds of every timed phase and a
+ * long high beep when the next phase starts (optionally a short signal halfway through work).
+ * Open-ended phases have no known end, so scheduling stops there (after their interval signals).
+ * Used to pre-schedule audio so beeps play on time even if the page is throttled.
  */
-export function upcomingSounds(phases: Phase[], s: TimerState, now: number, horizonMs = 15 * 60_000): ScheduledSound[] {
+export function upcomingSounds(phases: Phase[], s: TimerState, now: number, horizonMs = 15 * 60_000, opts: SoundOptions = {}): ScheduledSound[] {
   if (s.status !== 'running') return [];
   const out: ScheduledSound[] = [];
+  const push = (at: number, kind: SoundKind) => {
+    if (at > now && at <= now + horizonMs) out.push({ at, kind });
+  };
   let start = s.phaseStartedAt;
   for (let i = s.index; i < phases.length; i++) {
     const p = phases[i];
+    if (start > now + horizonMs) break;
+    if (p.sound && p.signalEverySec && p.signalEverySec > 0) {
+      const every = p.signalEverySec * 1000;
+      const limit = p.durationSec === null ? now + horizonMs : start + p.durationSec * 1000 - 3000;
+      for (let at = start + every; at < limit; at += every) push(at, 'signal');
+    }
     if (p.durationSec === null) break;
     const end = start + p.durationSec * 1000;
-    if (start > now + horizonMs) break;
     if (p.sound) {
+      if (opts.halfway && p.kind === 'work' && p.format !== 'emom' && p.durationSec >= 20) push(start + (p.durationSec * 1000) / 2, 'half');
       for (const sec of [3, 2, 1]) {
         const at = end - sec * 1000;
-        if (at > now && at >= start && p.durationSec > sec) out.push({ at, kind: 'tick' });
+        if (at >= start && p.durationSec > sec) push(at, 'tick');
       }
       const next = phases[i + 1];
-      if (end > now) out.push({ at: end, kind: !next ? 'finish' : next.kind === 'work' ? 'work' : 'rest' });
+      push(end, !next ? 'finish' : next.kind === 'work' ? 'work' : 'rest');
     }
     start = end;
   }
-  return out;
+  return out.sort((a, b) => a.at - b.at);
 }
 
 /** Wall-clock time the current timed phase ends, if any. */

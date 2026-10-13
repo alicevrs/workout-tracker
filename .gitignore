@@ -12,3 +12,8 @@ dev-dist
 /*.zip
 tests/_local/
 /CLAUDE.md
+# Screen recordings used as references
+*.MP4
+*.mp4
+*.MOV
+*.mov

@@ -91,6 +91,12 @@ export function BlockEditor({ block, onChange }: { block: Block; onChange: (b: B
             <NumberField label="Target rounds" value={p.targetRounds} onChange={(v) => setParams({ targetRounds: v })} stepper inputMode="numeric" />
             <NumberField label="or target reps" value={p.targetReps} onChange={(v) => setParams({ targetReps: v })} inputMode="numeric" />
             <NumberField label="Time cap" suffix="min, optional" value={p.timeCapMin} onChange={(v) => setParams({ timeCapMin: v })} />
+            <NumberField
+              label="Signal every"
+              suffix="min, optional"
+              value={p.signalEverySec ? p.signalEverySec / 60 : undefined}
+              onChange={(v) => setParams({ signalEverySec: v ? Math.round(v * 60) : undefined })}
+            />
           </>
         )}
       </div>
