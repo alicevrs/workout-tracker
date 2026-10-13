@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { EmptyState, NumberField, PageHeader, Segmented, useToast } from '../components/ui';
-import { GROUP_INFO, resolveSport, SPORT_BY_ID, SPORTS, type SportGroup } from '../data/sports';
+import { GROUP_INFO, resolveSport, SPORT_BY_ID } from '../data/sports';
+import { SportPicker } from '../components/SportPicker';
 import { db } from '../db/db';
 import { useExerciseMap, useProfile } from '../db/repo';
 import type { Intensity, Session } from '../db/types';
@@ -12,7 +13,6 @@ import { sessionCalories } from '../lib/calories';
 import { pad, toDateKey } from '../lib/dates';
 import { uid } from '../lib/ids';
 
-const GROUP_ORDER: SportGroup[] = ['foot', 'cycling', 'water', 'snow', 'climbing', 'fitness', 'team', 'other'];
 
 function toLocalInput(ms: number): string {
   const d = new Date(ms);
@@ -44,7 +44,7 @@ export default function ActivityFormPage() {
   const weights = useLiveQuery(() => db.bodyWeights.toArray(), []) ?? [];
   const [existing, setExisting] = useState<Session | null | undefined>(id ? undefined : null);
   const [form, setForm] = useState<Form | null>(null);
-  const [query, setQuery] = useState('');
+  const [changing, setChanging] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -52,7 +52,9 @@ export default function ActivityFormPage() {
       const now = new Date();
       now.setMinutes(0, 0, 0);
       const date = params.get('date');
-      const start = date ? new Date(`${date}T${pad(now.getHours())}:00`).getTime() : now.getTime() - 3600_000;
+      // Only the date is asked; a past day is saved at midday, today one hour ago.
+      const isToday = !date || date === toDateKey(Date.now());
+      const start = isToday ? now.getTime() - 3600_000 : new Date(`${date}T12:00:00`).getTime();
       setForm({ sportId: params.get('sport') ?? '', title: '', start: toLocalInput(start), hours: 1, minutes: 0, intensity: 'moderate', notes: '' });
       return;
     }
@@ -112,11 +114,6 @@ export default function ActivityFormPage() {
     return sessionCalories({ ...draft, importedCalories: undefined }, { profile, weights, exercises });
   }, [draft, profile, weights, exercises]);
 
-  const filteredSports = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return SPORTS.filter((s) => !q || s.label.toLowerCase().includes(q) || GROUP_INFO[s.group].label.toLowerCase().includes(q));
-  }, [query]);
-
   if (existing === undefined || !form) return <div className="page" />;
   if (id && existing === null)
     return (
@@ -151,32 +148,24 @@ export default function ActivityFormPage() {
       <div className="stack">
         <section className="card">
           <h2 className="mb">Sport</h2>
-          {sport && (
-            <div className="row mb">
+          {sport && !changing ? (
+            <div className="row">
               <span style={{ width: 12, height: 12, background: GROUP_INFO[sport.group].color, borderRadius: 2 }} aria-hidden />
               <strong>{sport.label}</strong>
-              <span className="small muted">· {GROUP_INFO[sport.group].label}</span>
+              <span className="small muted grow">· {GROUP_INFO[sport.group].label}</span>
+              <button className="btn small ghost" onClick={() => setChanging(true)}>
+                Change
+              </button>
             </div>
+          ) : (
+            <SportPicker
+              value={form.sportId || undefined}
+              onChange={(sportId) => {
+                set({ sportId });
+                setChanging(false);
+              }}
+            />
           )}
-          <input type="search" placeholder="Search sport" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search sport" />
-          {GROUP_ORDER.map((g) => {
-            const list = filteredSports.filter((s) => s.group === g);
-            if (!list.length) return null;
-            return (
-              <div key={g} className="mt-s">
-                <div className="tiny faint" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', margin: '8px 0 4px' }}>
-                  {GROUP_INFO[g].label}
-                </div>
-                <div className="chips">
-                  {list.map((s) => (
-                    <button key={s.id} type="button" className="chip" aria-pressed={form.sportId === s.id} onClick={() => set({ sportId: s.id })}>
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
         </section>
 
         {sport && (
@@ -186,8 +175,13 @@ export default function ActivityFormPage() {
               <input value={form.title} placeholder={sport.label} onChange={(e) => set({ title: e.target.value })} />
             </label>
             <label className="field full">
-              Start
-              <input type="datetime-local" value={form.start} onChange={(e) => set({ start: e.target.value })} />
+              Date
+              <input
+                type="date"
+                value={form.start.slice(0, 10)}
+                max={toDateKey(Date.now())}
+                onChange={(e) => e.target.value && set({ start: `${e.target.value}${form.start.slice(10)}` })}
+              />
             </label>
             <NumberField label="Hours" value={form.hours} onChange={(v) => set({ hours: v })} stepper inputMode="numeric" />
             <NumberField label="Minutes" value={form.minutes} onChange={(v) => set({ minutes: v })} stepper step={5} inputMode="numeric" max={59} />

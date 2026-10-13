@@ -5,6 +5,7 @@ import { Navigate, NavLink, Route, Routes, useLocation, useParams } from 'react-
 import { Icon, type IconName } from './components/Icon';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import TodayPage from './pages/TodayPage';
+import { BrandLoader } from './components/BrandRing';
 import { isStravaRedirect, StravaRedirectNotice } from './strava';
 
 const stravaRedirect = isStravaRedirect();
@@ -61,7 +62,7 @@ export default function App() {
           </Suspense>
         )}
         <ErrorBoundary key={location.pathname}>
-        <Suspense fallback={<div className="empty">Loading…</div>}>
+        <Suspense fallback={<BrandLoader />}>
           <Routes>
             <Route path="/" element={<TodayPage />} />
             <Route path="/exercises" element={<ExercisesPage />} />

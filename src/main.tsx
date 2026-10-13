@@ -35,6 +35,16 @@ async function boot() {
 
 void boot();
 
+// Opening screen: stays 3 s from the start of loading, then fades out.
+const splash = document.getElementById('splash');
+if (splash) {
+  const wait = Math.max(0, 3000 - performance.now());
+  setTimeout(() => {
+    splash.classList.add('hide');
+    setTimeout(() => splash.remove(), 500);
+  }, wait);
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <HashRouter>

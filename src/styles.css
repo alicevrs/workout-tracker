@@ -947,6 +947,31 @@ div.ring-wrap {
   outline-offset: 6px;
   border-radius: 50%;
 }
+.brand-loader {
+  display: flex;
+  justify-content: center;
+  padding: 18vh 0;
+  color: var(--accent);
+}
+.brand-loader svg {
+  width: 56px;
+  height: 56px;
+}
+.brand-loader-reveal {
+  stroke-dashoffset: 1910;
+  animation: brand-load 1.4s ease-in-out infinite;
+}
+@keyframes brand-load {
+  0% {
+    stroke-dashoffset: 1910;
+  }
+  60% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -1910;
+  }
+}
 .ring-done .ring-wrap {
   width: min(56vw, 30dvh, 260px);
 }
@@ -1233,6 +1258,37 @@ div.ring-wrap {
 .big-btn.pink,
 .qt-mix .qt-card-main {
   background: var(--rest);
+}
+.big-btn-note {
+  max-width: 260px;
+  text-align: center;
+  margin: 0;
+}
+.search-results {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: var(--bg-elev-2);
+}
+.search-results button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 8px 12px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.search-results li:last-child button {
+  border-bottom: 0;
 }
 .big-btn:active,
 .qt-card-main:active {

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { isStandalone } from '../components/InstallHelp';
 import { PageHeader } from '../components/ui';
+import { StartActivitySheet } from '../components/StartActivitySheet';
 import { StartWorkoutSheet } from '../components/StartWorkoutSheet';
 import { db } from '../db/db';
 import { formatTime } from '../lib/dates';
@@ -11,6 +12,7 @@ import { formatTime } from '../lib/dates';
 export default function TodayPage() {
   const active = useLiveQuery(() => db.sessions.where('status').equals('in_progress').toArray(), []);
   const [starting, setStarting] = useState(false);
+  const [activity, setActivity] = useState(false);
   return (
     <div className="page">
       <PageHeader
@@ -35,12 +37,10 @@ export default function TodayPage() {
           <button className="big-btn" onClick={() => setStarting(true)}>
             Start a workout
           </button>
-          <Link className="big-btn pink" to="/activity/new">
+          <button className="big-btn pink" onClick={() => setActivity(true)}>
             Start an activity
-          </Link>
-          <p className="tiny faint" style={{ textAlign: 'center', margin: 0 }}>
-            You can also pick an earlier date to log something you already did.
-          </p>
+          </button>
+          <p className="tiny faint big-btn-note">Change the date to log a past one.</p>
         </section>
         {active && active.length > 0 && (
           <section className="card" style={{ borderColor: 'var(--accent)' }}>
@@ -60,6 +60,7 @@ export default function TodayPage() {
 
       </div>
       <StartWorkoutSheet open={starting} onClose={() => setStarting(false)} />
+      <StartActivitySheet open={activity} onClose={() => setActivity(false)} />
     </div>
   );
 }

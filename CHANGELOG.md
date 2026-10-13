@@ -146,3 +146,10 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Mix setup: timers are big centered buttons like on the Timer home (yellow; Rest pink; Work white) with an × on the right to remove them. Tap one to edit it; hold it for a moment and drag it up or down to reorder (the arrows are gone).
 - The voice always says “Well done!” at the end. Fixed: a voice cue that starts a few tenths after its beep could be dropped when the phase changed (this could also silence “Rest”, “Round 2” and the others).
 
+## Start sheets, opening screen and loader (2026-10-13)
+- Opening screen: the MORE · Monday Resolution logo on black for 3 seconds when the app starts, then it fades out.
+- Loading: the Monday Resolution circle drawing itself replaces the “Loading…” text.
+- Home: shorter hint under the buttons (“Change the date to log a past one.”).
+- Start a workout: only the date (today by default) and a plain list of workout names plus “Free workout”. No start time is asked for past dates.
+- Start an activity opens a sheet too: date (today by default), a search bar and two lists, Type and Sport. Picking a sport fills in its type; picking a type narrows the sports; a search result fills in both. Choosing the sport opens the activity form for that day. The activity form uses the same picker (with “Change”) and asks only for the date, not the time.
+

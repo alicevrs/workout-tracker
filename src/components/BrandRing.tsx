@@ -79,3 +79,26 @@ export function BrandSymbol({ size = 120 }: { size?: number }) {
     </svg>
   );
 }
+
+/** Loading indicator: the Monday Resolution circle drawing itself over and over. */
+export function BrandLoader({ label = 'Loading' }: { label?: string }) {
+  const id = useId().replace(/:/g, '');
+  return (
+    <div className="brand-loader" role="status" aria-label={label}>
+      <svg viewBox="0 0 676 676.1" aria-hidden>
+        <defs>
+          <mask id={`l${id}`} maskUnits="userSpaceOnUse" x="0" y="0" width="676" height="676.1">
+            <rect width="676" height="676.1" fill="#000" />
+            <circle className="brand-loader-reveal" cx="338" cy="338" r="304" fill="none" stroke="#fff" strokeWidth="112" strokeDasharray={`${C} ${C}`} transform={`rotate(${START_DEG} 338 338)`} />
+          </mask>
+        </defs>
+        <path d={MR_RING} fill="currentColor" opacity={0.15} />
+        <path d={MR_RING} fill="currentColor" mask={`url(#l${id})`} />
+        {MR_X.map((d, i) => (
+          <path key={i} d={d} fill="currentColor" opacity={0.15} />
+        ))}
+      </svg>
+    </div>
+  );
+}
+
