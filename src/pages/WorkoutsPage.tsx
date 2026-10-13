@@ -1,25 +1,17 @@
-import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { InfoButton } from '../components/Library';
 import { PageHeader } from '../components/ui';
-import { db } from '../db/db';
 
 type Level = 'workouts' | 'blocks' | 'exercises';
 
 const LEVELS: { id: Level; label: string; to: string; pink?: boolean }[] = [
-  { id: 'workouts', label: 'Workouts', to: '/workouts/templates' },
+  { id: 'exercises', label: 'Exercises', to: '/exercises' },
   { id: 'blocks', label: 'Training blocks', to: '/workouts/blocks' },
-  { id: 'exercises', label: 'Exercises', to: '/exercises', pink: true },
+  { id: 'workouts', label: 'Workouts', to: '/workouts/templates', pink: true },
 ];
 
-/** Workouts hub: the three libraries, from the biggest piece to the smallest. */
+/** Workouts hub: the three libraries, from the smallest piece to the biggest. */
 export default function WorkoutsPage() {
-  const counts = useLiveQuery(async () => ({
-    workouts: await db.programs.count(),
-    blocks: await db.blockTemplates.count(),
-    exercises: await db.exercises.count(),
-  }));
-
   return (
     <div className="page">
       <PageHeader
@@ -41,9 +33,8 @@ export default function WorkoutsPage() {
       />
       <section className="qt-list" aria-label="Libraries">
         {LEVELS.map((l) => (
-          <Link key={l.id} className={`big-btn qt-card-two${l.pink ? ' pink' : ''}`} to={l.to}>
-            <span>{l.label}</span>
-            {counts && <small>{counts[l.id]}</small>}
+          <Link key={l.id} className={`big-btn${l.pink ? ' pink' : ''}`} to={l.to}>
+            {l.label}
           </Link>
         ))}
       </section>
