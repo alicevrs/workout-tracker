@@ -74,7 +74,7 @@ describe('voice cues', () => {
     const startAt = start(phases, initialState(), 0);
     const cues = upcomingCues(phases, startAt, 0, undefined, { halfway: true });
     expect(cues).toEqual([
-      { at: 10 * S, cue: 'go' },
+      { at: 10 * S, cue: 'lets_go' },
       { at: 25 * S, cue: 'halfway' },
       { at: 30 * S, cue: 'ten_seconds' },
       { at: 40 * S, cue: 'rest' },
@@ -83,6 +83,17 @@ describe('voice cues', () => {
       { at: 70 * S, cue: 'ten_seconds' },
       { at: 80 * S, cue: 'done' },
     ]);
+  });
+});
+
+describe('round cues', () => {
+  it('counts rounds, then last round; set rest between Tabata sets and EMOM sets', () => {
+    const tabata = phasesOf(quickBlocks([{ ...defaultQuick('tabata'), rounds: 4, sets: 2, setRestSec: 30 }], 0));
+    const cues = upcomingCues(tabata, start(tabata, initialState(), 0), -1).map((c) => c.cue);
+    expect(cues.slice(0, 8)).toEqual(['rest', 'round_2', 'rest', 'round_3', 'rest', 'last_round', 'set_rest', 'lets_go']);
+    expect(cues[cues.length - 1]).toBe('done');
+    const emom = phasesOf(quickBlocks([{ ...defaultQuick('emom'), minutes: 2, sets: 2, setRestSec: 60 }], 0));
+    expect(upcomingCues(emom, start(emom, initialState(), 0), -1).map((c) => c.cue).filter((c) => c !== 'ten_seconds')).toEqual(['last_round', 'set_rest', 'lets_go', 'last_round', 'done']);
   });
 });
 

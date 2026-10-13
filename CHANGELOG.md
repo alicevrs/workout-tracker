@@ -134,3 +134,8 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Voice guide (female or male, or off): “Get ready”, “Go!”, “Rest”, “Halfway”, “Ten seconds”, “Last round!”, “Workout complete”. Recorded clips, played like the beeps, so they work offline and with music.
 - Rest is shown in pink.
 
+## Timer voice and home layout (2026-10-13)
+- Voice guide speaks like SmartWOD: “Let's go!” at the first round, “Round 2”, “Round 3”… (EMOM intervals too), “Last round!”, “Rest” between rounds, “Set rest” between sets, “Halfway there!” in the middle.
+- Timer home: smaller centered buttons, yellow for AMRAP / For Time / EMOM / Tabata and pink for Mix, with the ⓘ beside each one; the format names are now smaller than the page title.
+- Between sets of AMRAP / EMOM / For Time the heading reads “Set rest”.
+

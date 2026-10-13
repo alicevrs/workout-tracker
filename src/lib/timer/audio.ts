@@ -10,7 +10,7 @@
 // and the sounds play on top, but iOS mutes them on silent. "playback" ignores the silent switch
 // but iOS pauses other apps' music. A web app cannot have both (see DECISIONS.md).
 
-import type { ScheduledCue, ScheduledSound, SoundKind, VoiceCue } from './engine';
+import { MAX_ROUND_CUE, type ScheduledCue, type ScheduledSound, type SoundKind, type VoiceCue } from './engine';
 
 type AudioSessionNavigator = Navigator & { audioSession?: { type: string } };
 
@@ -37,9 +37,20 @@ const TONES: Record<SoundKind, Tone> = {
   signal: { freq: 1400, dur: 0.12, repeat: 3, gap: 0.06, wave: 'sine', level: 0.5, group: 'signal' },
 };
 
-export const VOICE_CUES: VoiceCue[] = ['get_ready', 'go', 'rest', 'halfway', 'ten_seconds', 'last_round', 'done'];
+export const VOICE_CUES: VoiceCue[] = [
+  'get_ready',
+  'go',
+  'lets_go',
+  'rest',
+  'set_rest',
+  'halfway',
+  'ten_seconds',
+  'last_round',
+  'done',
+  ...Array.from({ length: MAX_ROUND_CUE - 1 }, (_, i) => `round_${i + 2}` as VoiceCue),
+];
 /** Voice starts a little after the beep of the same moment, so both are heard. */
-const CUE_DELAY: Partial<Record<VoiceCue, number>> = { done: 1.3, go: 0.3, rest: 0.3, last_round: 0.3, halfway: 0.3 };
+const cueDelay = (c: VoiceCue) => (c === 'done' ? 1.3 : c === 'ten_seconds' || c === 'get_ready' ? 0 : 0.3);
 
 interface Playing {
   node: AudioScheduledSourceNode;
@@ -199,7 +210,7 @@ class TimerAudio {
       this.tone(s.kind, base + Math.max(0.01, offset));
     }
     for (const c of cues) {
-      const offset = (c.at - now) / 1000 + (CUE_DELAY[c.cue] ?? 0);
+      const offset = (c.at - now) / 1000 + cueDelay(c.cue);
       if (offset < -0.05) continue;
       this.speak(c.cue, base + Math.max(0.01, offset));
     }

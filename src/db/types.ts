@@ -106,6 +106,8 @@ export interface TimerOptions {
   prepSec: number;
   /** Rest before the block (used between chained quick timers, e.g. sets of EMOMs). */
   restBeforeSec?: number;
+  /** Label of that rest, e.g. “Set rest”. */
+  restBeforeLabel?: string;
   workLabel: string;
   restLabel: string;
   sound: boolean;

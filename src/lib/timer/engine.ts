@@ -171,19 +171,32 @@ export function upcomingSounds(phases: Phase[], s: TimerState, now: number, hori
   return out.sort((a, b) => a.at - b.at);
 }
 
-export type VoiceCue = 'get_ready' | 'go' | 'rest' | 'halfway' | 'ten_seconds' | 'last_round' | 'done';
+/** Highest “Round N” recording in public/voice. */
+export const MAX_ROUND_CUE = 40;
+
+export type VoiceCue = 'get_ready' | 'go' | 'lets_go' | 'rest' | 'set_rest' | 'halfway' | 'ten_seconds' | 'last_round' | 'done' | `round_${number}`;
 
 export interface ScheduledCue {
   at: number;
   cue: VoiceCue;
 }
 
-/** The spoken cue when phase `p` starts. */
+/**
+ * The spoken cue when phase `p` starts (SmartWOD-style): “Let's go!” for the first round,
+ * “Round 2”, “Round 3”… then “Last round!”; “Rest” between rounds and “Set rest” between sets.
+ */
 export function cueForPhaseStart(p: Phase): VoiceCue | null {
   if (p.kind === 'prep') return p.durationSec !== null && p.durationSec >= 3 ? 'get_ready' : null;
-  if (p.kind === 'rest') return 'rest';
-  const lastRound = (p.format === 'tabata' || p.format === 'intervals') && p.round && p.totalRounds && p.totalRounds > 1 && p.round === p.totalRounds && (p.set ?? 1) === (p.totalSets ?? 1);
-  return lastRound ? 'last_round' : 'go';
+  if (p.kind === 'rest') return p.label === 'Set rest' ? 'set_rest' : 'rest';
+  const round = p.format === 'emom' ? p.interval : p.format === 'tabata' || p.format === 'intervals' ? p.round : undefined;
+  const total = p.format === 'emom' ? p.totalIntervals : p.totalRounds;
+  if (round && total && total > 1) {
+    if (round === 1) return 'lets_go';
+    if (round === total) return 'last_round';
+    return round <= MAX_ROUND_CUE ? `round_${round}` : 'go';
+  }
+  if (p.format === 'sets_reps' || p.format === 'timed_sets') return 'go';
+  return 'lets_go';
 }
 
 /**

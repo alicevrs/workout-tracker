@@ -144,7 +144,7 @@ function timerBlocks(q: QuickTimer): Block[] {
   return Array.from({ length: sets }, (_, i) => {
     const b = i === 0 ? one : { ...structuredClone(one), id: uid() };
     b.name = `${name} · set ${i + 1}/${sets}`;
-    b.timer = { ...b.timer, restBeforeSec: i === 0 ? 0 : q.setRestSec ?? 0 };
+    b.timer = { ...b.timer, restBeforeSec: i === 0 ? 0 : q.setRestSec ?? 0, restBeforeLabel: 'Set rest' };
     return b;
   });
 }
@@ -165,7 +165,11 @@ export function quickBlocks(items: QuickTimer[], prepSec: number, repeat = 1): B
       for (const b of timerBlocks(q)) {
         const isFirst = out.length === 0;
         b.timer = { ...b.timer, prepSec: isFirst ? prepSec : 0, restBeforeSec: isFirst ? 0 : (b.timer.restBeforeSec ?? 0) + pendingRest };
-        if (!b.timer.restBeforeSec) delete b.timer.restBeforeSec;
+        if (pendingRest > 0) delete b.timer.restBeforeLabel; // a Rest item from a Mix is a plain rest
+        if (!b.timer.restBeforeSec) {
+          delete b.timer.restBeforeSec;
+          delete b.timer.restBeforeLabel;
+        }
         pendingRest = 0;
         out.push(b);
       }

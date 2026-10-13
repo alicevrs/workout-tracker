@@ -152,9 +152,8 @@ export default function TimerPage() {
         <section className="qt-list" aria-label="Timer formats">
           {MODES.map((m) => (
             <div key={m} className={`qt-card qt-${m}`}>
-              <button className="qt-card-main" onClick={() => setMode(m)}>
-                <span className="qt-card-title">{QUICK_LABEL[m]}</span>
-                <span className="qt-card-sub">{TIMER_INFO[m].tagline}</span>
+              <button className="qt-card-main" onClick={() => setMode(m)} aria-label={`${QUICK_LABEL[m]}: ${TIMER_INFO[m].tagline}`}>
+                {QUICK_LABEL[m]}
               </button>
               <button className="qt-card-info" onClick={() => setInfo(m)} aria-label={`How ${QUICK_LABEL[m]} works`}>
                 <Icon name="info" />

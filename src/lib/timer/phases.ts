@@ -83,7 +83,7 @@ export function blockPhases(block: PerformedBlock, blockIndex: number): Phase[] 
     ...extra,
   });
 
-  if ((t.restBeforeSec ?? 0) > 0) out.push({ ...base, kind: 'rest', label: t.restLabel || 'Rest', durationSec: t.restBeforeSec ?? 0, countUp: false });
+  if ((t.restBeforeSec ?? 0) > 0) out.push({ ...base, kind: 'rest', label: t.restBeforeLabel || 'Rest', durationSec: t.restBeforeSec ?? 0, countUp: false });
   if (t.prepSec > 0) out.push({ ...base, kind: 'prep', label: 'Get ready', durationSec: t.prepSec, countUp: false });
 
   switch (block.format) {

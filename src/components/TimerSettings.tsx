@@ -69,7 +69,7 @@ export function TimerSettings() {
       ))}
 
       <div className="field">
-        Voice guide (Get ready, Go, Rest, Halfway, Ten seconds, Last round)
+        Voice guide (Let's go, Round 2…, Last round, Rest, Set rest, Halfway there, Ten seconds)
         <Segmented
           label="Voice guide"
           value={s.voice}
