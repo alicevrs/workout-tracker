@@ -134,6 +134,7 @@ Choices made while building the app, with the reason for each.
 
 ## Home and shared look
 - “Today” renamed **Home** (route stays `/`). The weekly backup reminder banner was removed at the user's request; `backupReminderDue` remains in `lib/backup.ts`, unused by the UI, and Settings still shows the last backup.
+- The update banner is black with a yellow border and yellow buttons (pink felt too heavy).
 - Big centered buttons (`.big-btn`, yellow; `.pink` uses the rest pink) are the shared style for Home, the Timer home and the Mix list; corners stay square like the rest of the app.
 - Page titles show the Monday Resolution symbol (`/favicon-mr.svg` as a CSS background, Vite adds the base path). Card titles keep the thin yellow rule.
 - Mix reordering: hold 350 ms then drag (pointer events; scrolling is blocked only while dragging with a non-passive `touchmove` listener; moving more than 8 px before the hold ends counts as scrolling). Keyboard: Alt + ↑/↓ on a focused item.
@@ -143,5 +144,5 @@ Choices made while building the app, with the reason for each.
 - **Opening screen** copies the gym app's “MORE · Monday Resolution” splash (from the user's reference video; the gym's branding is used with the owner's consent, the “powered by” vendor mark is not). It is an inline SVG in `index.html`, so it appears before any script loads: the letters are outlines of the free Anton font (converted to paths once with opentype.js, no font file shipped), stretched to the original proportions, with the symbol from `favicon-mr.svg`. `main.tsx` removes it 3 s after the page started loading.
 - **Loader** (`BrandLoader`): the brush circle revealed and hidden in a loop with the same mask technique as the timer ring.
 - **Past dates without a time:** a workout or activity on a past day is saved at 12:00; today's activity defaults to one hour ago. Editing an existing activity's date keeps its original time (imports have exact times).
-- **Sport picker:** a search box plus native `<select>` lists (wheels on iPhone): Type (sport groups, gym excluded) and Sport (alphabetical, filtered by type). Selecting a sport sets the type; changing the type does not clear the search.
+- **Sport picker:** a search box plus native `<select>` lists (wheels on iPhone): “Activity category” (sport groups, gym excluded) and “Activity” (alphabetical, filtered by category), stacked. Selecting a sport sets the type; changing the type does not clear the search.
 

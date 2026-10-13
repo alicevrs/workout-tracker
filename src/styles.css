@@ -483,6 +483,33 @@ textarea:focus {
   outline: none;
   border-color: var(--accent);
 }
+/* iPhone gives date fields their own width and sticks them out of the box; keep them inside. */
+input[type='date'],
+input[type='time'],
+input[type='datetime-local'] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  max-width: 100%;
+  text-align: center;
+}
+input::-webkit-date-and-time-value {
+  text-align: center;
+}
+.search-field {
+  position: relative;
+}
+.search-field svg {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-faint);
+  pointer-events: none;
+}
+.search-field input {
+  padding-left: 42px;
+}
 input[type='checkbox'],
 input[type='radio'] {
   width: 22px;
@@ -685,19 +712,18 @@ button.chip[aria-pressed='true'] {
   background: rgba(90, 169, 255, 0.08);
 }
 .banner.update {
-  border: 0;
-  background: var(--rest);
-  color: #111;
+  background: #000;
+  border: 1px solid var(--accent);
   align-items: center;
   font-weight: 600;
 }
 .banner.update .btn {
-  color: #111;
+  color: var(--accent);
 }
 .banner.update .update-btn {
-  background: #111;
-  color: var(--rest);
-  border-color: #111;
+  background: var(--accent);
+  color: #111;
+  border-color: var(--accent);
 }
 .banner .grow {
   flex: 1;

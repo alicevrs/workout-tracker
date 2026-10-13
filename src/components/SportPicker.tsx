@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Icon } from './Icon';
 import { GROUP_INFO, SPORT_BY_ID, SPORTS, type SportGroup } from '../data/sports';
 
 export const SPORT_GROUP_ORDER: SportGroup[] = ['foot', 'cycling', 'water', 'snow', 'climbing', 'fitness', 'team', 'other'];
@@ -34,8 +35,11 @@ export function SportPicker({ value, onChange }: { value?: string; onChange: (sp
 
   return (
     <div className="stack" style={{ gap: 10 }}>
-      <div style={{ position: 'relative' }}>
-        <input type="search" placeholder="Search a sport" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search a sport" />
+      <div>
+        <div className="search-field">
+          <Icon name="search" />
+          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search a sport" />
+        </div>
         {results.length > 0 && (
           <ul className="search-results" role="listbox" aria-label="Matching sports">
             {results.map((s) => (
@@ -50,9 +54,9 @@ export function SportPicker({ value, onChange }: { value?: string; onChange: (sp
         )}
         {query.trim() && results.length === 0 && <p className="small faint" style={{ margin: '6px 0 0' }}>No sport found. Try “Other”.</p>}
       </div>
-      <div className="form-grid">
+      <div className="stack" style={{ gap: 10 }}>
         <label className="field">
-          Type
+          Activity category
           <select
             value={group}
             onChange={(e) => {
@@ -60,7 +64,7 @@ export function SportPicker({ value, onChange }: { value?: string; onChange: (sp
               setGroup(g);
             }}
           >
-            <option value="">All types</option>
+            <option value="">All categories</option>
             {SPORT_GROUP_ORDER.map((g) => (
               <option key={g} value={g}>
                 {GROUP_INFO[g].label}
@@ -69,7 +73,7 @@ export function SportPicker({ value, onChange }: { value?: string; onChange: (sp
           </select>
         </label>
         <label className="field">
-          Sport
+          Activity
           <select value={current && (!group || current.group === group) ? current.id : ''} onChange={(e) => choose(e.target.value)}>
             <option value="" disabled>
               Choose…

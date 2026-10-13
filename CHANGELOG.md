@@ -152,4 +152,7 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Home: shorter hint under the buttons (“Change the date to log a past one.”).
 - Start a workout: only the date (today by default) and a plain list of workout names plus “Free workout”. No start time is asked for past dates.
 - Start an activity opens a sheet too: date (today by default), a search bar and two lists, Type and Sport. Picking a sport fills in its type; picking a type narrows the sports; a search result fills in both. Choosing the sport opens the activity form for that day. The activity form uses the same picker (with “Change”) and asks only for the date, not the time.
+- Date fields no longer stick out of their box on iPhone.
+- Activity picker: the lists are one under the other and are called “Activity category” and “Activity”; the search bar shows only a magnifying glass.
+- The “new version” banner is black with a yellow border and yellow buttons.
 
