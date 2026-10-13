@@ -1,26 +1,29 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { db } from '../db/db';
 import { useExerciseMap, useProfile } from '../db/repo';
-import type { Block, BlockFormat } from '../db/types';
+import type { Block } from '../db/types';
 import { useDragReorder } from '../hooks/useDragReorder';
-import { blockFromTemplate, templateFromBlock } from '../lib/blockTemplates';
-import { cloneBlock, describeBlock, FORMAT_INFO, FORMATS, newBlock } from '../lib/program';
+import { linkedBlock, newBlockTemplate, templateFromBlock } from '../lib/blockTemplates';
+import { cloneBlock, describeBlock, FORMAT_INFO } from '../lib/program';
 import { BlockEditor } from './BlockEditor';
 import { Icon } from './Icon';
 import { Sheet, useToast } from './ui';
 
 /**
- * The parts (blocks) of a workout as big buttons: tap to edit, hold and drag to reorder, × to remove.
- * New parts come from an exercise template or start empty in a chosen format.
+ * The parts of a workout as big buttons: hold and drag to reorder, × to remove. Parts linked to an
+ * exercise block open that block (changes there apply to every workout using it); older unlinked
+ * parts expand an editor here and can be saved as a block.
  */
-export function BlockList({ blocks, onChange }: { blocks: Block[]; onChange: (blocks: Block[]) => void }) {
+export function BlockList({ blocks, onChange, backTo }: { blocks: Block[]; onChange: (blocks: Block[]) => void; backTo: string }) {
+  const navigate = useNavigate();
   const profile = useProfile();
   const exercises = useExerciseMap();
   const toast = useToast();
   const templates = useLiveQuery(() => db.blockTemplates.orderBy('name').toArray(), []) ?? [];
   const [openBlock, setOpenBlock] = useState<string | null>(null);
-  const [adding, setAdding] = useState<null | 'template' | 'format'>(null);
+  const [adding, setAdding] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const blocksRef = useRef(blocks);
   blocksRef.current = blocks;
@@ -35,13 +38,19 @@ export function BlockList({ blocks, onChange }: { blocks: Block[]; onChange: (bl
   const { drag, handle, rowStyle, wasDragged } = useDragReorder(listRef, blocks.length, swap, () => setOpenBlock(null));
   const add = (b: Block) => {
     onChange([...blocks, b]);
-    setOpenBlock(b.id);
-    setAdding(null);
+    setAdding(false);
+  };
+  const openLinked = (templateId: string) => navigate(`/workouts/blocks/${templateId}?from=${encodeURIComponent(backTo)}`);
+  const newLinked = async () => {
+    const t = newBlockTemplate('sets_reps', profile.defaultPrepSec);
+    await db.blockTemplates.add(t);
+    onChange([...blocks, linkedBlock(t)]);
+    openLinked(t.id);
   };
 
   return (
     <div className="stack">
-      {blocks.length > 0 && <p className="tiny faint" style={{ textAlign: 'center', margin: 0 }}>Tap to edit · hold and drag to reorder</p>}
+      {blocks.length > 0 && <p className="tiny faint" style={{ textAlign: 'center', margin: 0 }}>Tap to open · hold and drag to reorder</p>}
       <div className="mix-list" ref={listRef}>
         {blocks.map((b, bi) => {
           const open = openBlock === b.id;
@@ -54,11 +63,12 @@ export function BlockList({ blocks, onChange }: { blocks: Block[]; onChange: (bl
                 aria-expanded={open}
                 className={`mix-pill block-pill${b.optional ? ' optional' : ''}`}
                 {...handle(bi)}
-                onClick={() => !wasDragged() && setOpenBlock(open ? null : b.id)}
+                onClick={() => !wasDragged() && (b.templateId ? openLinked(b.templateId) : setOpenBlock(open ? null : b.id))}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    setOpenBlock(open ? null : b.id);
+                    if (b.templateId) openLinked(b.templateId);
+                    else setOpenBlock(open ? null : b.id);
                   } else if (e.altKey && e.key === 'ArrowUp' && bi > 0) swap(bi, bi - 1);
                   else if (e.altKey && e.key === 'ArrowDown' && bi < blocks.length - 1) swap(bi, bi + 1);
                 }}
@@ -67,6 +77,7 @@ export function BlockList({ blocks, onChange }: { blocks: Block[]; onChange: (bl
                   <span className="mix-pill-name">
                     {b.name ?? FORMAT_INFO[b.format].label}
                     {b.optional && <span className="lib-badge dark">Optional</span>}
+                    {b.templateId && <Icon name="link" size={14} title="Exercise block: changes apply to every workout that uses it" />}
                   </span>
                   <span className="mix-pill-desc">
                     {FORMAT_INFO[b.format].short} · {describeBlock(b)}
@@ -102,11 +113,14 @@ export function BlockList({ blocks, onChange }: { blocks: Block[]; onChange: (bl
                     <button
                       className="btn small"
                       onClick={async () => {
-                        await db.blockTemplates.add(templateFromBlock(b));
-                        toast('Saved as exercise template');
+                        const t = templateFromBlock(b);
+                        await db.blockTemplates.add(t);
+                        setBlock({ ...linkedBlock(t, b.id) });
+                        setOpenBlock(null);
+                        toast('Saved as exercise block and linked');
                       }}
                     >
-                      <Icon name="plus" /> Save as exercise template
+                      <Icon name="plus" /> Save as exercise block
                     </button>
                   </div>
                 </div>
@@ -117,22 +131,22 @@ export function BlockList({ blocks, onChange }: { blocks: Block[]; onChange: (bl
       </div>
 
       <div className="big-buttons" style={{ paddingTop: 4 }}>
-        <button className="big-btn" onClick={() => setAdding('template')}>
-          <Icon name="plus" /> From template
+        <button className="big-btn" onClick={() => setAdding(true)}>
+          <Icon name="plus" /> Add a block
         </button>
-        <button className="big-btn pink" onClick={() => setAdding('format')}>
-          <Icon name="plus" /> New part
+        <button className="big-btn pink" onClick={newLinked}>
+          <Icon name="plus" /> New block
         </button>
       </div>
 
-      <Sheet open={adding === 'template'} onClose={() => setAdding(null)} title="Add an exercise template">
+      <Sheet open={adding} onClose={() => setAdding(false)} title="Add an exercise block">
         {templates.length === 0 ? (
-          <p className="small muted">No exercise templates yet. Create them in Workouts → Exercise templates, or save a part of a workout as a template.</p>
+          <p className="small muted">No exercise blocks yet. Use New block, or create them in Workouts → Exercise blocks.</p>
         ) : (
           <ul className="lib-list">
             {templates.map((t) => (
               <li key={t.id} className="lib-row">
-                <button className="lib-main" onClick={() => add(blockFromTemplate(t))}>
+                <button className="lib-main" onClick={() => add(linkedBlock(t))}>
                   <span className="lib-name">
                     {t.name}
                     <span className="lib-badge">{FORMAT_INFO[t.block.format].short}</span>
@@ -143,19 +157,6 @@ export function BlockList({ blocks, onChange }: { blocks: Block[]; onChange: (bl
             ))}
           </ul>
         )}
-      </Sheet>
-
-      <Sheet open={adding === 'format'} onClose={() => setAdding(null)} title="New part">
-        <ul className="lib-list">
-          {FORMATS.map((f: BlockFormat) => (
-            <li key={f} className="lib-row">
-              <button className="lib-main" onClick={() => add(newBlock(f, profile.defaultPrepSec))}>
-                <span className="lib-name">{FORMAT_INFO[f].label}</span>
-                <span className="lib-sub">{FORMAT_INFO[f].description}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
       </Sheet>
     </div>
   );

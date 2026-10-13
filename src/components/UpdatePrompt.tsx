@@ -1,7 +1,12 @@
+import { useLocation } from 'react-router-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
-/** Shows a banner when a new version of the app has been downloaded. */
+/**
+ * Registers the service worker everywhere, but shows the “new version” banner only on Home,
+ * at the bottom just above the tab bar.
+ */
 export function UpdatePrompt() {
+  const { pathname } = useLocation();
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     offlineReady: [offlineReady, setOfflineReady],
@@ -17,9 +22,9 @@ export function UpdatePrompt() {
     },
   });
 
-  if (!needRefresh && !offlineReady) return null;
+  if ((!needRefresh && !offlineReady) || pathname !== '/') return null;
   return (
-    <div className="banner update mb" role="status">
+    <div className="banner update update-float" role="status">
       <div className="grow">
         {needRefresh ? 'A new version of the app is available.' : 'The app is ready to work offline.'}
       </div>

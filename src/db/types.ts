@@ -146,6 +146,8 @@ export interface Block {
   entries: ExerciseEntry[];
   note?: string;
   timer: TimerOptions;
+  /** Part of a workout template linked to an exercise block: it follows that block's changes. */
+  templateId?: string;
 }
 
 export interface ProgramDay {

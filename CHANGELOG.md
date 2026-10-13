@@ -165,3 +165,11 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Exercise templates are included in backups (older backup files still import).
 - Fixed: sometimes an empty strip appeared under the bottom bar when the app opened on iPhone; the bar now covers it.
 
+## Exercise blocks (2026-10-14)
+- “Exercise templates” are now called **Exercise blocks**.
+- New, simpler block editor in numbered steps: 1. pick exercises from the catalogue; 2. with several, choose how they are combined (in sequence, alternating, circuit); 3. count by reps (sets, rest) or by time with a timer (timed sets, Tabata, AMRAP, EMOM, For Time — same big boxes as the Timer tab); 4. reps and weight per exercise (with optional different targets per set); then block notes and an Optional tick. The block name fills in from the exercises. Rare settings (drop sets, custom intervals) are under “Advanced settings”.
+- **Blocks are linked to workouts**: change a block once and every workout template that uses it is updated, from the next session on. Workouts already done never change. In a workout, linked blocks show a link icon and open the block; “Add a block” adds one from the library, “New block” creates one and opens it. Older parts can be linked with “Save as exercise block”.
+- Exercise blocks list: filters by category (All, Strength, Bodyweight, Cardio, Mobility) and muscle group under the search.
+- Workouts page: one short ⓘ that explains Exercises, Exercise blocks and Workout templates; more detail in the ⓘ of each page.
+- The “new version” banner appears only on Home, at the bottom just above the tab bar.
+

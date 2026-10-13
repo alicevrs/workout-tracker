@@ -80,8 +80,9 @@ export default function App() {
             <Route path="/exercises/:id/edit" element={<ExerciseEditPage />} />
             <Route path="/workouts" element={<WorkoutsPage />} />
             <Route path="/workouts/templates" element={<WorkoutTemplatesPage />} />
-            <Route path="/workouts/exercise-templates" element={<ExerciseTemplatesPage />} />
-            <Route path="/workouts/exercise-templates/:id" element={<ExerciseTemplateEditPage />} />
+            <Route path="/workouts/blocks" element={<ExerciseTemplatesPage />} />
+            <Route path="/workouts/blocks/:id" element={<ExerciseTemplateEditPage />} />
+            <Route path="/workouts/exercise-templates" element={<Navigate to="/workouts/blocks" replace />} />
             <Route path="/workouts/:id" element={<WorkoutEditPage />} />
             <Route path="/programs" element={<Navigate to="/workouts" replace />} />
             <Route path="/programs/:id" element={<ProgramRedirect />} />

@@ -45,3 +45,51 @@ describe('exercise templates', () => {
     expect(await c.blockTemplates.count()).toBe(0);
   });
 });
+
+describe('exercise block editor model', () => {
+  it('combines exercises in sequence, alternating (superset) or circuit, with rest after each round', async () => {
+    const { addExercise, withStructure, withSetsRest, structureOf, restOf, setsOf } = await import('../src/lib/blockTemplates');
+    let b = newBlock('sets_reps');
+    b = addExercise(b, 'hip-abduction', 90);
+    b = addExercise(b, 'hip-adduction', 90);
+    expect(structureOf(b)).toBe('sequence');
+    b = withSetsRest(b, 4, 60);
+    expect(b.entries.map((e) => [e.sets, e.restSec])).toEqual([[4, 60], [4, 60]]);
+    b = withStructure(b, 'alternate');
+    expect(b.entries.map((e) => [e.grouping, e.groupLabel, e.restSec])).toEqual([['superset', 'A', 0], ['superset', 'A', 60]]);
+    expect([setsOf(b), restOf(b)]).toEqual([4, 60]);
+    b = withStructure(b, 'circuit');
+    expect(b.entries.every((e) => e.grouping === 'circuit')).toBe(true);
+  });
+
+  it('switches between reps and timers keeping exercises and weights', async () => {
+    const { addExercise, withFormat, quickFromParams, paramsFromQuick } = await import('../src/lib/blockTemplates');
+    let b = addExercise(newBlock('sets_reps'), 'hip-thrust', 90);
+    b.entries[0].targetWeight = 100;
+    b = withFormat(b, 'emom');
+    expect(b.format).toBe('emom');
+    expect(b.entries[0]).toMatchObject({ exerciseId: 'hip-thrust', targetWeight: 100, grouping: 'none' });
+    b.params = paramsFromQuick({ ...quickFromParams('emom', b.params), everySec: 120, minutes: 12 }, b.params);
+    expect(b.params).toMatchObject({ intervalSec: 120, totalMin: 12 });
+    b = withFormat(b, 'sets_reps');
+    expect(b.entries[0]).toMatchObject({ sets: 3, restSec: 60, targetWeight: 100 });
+  });
+
+  it('updates linked workout parts when the block is saved, and unlinks them when it is deleted', async () => {
+    const { linkedBlock, syncTemplate, unlinkTemplate } = await import('../src/lib/blockTemplates');
+    const { newWorkout } = await import('../src/lib/workouts');
+    const db = await freshDb();
+    const t = newBlockTemplate('sets_reps', 10, 'Squat');
+    const w = newWorkout('Legs');
+    const part = linkedBlock(t);
+    w.days[0].blocks = [part, newBlock('amrap')];
+    await db.programs.add(w);
+    const changed = { ...t, name: 'Back squat', block: { ...t.block, optional: true } };
+    expect(await syncTemplate(db, changed)).toBe(1);
+    const after = (await db.programs.get(w.id))!.days[0].blocks;
+    expect(after[0]).toMatchObject({ id: part.id, name: 'Back squat', optional: true, templateId: t.id });
+    expect(after[1].format).toBe('amrap');
+    await unlinkTemplate(db, t.id);
+    expect((await db.programs.get(w.id))!.days[0].blocks[0].templateId).toBeUndefined();
+  });
+});

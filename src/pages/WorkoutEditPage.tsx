@@ -64,7 +64,7 @@ export default function WorkoutEditPage() {
           Notes
           <input value={workout.notes ?? ''} placeholder="Optional" onChange={(e) => update({ notes: e.target.value || undefined })} />
         </label>
-        <BlockList blocks={day.blocks} onChange={(blocks) => update({}, { blocks })} />
+        <BlockList blocks={day.blocks} onChange={(blocks) => update({}, { blocks })} backTo={`/workouts/${workout.id}`} />
         <div className="big-buttons" style={{ paddingTop: 0 }}>
           <button
             className="btn small"

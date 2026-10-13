@@ -337,7 +337,7 @@ function SegmentsEditor({ params, onChange }: { params: BlockParams; onChange: (
 }
 
 /** Per-set targets: warm-up sets, pyramids, a last set to failure, or per-interval targets in EMOM. */
-function SetTargetsEditor({ entry, unit, perInterval, onChange }: { entry: ExerciseEntry; unit: WeightUnit; perInterval: boolean; onChange: (p: Partial<ExerciseEntry>) => void }) {
+export function SetTargetsEditor({ entry, unit, perInterval, onChange }: { entry: ExerciseEntry; unit: WeightUnit; perInterval: boolean; onChange: (p: Partial<ExerciseEntry>) => void }) {
   const on = !!entry.setTargets?.length;
   const rows = entry.setTargets ?? [];
   const word = perInterval ? 'interval' : 'set';
