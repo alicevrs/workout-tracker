@@ -161,3 +161,6 @@ Choices made while building the app, with the reason for each.
 - **Linking:** a workout part keeps a full copy of the block plus `templateId`. Saving a block rewrites every linked part in every workout template (`syncTemplate`), so everything that reads workouts (starting, “log as done”, durations, backups) keeps working unchanged. Sessions copy blocks when they start, so past workouts never change. Deleting a block turns its linked parts into ordinary parts. Duplicating a workout keeps the links; duplicating a block makes an unlinked new block.
 - The update banner is rendered only on Home (the service worker is still registered everywhere), fixed above the tab bar.
 - Training blocks have no Optional setting (user's choice: skip a block by removing it from the session). The `optional` field stays in the data model for older workouts.
+- No examples in the UI (user's rule): hints, placeholders and ⓘ texts describe, they do not quote sample exercises or values.
+- “Count by → Time” lists only the Timer tab's formats. Timed sets (each exercise a number of fixed-time sets with rest) was dropped from the choice because Tabata covers the common case; existing timed-sets blocks still show it.
+

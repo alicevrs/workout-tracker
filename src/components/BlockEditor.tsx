@@ -178,7 +178,7 @@ export function BlockEditor({ block, onChange, hideName, hideOptional }: { block
               </div>
               <label className="field mt-s">
                 <span>
-                  Note <span className="faint">(optional, e.g. “18% incline · 4 km/h”)</span>
+                  Note <span className="faint">(optional)</span>
                 </span>
                 <input value={e.note ?? ''} onChange={(ev) => setEntry(e.id, { note: ev.target.value || undefined })} />
               </label>
@@ -353,7 +353,7 @@ export function SetTargetsEditor({ entry, unit, perInterval, onChange }: { entry
     <div className="mt-s">
       <label className="check-row">
         <input type="checkbox" checked={on} onChange={(e) => toggle(e.target.checked)} />
-        Different targets per {word} (warm-up, pyramid, last {word} to failure…)
+        Different targets per {word}
       </label>
       {on && (
         <div className="stack" style={{ marginTop: 4 }}>

@@ -174,4 +174,6 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - The “new version” banner appears only on Home, at the bottom just above the tab bar.
 - Renamed again: **Training blocks** (instead of Exercise blocks) and **Workouts** (instead of Workout templates).
 - The Optional tick was removed from training blocks: to skip a block, remove it from the workout while you do it.
+- Removed example texts from the app (hints, placeholders and ⓘ texts) and the explanation in brackets after “Different targets per set”.
+- Training blocks: “Count by → Time” offers only the Timer tab's timers (AMRAP, For Time, EMOM, Tabata). “Timed sets” is no longer offered for new blocks; blocks that already use it keep working.
 

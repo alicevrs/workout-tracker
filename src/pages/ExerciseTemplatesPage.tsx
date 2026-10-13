@@ -66,7 +66,7 @@ export default function ExerciseTemplatesPage() {
           <InfoButton title="Training blocks">
             <p style={{ margin: 0 }}>
               Structured pieces of a workout built from catalogue exercises: one exercise or several combined (in sequence, alternating or as a circuit), counted by reps or with a
-              timer, with weights. Example: “Abduction / adduction”, “Hip thrust EMOM 2 × 12”.
+              timer, with weights.
             </p>
             <p style={{ margin: 0 }}>Add them to workouts. Change a block once and every workout that uses it follows from the next session.</p>
             <p style={{ margin: 0 }}>The copy icon makes a duplicate to adapt.</p>

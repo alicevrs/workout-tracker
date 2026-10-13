@@ -49,7 +49,7 @@ export function EnergyInfo() {
           <tr>
             <td>Cardio exercises</td>
             <td colSpan={3} style={{ textAlign: 'right' }}>
-              per exercise (e.g. running 9.8), × 0.75 light / × 1.3 vigorous
+              per exercise, × 0.75 light / × 1.3 vigorous
             </td>
           </tr>
         </tbody>

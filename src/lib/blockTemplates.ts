@@ -82,8 +82,11 @@ export async function unlinkTemplate(db: WorkoutDB, templateId: string): Promise
 /** How several exercises are combined. */
 export type Structure = 'sequence' | 'alternate' | 'circuit';
 export type CountBy = 'reps' | 'time';
-/** Timers to count by time: fixed-time sets or one of the Timer-tab formats. */
-export const TIME_FORMATS: BlockFormat[] = ['timed_sets', 'tabata', 'amrap', 'emom', 'for_time'];
+/**
+ * Timers to count by time, in the Timer tab's order. Timed sets is not offered for new blocks
+ * (the Timer tab has no such timer); it stays selectable only on blocks that already use it.
+ */
+export const TIME_FORMATS: BlockFormat[] = ['amrap', 'for_time', 'emom', 'tabata', 'timed_sets'];
 const GROUPING: Record<Structure, Grouping> = { sequence: 'none', alternate: 'superset', circuit: 'circuit' };
 
 /** Formats where exercises can be in sequence, alternate or circuit. Timers like EMOM/Tabata take turns by themselves. */

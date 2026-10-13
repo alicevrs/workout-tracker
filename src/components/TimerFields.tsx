@@ -101,7 +101,7 @@ export function TimerFields({ q, onChange, compact, noSets }: { q: QuickTimer; o
       fields = (
         <Line>
           <Pick value={q.workSec ?? 60} options={SECOND_OPTIONS} format={secs} onChange={(v) => set({ workSec: v })} label="Work time" small={compact} />
-          <input className="mix-label" value={q.label ?? ''} placeholder="Label, e.g. Plank" onChange={(e) => set({ label: e.target.value })} aria-label="Label" />
+          <input className="mix-label" value={q.label ?? ''} placeholder="Label" onChange={(e) => set({ label: e.target.value })} aria-label="Label" />
         </Line>
       );
       break;

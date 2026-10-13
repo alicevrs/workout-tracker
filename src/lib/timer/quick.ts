@@ -61,13 +61,13 @@ export const TIMER_INFO: Record<QuickKind | 'mix', { tagline: string; text: stri
     tagline: 'Every minute on the minute',
     text: [
       'At the start of every interval (usually one minute) do the planned reps. Whatever time is left is your rest until the next interval begins.',
-      'The faster you finish, the more you rest. “Every 2 min for 12 min” means 6 intervals of 2 minutes.',
+      'The faster you finish, the more you rest.',
     ],
   },
   tabata: {
     tagline: 'Work / rest intervals',
     text: [
-      'Short all-out work followed by a short rest, repeated for a number of rounds. The classic Tabata is 8 rounds of 20 seconds work and 10 seconds rest (4 minutes).',
+      'Short all-out work followed by a short rest, repeated for a number of rounds.',
       'Add sets to repeat the whole Tabata with a longer rest between sets.',
     ],
   },

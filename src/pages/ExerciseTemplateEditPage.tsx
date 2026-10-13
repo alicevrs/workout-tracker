@@ -38,7 +38,7 @@ import { fromDisplayWeight, toDisplayWeight } from '../lib/units';
 
 const STRUCTURE_HINT: Record<Structure, string> = {
   sequence: 'All sets of the first exercise, then all sets of the next.',
-  alternate: 'One set of each exercise in turn (e.g. abduction / adduction), then rest.',
+  alternate: 'One set of each exercise in turn, then rest.',
   circuit: 'Go through all exercises one after the other, rest, and repeat for each round.',
 };
 const TIME_LABEL: Partial<Record<BlockFormat, string>> = { timed_sets: 'Timed sets', tabata: 'Tabata', amrap: 'AMRAP', emom: 'EMOM', for_time: 'For Time' };
@@ -201,7 +201,7 @@ export default function ExerciseTemplateEditPage() {
           <Segmented<'reps' | 'time'>
             label="Count by"
             value={countBy}
-            onChange={(c) => setBlock(withFormat(b, c === 'reps' ? 'sets_reps' : 'timed_sets'))}
+            onChange={(c) => setBlock(withFormat(b, c === 'reps' ? 'sets_reps' : 'tabata'))}
             options={[
               { value: 'reps', label: 'Reps' },
               { value: 'time', label: 'Time' },
@@ -209,7 +209,7 @@ export default function ExerciseTemplateEditPage() {
           />
           {countBy === 'time' && (
             <div className="scroll-x mt-s" role="group" aria-label="Timer">
-              {TIME_FORMATS.map((f) => (
+              {TIME_FORMATS.filter((f) => f !== 'timed_sets' || b.format === 'timed_sets').map((f) => (
                 <button key={f} className="chip" aria-pressed={b.format === f} onClick={() => setBlock(withFormat(b, f))}>
                   {TIME_LABEL[f]}
                 </button>
@@ -277,7 +277,7 @@ export default function ExerciseTemplateEditPage() {
 
         <details className="advanced" open={isAdvanced(b)}>
           <summary>Advanced settings</summary>
-          {isAdvanced(b) && <p className="small muted">This block uses settings the simple form above cannot show (e.g. drop sets or custom intervals). Edit them here.</p>}
+          {isAdvanced(b) && <p className="small muted">This block uses settings the simple form above cannot show. Edit them here.</p>}
           <BlockEditor hideName hideOptional block={b} onChange={setBlock} />
         </details>
 

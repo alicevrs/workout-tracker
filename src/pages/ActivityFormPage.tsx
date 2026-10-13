@@ -222,7 +222,7 @@ export default function ActivityFormPage() {
             </div>
             <label className="field full">
               Notes
-              <textarea value={form.notes} onChange={(e) => set({ notes: e.target.value })} placeholder="Conditions, spot, how it felt…" />
+              <textarea value={form.notes} onChange={(e) => set({ notes: e.target.value })} placeholder="Optional" />
             </label>
           </section>
         )}
