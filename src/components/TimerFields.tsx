@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { EVERY_OPTIONS, MINUTE_OPTIONS, quickClock, REST_OPTIONS, ROUND_OPTIONS, SECOND_OPTIONS, SET_OPTIONS, SIGNAL_OPTIONS, type QuickTimer } from '../lib/timer/quick';
+import { quickClock, ROUND_OPTIONS, SET_OPTIONS, SIGNAL_OPTIONS, type QuickTimer } from '../lib/timer/quick';
 import { Icon } from './Icon';
 
 // Big boxed values in sentences (“[8] Rounds · [0:20] Work”), shared by the Timer tab and training blocks.
@@ -21,6 +21,68 @@ export function Pick({ value, options, format, onChange, label, small }: { value
   );
 }
 
+/**
+ * A time in minutes and seconds in one box: the minutes (before the colon) and the seconds (after
+ * it, in 5 s steps) each open their own native wheel, so any time takes at most two taps.
+ */
+export function ClockPick({
+  value,
+  onChange,
+  label,
+  small,
+  maxMin = 60,
+  min = 0,
+  emptyText,
+}: {
+  /** Seconds. */
+  value: number;
+  onChange: (sec: number) => void;
+  label: string;
+  small?: boolean;
+  maxMin?: number;
+  /** Smallest allowed value in seconds. */
+  min?: number;
+  /** Shown instead of 0:00 (e.g. “none”). */
+  emptyText?: string;
+}) {
+  const total = Math.max(0, Math.round(value));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  const minutes = Array.from({ length: Math.max(maxMin, m) + 1 }, (_, i) => i);
+  const seconds = Array.from({ length: 12 }, (_, i) => i * 5);
+  if (!seconds.includes(s)) seconds.push(s), seconds.sort((a, b) => a - b);
+  const set = (mm: number, ss: number) => onChange(Math.max(min, mm * 60 + ss));
+  const empty = !total && emptyText;
+  return (
+    <span className={`vbox clock${small ? ' small' : ''}`}>
+      <label className="clock-part clock-min">
+        <span className="vbox-value num">{empty ? emptyText : m}</span>
+        <select aria-label={`${label}, minutes`} value={m} onChange={(e) => set(Number(e.target.value), s)}>
+          {minutes.map((o) => (
+            <option key={o} value={o}>
+              {o} min
+            </option>
+          ))}
+        </select>
+      </label>
+      {!empty && <span className="vbox-value num clock-colon">:</span>}
+      <label className={`clock-part clock-sec${empty ? ' clock-hidden' : ''}`}>
+        {!empty && <span className="vbox-value num">{String(s).padStart(2, '0')}</span>}
+        <select aria-label={`${label}, seconds`} value={s} onChange={(e) => set(m, Number(e.target.value))}>
+          {seconds.map((o) => (
+            <option key={o} value={o}>
+              {String(o).padStart(2, '0')} s
+            </option>
+          ))}
+        </select>
+      </label>
+    </span>
+  );
+}
+
+/** Minutes (possibly with seconds) to whole seconds. */
+const toSec = (min: number | undefined, fallback: number) => Math.round((min ?? fallback) * 60);
+
 export const secs = (v: number) => quickClock(v);
 export const mins = (v: number) => `${v}`;
 
@@ -39,8 +101,8 @@ export function TimerFields({ q, onChange, compact }: { q: QuickTimer; onChange:
         <>
           {!compact && <p className="sentence-lead">As many rounds as possible in</p>}
           <Line>
-            <Pick value={q.minutes ?? 10} options={MINUTE_OPTIONS} format={mins} onChange={(v) => set({ minutes: v })} label="Minutes" small={compact} />
-            <span>minutes</span>
+            <ClockPick value={toSec(q.minutes, 10)} min={5} maxMin={120} onChange={(v) => set({ minutes: v / 60 })} label="Time" small={compact} />
+            <span>min</span>
           </Line>
         </>
       );
@@ -51,7 +113,7 @@ export function TimerFields({ q, onChange, compact }: { q: QuickTimer; onChange:
           {!compact && <p className="sentence-lead">As fast as possible, for time</p>}
           <Line>
             <span>Time cap</span>
-            <Pick value={q.minutes ?? 0} options={[0, ...MINUTE_OPTIONS]} format={(v) => (v ? `${v} min` : 'none')} onChange={(v) => set({ minutes: v })} label="Time cap" small={compact} />
+            <ClockPick value={toSec(q.minutes, 0)} maxMin={120} emptyText="none" onChange={(v) => set({ minutes: v / 60 })} label="Time cap" small={compact} />
           </Line>
           <Line>
             <span>Signal every</span>
@@ -61,16 +123,16 @@ export function TimerFields({ q, onChange, compact }: { q: QuickTimer; onChange:
       );
       break;
     case 'emom': {
-      const count = Math.floor(((q.minutes ?? 10) * 60) / (q.everySec ?? 60));
+      const count = Math.floor(toSec(q.minutes, 10) / (q.everySec ?? 60));
       fields = (
         <>
           <Line>
             <span>Every</span>
-            <Pick value={q.everySec ?? 60} options={EVERY_OPTIONS} format={secs} onChange={(v) => set({ everySec: v })} label="Every" small={compact} />
+            <ClockPick value={q.everySec ?? 60} min={5} maxMin={10} onChange={(v) => set({ everySec: v })} label="Every" small={compact} />
           </Line>
           <Line>
             <span>for</span>
-            <Pick value={q.minutes ?? 10} options={MINUTE_OPTIONS} format={mins} onChange={(v) => set({ minutes: v })} label="For minutes" small={compact} />
+            <ClockPick value={toSec(q.minutes, 10)} min={5} maxMin={120} onChange={(v) => set({ minutes: v / 60 })} label="For" small={compact} />
             <span>min</span>
           </Line>
           {!compact && <p className="sentence-note">{count} interval{count === 1 ? '' : 's'}</p>}
@@ -87,11 +149,11 @@ export function TimerFields({ q, onChange, compact }: { q: QuickTimer; onChange:
             <span>Rounds</span>
           </Line>
           <Line>
-            <Pick value={q.workSec ?? 20} options={SECOND_OPTIONS} format={secs} onChange={(v) => set({ workSec: v })} label="Work" small={compact} />
+            <ClockPick value={q.workSec ?? 20} min={5} maxMin={10} onChange={(v) => set({ workSec: v })} label="Work" small={compact} />
             <span>Work</span>
           </Line>
           <Line>
-            <Pick value={q.restSec ?? 10} options={REST_OPTIONS} format={secs} onChange={(v) => set({ restSec: v })} label="Rest" small={compact} />
+            <ClockPick value={q.restSec ?? 10} maxMin={10} onChange={(v) => set({ restSec: v })} label="Rest" small={compact} />
             <span>Rest</span>
           </Line>
         </>
@@ -100,7 +162,7 @@ export function TimerFields({ q, onChange, compact }: { q: QuickTimer; onChange:
     case 'work':
       fields = (
         <Line>
-          <Pick value={q.workSec ?? 60} options={SECOND_OPTIONS} format={secs} onChange={(v) => set({ workSec: v })} label="Work time" small={compact} />
+          <ClockPick value={q.workSec ?? 60} min={5} maxMin={30} onChange={(v) => set({ workSec: v })} label="Work time" small={compact} />
           <input className="mix-label" value={q.label ?? ''} placeholder="Label" onChange={(e) => set({ label: e.target.value })} aria-label="Label" />
         </Line>
       );
@@ -108,7 +170,7 @@ export function TimerFields({ q, onChange, compact }: { q: QuickTimer; onChange:
     case 'rest':
       fields = (
         <Line>
-          <Pick value={q.restSec ?? 60} options={SECOND_OPTIONS} format={secs} onChange={(v) => set({ restSec: v })} label="Rest time" small={compact} />
+          <ClockPick value={q.restSec ?? 60} min={5} maxMin={30} onChange={(v) => set({ restSec: v })} label="Rest time" small={compact} />
           <span>Rest</span>
         </Line>
       );
@@ -128,7 +190,7 @@ export function TimerFields({ q, onChange, compact }: { q: QuickTimer; onChange:
             <span>Sets</span>
           </Line>
           <Line>
-            <Pick value={q.setRestSec ?? 60} options={REST_OPTIONS} format={secs} onChange={(v) => set({ setRestSec: v })} label="Rest between sets" small={compact} />
+            <ClockPick value={q.setRestSec ?? 60} maxMin={15} onChange={(v) => set({ setRestSec: v })} label="Rest between sets" small={compact} />
             <span>Rest</span>
           </Line>
         </div>

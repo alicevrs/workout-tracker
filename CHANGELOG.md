@@ -215,3 +215,7 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Link, duplicate and × are closer together at the right edge.
 - Lists show less: timers and training blocks only their name (no type tag, no second line); exercises without the muscles/equipment line; workouts only their approximate duration.
 - Exercises: the “Mine” tag and the “Mine” filter were removed. Every exercise, yours included, belongs to the category chosen when it is created (Strength, Bodyweight, Cardio, Mobility).
+
+## Minutes and seconds in timers (2026-10-15)
+- Every time box (AMRAP time, For Time cap, EMOM interval and length, Tabata work and rest, rest between sets, Mix work/rest items, rest in training blocks) now shows minutes:seconds. Tap the part before the colon to pick the minutes, the part after it to pick the seconds (5 s steps): any time such as 2:40 takes two taps.
+- Labels show times with seconds where needed (“2:40 min”).

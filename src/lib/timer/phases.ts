@@ -135,11 +135,11 @@ export function blockPhases(block: PerformedBlock, blockIndex: number): Phase[] 
       break;
     }
     case 'amrap':
-      out.push(work({ label: 'AMRAP' }, Math.max(1, (p.timeCapMin ?? 10) * 60)));
+      out.push(work({ label: 'AMRAP' }, Math.max(1, Math.round((p.timeCapMin ?? 10) * 60))));
       break;
     case 'emom': {
       const interval = Math.max(5, p.intervalSec ?? 60);
-      const count = Math.max(1, Math.floor(((p.totalMin ?? 10) * 60) / interval));
+      const count = Math.max(1, Math.floor(Math.round((p.totalMin ?? 10) * 60) / interval));
       const seen = new Map<string, number>();
       for (let i = 1; i <= count; i++) {
         const e = entries.length ? entries[(i - 1) % entries.length] : undefined;
@@ -151,7 +151,7 @@ export function blockPhases(block: PerformedBlock, blockIndex: number): Phase[] 
       break;
     }
     case 'for_time':
-      out.push(work({ label: 'For time', signalEverySec: p.signalEverySec || undefined }, p.timeCapMin ? p.timeCapMin * 60 : null, true));
+      out.push(work({ label: 'For time', signalEverySec: p.signalEverySec || undefined }, p.timeCapMin ? Math.round(p.timeCapMin * 60) : null, true));
       break;
     case 'intervals': {
       const segs = p.segments ?? [];

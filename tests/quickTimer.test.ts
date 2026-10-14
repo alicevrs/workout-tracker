@@ -97,3 +97,17 @@ describe('round cues', () => {
   });
 });
 
+
+describe('times with minutes and seconds', () => {
+  it('runs and labels an AMRAP / EMOM of 2:40', async () => {
+    const { quickBlocks, describeQuick } = await import('../src/lib/timer/quick');
+    const { minutesLabel, estimateBlockSeconds } = await import('../src/lib/program');
+    expect(minutesLabel(160 / 60)).toBe('2:40 min');
+    expect(minutesLabel(12)).toBe('12 min');
+    const [amrap] = quickBlocks([{ kind: 'amrap', minutes: 160 / 60 }], 0);
+    expect(estimateBlockSeconds(amrap)).toBe(160);
+    expect(describeQuick({ kind: 'emom', everySec: 40, minutes: 160 / 60 })).toBe('Every 0:40 for 2:40 min');
+    const [emom] = quickBlocks([{ kind: 'emom', everySec: 40, minutes: 160 / 60 }], 0);
+    expect(estimateBlockSeconds(emom)).toBe(160);
+  });
+});

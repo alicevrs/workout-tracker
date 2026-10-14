@@ -2,7 +2,7 @@
 // ordinary blocks so the normal timer engine runs them. They are plain timers: nothing is logged.
 
 import type { Block, BlockFormat } from '../../db/types';
-import { estimateBlockSeconds, newBlock } from '../program';
+import { estimateBlockSeconds, minutesLabel, newBlock } from '../program';
 import { uid } from '../ids';
 
 export type QuickKind = 'amrap' | 'for_time' | 'emom' | 'tabata';
@@ -101,6 +101,9 @@ export function defaultMix(): MixConfig {
   return { items: [defaultQuick('amrap'), defaultQuick('rest'), defaultQuick('emom')], repeat: 1 };
 }
 
+/** Shortest AMRAP / EMOM: 5 s (minutes can carry seconds, e.g. 2:40 = 2.666… min). */
+const MIN_MINUTES = 5 / 60;
+
 const FORMAT: Record<QuickKind | 'work', BlockFormat> = { amrap: 'amrap', for_time: 'for_time', emom: 'emom', tabata: 'tabata', work: 'intervals' };
 
 /** One timer (without its sets) as a block. Rest items have no block. */
@@ -110,13 +113,13 @@ function itemBlock(q: QuickTimer): Block | null {
   b.name = q.kind === 'work' ? q.label?.trim() || 'Work' : QUICK_LABEL[q.kind];
   switch (q.kind) {
     case 'amrap':
-      b.params = { timeCapMin: Math.max(1, q.minutes ?? 10) };
+      b.params = { timeCapMin: Math.max(MIN_MINUTES, q.minutes ?? 10) };
       break;
     case 'for_time':
       b.params = { timeCapMin: q.minutes || undefined, signalEverySec: q.everySec || undefined };
       break;
     case 'emom':
-      b.params = { totalMin: Math.max(1, q.minutes ?? 10), intervalSec: Math.max(5, q.everySec ?? 60) };
+      b.params = { totalMin: Math.max(MIN_MINUTES, q.minutes ?? 10), intervalSec: Math.max(5, q.everySec ?? 60) };
       break;
     case 'tabata':
       b.params = {
@@ -200,11 +203,11 @@ export function describeQuick(q: QuickTimer): string {
   const sets = q.kind !== 'work' && q.kind !== 'rest' && (q.sets ?? 1) > 1 ? ` · ${q.sets} sets, rest ${clock(q.setRestSec ?? 0)}` : '';
   switch (q.kind) {
     case 'amrap':
-      return `${q.minutes} min${sets}`;
+      return `${minutesLabel(q.minutes ?? 10)}${sets}`;
     case 'for_time':
-      return `${q.minutes ? `Cap ${q.minutes} min` : 'No cap'}${q.everySec ? ` · signal every ${clock(q.everySec)}` : ''}${sets}`;
+      return `${q.minutes ? `Cap ${minutesLabel(q.minutes)}` : 'No cap'}${q.everySec ? ` · signal every ${clock(q.everySec)}` : ''}${sets}`;
     case 'emom':
-      return `Every ${clock(q.everySec ?? 60)} for ${q.minutes} min${sets}`;
+      return `Every ${clock(q.everySec ?? 60)} for ${minutesLabel(q.minutes ?? 10)}${sets}`;
     case 'tabata':
       return `${q.rounds} × ${clock(q.workSec ?? 20)} / ${clock(q.restSec ?? 10)}${sets}`;
     case 'work':

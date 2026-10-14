@@ -144,7 +144,7 @@ export function estimateBlockSeconds(b: Block): number {
     case 'amrap':
     case 'emom':
     case 'for_time': {
-      const one = (b.format === 'emom' ? p.totalMin ?? 0 : p.timeCapMin ?? (b.format === 'for_time' ? 15 : 0)) * 60;
+      const one = Math.round((b.format === 'emom' ? p.totalMin ?? 0 : p.timeCapMin ?? (b.format === 'for_time' ? 15 : 0)) * 60);
       const sets = timerSets(b);
       return sets * one + (sets - 1) * (p.restBetweenSetsSec ?? 0);
     }
@@ -153,6 +153,12 @@ export function estimateBlockSeconds(b: Block): number {
     default:
       return b.entries.reduce((s, e) => s + (e.setTargets?.length || e.sets) * ((e.durationSec ?? 40) + e.restSec), 0);
   }
+}
+
+/** Minutes that may include seconds, for labels: “12 min” or “2:40 min”. */
+export function minutesLabel(min: number): string {
+  const sec = Math.round(min * 60);
+  return sec % 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')} min` : `${sec / 60} min`;
 }
 
 export function describeBlock(b: Block): string {
@@ -166,11 +172,11 @@ function describeOne(b: Block): string {
     case 'tabata':
       return `${p.rounds} rounds · ${p.workSec}s on / ${p.restSec}s off${tabataSets(p) > 1 ? ` · ${tabataSets(p)} sets` : ''}`;
     case 'amrap':
-      return `${p.timeCapMin} min AMRAP`;
+      return `${minutesLabel(p.timeCapMin ?? 0)} AMRAP`;
     case 'emom':
-      return `${p.totalMin} min · every ${p.intervalSec === 60 ? 'minute' : `${p.intervalSec}s`}`;
+      return `${minutesLabel(p.totalMin ?? 0)} · every ${p.intervalSec === 60 ? 'minute' : `${p.intervalSec}s`}`;
     case 'for_time':
-      return `${p.targetRounds ? `${p.targetRounds} rounds` : p.targetReps ? `${p.targetReps} reps` : 'For time'}${p.timeCapMin ? ` · cap ${p.timeCapMin} min` : ''}`;
+      return `${p.targetRounds ? `${p.targetRounds} rounds` : p.targetReps ? `${p.targetReps} reps` : 'For time'}${p.timeCapMin ? ` · cap ${minutesLabel(p.timeCapMin)}` : ''}`;
     case 'intervals':
       return `${p.segments?.length ?? 0} segments × ${p.repeats ?? 1}`;
     case 'timed_sets': {

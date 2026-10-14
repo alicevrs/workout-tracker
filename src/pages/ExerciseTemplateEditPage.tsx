@@ -5,7 +5,7 @@ import { BlockEditor, SetTargetsEditor } from '../components/BlockEditor';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { Icon } from '../components/Icon';
 import { InfoButton } from '../components/Library';
-import { Line, Pick, TimerFields, mins, secs } from '../components/TimerFields';
+import { ClockPick, Line, Pick, TimerFields, mins } from '../components/TimerFields';
 import { EmptyState, NumberField, PageHeader, Segmented, useToast } from '../components/ui';
 import { getDraft, setDraft, useDraft, withDraftParam } from '../lib/drafts';
 import { db } from '../db/db';
@@ -34,7 +34,7 @@ import {
 } from '../lib/blockTemplates';
 import { formatDuration } from '../lib/dates';
 import { estimateBlockSeconds } from '../lib/program';
-import { describeQuick, QUICK_LABEL, REST_OPTIONS, SET_OPTIONS } from '../lib/timer/quick';
+import { describeQuick, QUICK_LABEL, SET_OPTIONS } from '../lib/timer/quick';
 import { withTimer } from '../lib/timerTemplates';
 import { workoutDay } from '../lib/workouts';
 import { fromDisplayWeight, toDisplayWeight } from '../lib/units';
@@ -276,7 +276,7 @@ export default function ExerciseTemplateEditPage() {
                   <span>{structureOf(b) === 'sequence' || b.entries.length < 2 ? 'sets' : 'rounds'}</span>
                 </Line>
                 <Line>
-                  <Pick small value={restOf(b)} options={REST_OPTIONS} format={secs} onChange={(v) => setBlock(withSetsRest(b, setsOf(b), v))} label="Rest" />
+                  <ClockPick small value={restOf(b)} maxMin={15} onChange={(v) => setBlock(withSetsRest(b, setsOf(b), v))} label="Rest" />
                   <span>rest</span>
                 </Line>
               </div>

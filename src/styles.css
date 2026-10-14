@@ -2196,3 +2196,31 @@ kbd {
   width: 34px;
   flex-shrink: 0;
 }
+
+/* Minutes:seconds box: each side of the colon opens its own wheel. */
+.vbox.clock {
+  padding: 0;
+  align-items: stretch;
+}
+.clock-part {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  padding: 0 0.12em 0 0.35em;
+  justify-content: flex-end;
+  cursor: pointer;
+}
+.clock-sec {
+  justify-content: flex-start;
+  padding: 0 0.35em 0 0.12em;
+}
+.clock-colon {
+  display: flex;
+  align-items: center;
+}
+.clock-hidden {
+  flex: 0;
+  padding: 0;
+  width: 0;
+}
