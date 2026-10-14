@@ -1,3 +1,4 @@
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useState, type ComponentProps } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
@@ -6,7 +7,7 @@ import { EmptyState, PageHeader, useToast } from '../components/ui';
 import { db } from '../db/db';
 import { uid } from '../lib/ids';
 import { blocksUsingExercise } from '../lib/usage';
-import { MUSCLES, MUSCLE_LABEL } from '../data/muscles';
+import { MUSCLES } from '../data/muscles';
 import { useVisibleExercises } from '../db/repo';
 import type { ExerciseCategory, MuscleId } from '../db/types';
 
@@ -21,6 +22,7 @@ const CATEGORIES: { value: ExerciseCategory | 'all' | 'custom'; label: string }[
 
 export default function ExercisesPage() {
   const exercises = useVisibleExercises();
+  const usedIds = useLiveQuery(async () => new Set((await db.blockTemplates.toArray()).flatMap((b) => b.block.entries.map((e) => e.exerciseId))), []);
   const toast = useToast();
   const [used, setUsed] = useState<ComponentProps<typeof UsedInSheet>['used']>(null);
   const [query, setQuery] = useState('');
@@ -120,7 +122,7 @@ export default function ExercisesPage() {
               name: e.name,
               to: `/exercises/${e.id}`,
               badge: e.isCustom ? 'Mine' : undefined,
-              sub: `${e.primaryMuscles.map((m) => MUSCLE_LABEL[m]).join(', ')} · ${e.equipment}`,
+              unused: !!usedIds && !usedIds.has(e.id),
             }))}
             onLinks={showUsage}
             onDuplicate={duplicate}

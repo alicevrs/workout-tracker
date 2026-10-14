@@ -2180,7 +2180,19 @@ kbd {
   }
 }
 
+.lib-actions {
+  display: flex;
+  flex-shrink: 0;
+  margin-right: -6px;
+}
+/* Compact icon row at the right edge: link, duplicate, delete. */
+.lib-actions .btn.icon {
+  width: 34px;
+}
+.lib-actions .lib-unused {
+  opacity: 0.3;
+}
 .lib-action-gap {
-  width: 44px;
+  width: 34px;
   flex-shrink: 0;
 }

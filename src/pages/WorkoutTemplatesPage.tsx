@@ -26,7 +26,7 @@ export default function WorkoutTemplatesPage() {
       .map((w) => {
         const day = workoutDay(w);
         const total = day.blocks.reduce((s, b) => s + estimateBlockSeconds(b), 0);
-        return { id: w.id, name: w.name, to: `/workouts/${w.id}`, sub: `${day.blocks.length} part${day.blocks.length === 1 ? '' : 's'}${total ? ` · ≈ ${formatDuration(total)}` : ''}` };
+        return { id: w.id, name: w.name, to: `/workouts/${w.id}`, sub: total ? `≈ ${formatDuration(total)}` : undefined };
       });
   }, [workouts, query]);
 

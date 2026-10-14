@@ -209,3 +209,8 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Training blocks list: a second filter row for how the block is counted (All, Reps, AMRAP, For Time, EMOM, Tabata), combined with the category and muscle-group filters.
 - New **link** icon in the lists: for an exercise or a timer it shows the training blocks that use it; for a training block, the workouts that use it. Each name opens that item.
 - Every exercise, built-in ones included, can now be edited (Edit on the exercise page) and deleted (× in the list). A deleted built-in exercise disappears from lists and pickers, but past workouts still show its name. Changed and deleted built-in exercises are kept when the catalogue is updated and are synced to the other devices.
+
+## Cleaner lists (2026-10-15)
+- The link icon is faded when the item is not used anywhere (an exercise or timer in no training block, a block in no workout).
+- Link, duplicate and × are closer together at the right edge.
+- Lists show less: timers and training blocks only their name (no type tag, no second line); exercises without the muscles/equipment line; workouts only their approximate duration.

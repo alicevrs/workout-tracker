@@ -11,7 +11,6 @@ import type { BlockFormat, ExerciseCategory, MuscleId } from '../db/types';
 import { duplicateTemplate, newBlockTemplate, unlinkTemplate } from '../lib/blockTemplates';
 import { setDraft } from '../lib/drafts';
 import { workoutsUsingBlock } from '../lib/usage';
-import { describeBlock, FORMAT_INFO } from '../lib/program';
 
 const CATEGORIES: { value: ExerciseCategory | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -38,6 +37,7 @@ export default function ExerciseTemplatesPage() {
   const profile = useProfile();
   const exercises = useExerciseMap();
   const templates = useLiveQuery(() => db.blockTemplates.orderBy('name').toArray(), []);
+  const usedIds = useLiveQuery(async () => new Set((await db.programs.toArray()).flatMap((p) => p.days.flatMap((d) => d.blocks.map((b) => b.templateId)))), []);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<ExerciseCategory | 'all'>('all');
   const [muscle, setMuscle] = useState<MuscleId | ''>('');
@@ -55,8 +55,8 @@ export default function ExerciseTemplatesPage() {
         if (muscle && !exs.some((x) => x.primaryMuscles.includes(muscle) || x.secondaryMuscles.includes(muscle))) return false;
         return true;
       })
-      .map((t) => ({ id: t.id, name: t.name, to: `/workouts/blocks/${t.id}`, badge: FORMAT_INFO[t.block.format].short, sub: describeBlock(t.block) }));
-  }, [templates, query, exercises, category, muscle, count]);
+      .map((t) => ({ id: t.id, name: t.name, to: `/workouts/blocks/${t.id}`, unused: !!usedIds && !usedIds.has(t.id) }));
+  }, [templates, query, exercises, category, muscle, count, usedIds]);
 
   const create = () => {
     const t = newBlockTemplate('sets_reps', profile.defaultPrepSec);

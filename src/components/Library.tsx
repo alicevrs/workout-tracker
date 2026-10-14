@@ -11,6 +11,8 @@ export interface LibraryItem {
   badge?: string;
   /** Built-in items (catalogue exercises) cannot be deleted. */
   noDelete?: boolean;
+  /** Not used anywhere: the link icon is shown faded. */
+  unused?: boolean;
 }
 
 /** Plain list of a library (workouts, training blocks, timers, exercises): tap to open, copy icon to duplicate, × to delete. */
@@ -40,24 +42,30 @@ export function LibraryList({
             </span>
             {it.sub && <span className="lib-sub">{it.sub}</span>}
           </Link>
-          {onLinks && (
-            <button className="btn icon ghost" onClick={() => onLinks(it.id)} aria-label={`Where ${it.name} is used`}>
-              <Icon name="link" size={20} />
-            </button>
-          )}
-          {onDuplicate && (
-            <button className="btn icon ghost" onClick={() => onDuplicate(it.id)} aria-label={`Duplicate ${it.name}`}>
-              <Icon name="copy" size={20} />
-            </button>
-          )}
-          {onDelete &&
-            (it.noDelete ? (
-              <span className="lib-action-gap" aria-hidden />
-            ) : (
-              <button className="btn icon ghost" onClick={() => onDelete(it.id)} aria-label={`Delete ${it.name}`}>
-                <Icon name="x" size={20} />
+          <span className="lib-actions">
+            {onLinks && (
+              <button
+                className={`btn icon ghost${it.unused ? ' lib-unused' : ''}`}
+                onClick={() => onLinks(it.id)}
+                aria-label={it.unused ? `${it.name} is not used anywhere` : `Where ${it.name} is used`}
+              >
+                <Icon name="link" size={20} />
               </button>
-            ))}
+            )}
+            {onDuplicate && (
+              <button className="btn icon ghost" onClick={() => onDuplicate(it.id)} aria-label={`Duplicate ${it.name}`}>
+                <Icon name="copy" size={20} />
+              </button>
+            )}
+            {onDelete &&
+              (it.noDelete ? (
+                <span className="lib-action-gap" aria-hidden />
+              ) : (
+                <button className="btn icon ghost" onClick={() => onDelete(it.id)} aria-label={`Delete ${it.name}`}>
+                  <Icon name="x" size={20} />
+                </button>
+              ))}
+          </span>
         </li>
       ))}
     </ul>
