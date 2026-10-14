@@ -272,7 +272,7 @@ export default function ExerciseTemplateEditPage() {
                 </Line>
               </div>
             ) : (
-              <TimerFields compact noSets q={quickFromParams(b.format, b.params)} onChange={(q) => setBlock({ ...b, params: paramsFromQuick(q, b.params) })} />
+              <TimerFields compact q={quickFromParams(b.format, b.params)} onChange={(q) => setBlock({ ...b, params: paramsFromQuick(q, b.params) })} />
             )}
           </div>
         </Step>

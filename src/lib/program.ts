@@ -126,6 +126,12 @@ export function tabataSets(params: BlockParams): number {
   return 1 + Math.max(0, params.extraSets ?? 0);
 }
 
+/** Formats that repeat the whole timer for extra sets by splitting into one block per set (Tabata runs its sets itself). */
+export const splitsSets = (f: BlockFormat) => f === 'amrap' || f === 'emom' || f === 'for_time';
+
+/** Sets of a timer block (1 when it has none). */
+export const timerSets = (b: Pick<Block, 'format' | 'params'>) => (b.format === 'tabata' || splitsSets(b.format) ? tabataSets(b.params) : 1);
+
 /** Approximate planned duration of a block in seconds (rep-based work counted as 40 s per set). */
 export function estimateBlockSeconds(b: Block): number {
   const p = b.params;
@@ -136,11 +142,12 @@ export function estimateBlockSeconds(b: Block): number {
       return sets * perSet + (sets - 1) * (p.restBetweenSetsSec ?? 0);
     }
     case 'amrap':
-      return (p.timeCapMin ?? 0) * 60;
     case 'emom':
-      return (p.totalMin ?? 0) * 60;
-    case 'for_time':
-      return (p.timeCapMin ?? 15) * 60;
+    case 'for_time': {
+      const one = (b.format === 'emom' ? p.totalMin ?? 0 : p.timeCapMin ?? (b.format === 'for_time' ? 15 : 0)) * 60;
+      const sets = timerSets(b);
+      return sets * one + (sets - 1) * (p.restBetweenSetsSec ?? 0);
+    }
     case 'intervals':
       return (p.repeats ?? 1) * (p.segments ?? []).reduce((s, x) => s + x.durationSec, 0);
     default:
@@ -149,6 +156,11 @@ export function estimateBlockSeconds(b: Block): number {
 }
 
 export function describeBlock(b: Block): string {
+  const sets = splitsSets(b.format) && timerSets(b) > 1 ? ` · ${timerSets(b)} sets` : '';
+  return describeOne(b) + sets;
+}
+
+function describeOne(b: Block): string {
   const p = b.params;
   switch (b.format) {
     case 'tabata':

@@ -1,7 +1,7 @@
 import type { Block, ExerciseEntry, PerformedBlock, PerformedEntry, Program, ProgramDay, Session, SetRecord, SetTarget } from '../db/types';
 import { toDateKey } from './dates';
 import { uid } from './ids';
-import { cloneBlock } from './program';
+import { cloneBlock, FORMAT_INFO, splitsSets, timerSets } from './program';
 
 /** Formats whose sets are planned up front (one row per planned set). */
 export function hasPlannedSets(format: Block['format']): boolean {
@@ -135,10 +135,31 @@ export function applyBlockEdit(pb: PerformedBlock, edited: Block): PerformedBloc
   };
 }
 
+/**
+ * AMRAP, EMOM and For Time with sets become one block per set, each after a “Set rest”, the way
+ * the Timer tab runs them; so the timer, results and history work per set without changes.
+ */
+export function splitTimerSets(b: Block): Block[] {
+  const sets = timerSets(b);
+  if (!splitsSets(b.format) || sets < 2) return [b];
+  const name = b.name ?? FORMAT_INFO[b.format].label;
+  const one: Block = { ...b, params: { ...b.params } };
+  delete one.params.extraSets;
+  delete one.params.restBetweenSetsSec;
+  return Array.from({ length: sets }, (_, i) => {
+    const copy = i === 0 ? one : { ...cloneBlock(one), timer: { ...one.timer, prepSec: 0, restBeforeSec: b.params.restBetweenSetsSec ?? 0, restBeforeLabel: 'Set rest' } };
+    if (i > 0 && !copy.timer.restBeforeSec) {
+      delete copy.timer.restBeforeSec;
+      delete copy.timer.restBeforeLabel;
+    }
+    return { ...copy, name: `${name} · set ${i + 1}/${sets}` };
+  });
+}
+
 export function createSession(opts: { program?: Program; day?: ProgramDay; title?: string; now?: number }): Session {
   const now = opts.now ?? Date.now();
   // The session gets its own copy of the plan: edits here never change the program.
-  const blocks = (opts.day?.blocks ?? []).map((b) => blockToPerformed(cloneBlock(b)));
+  const blocks = (opts.day?.blocks ?? []).flatMap((b) => splitTimerSets(cloneBlock(b))).map(blockToPerformed);
   return {
     id: uid(),
     date: toDateKey(now),

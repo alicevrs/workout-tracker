@@ -13,18 +13,9 @@ import { defaultQuick, describeQuick, QUICK_LABEL, type QuickKind } from './time
 export const NEW_TIMER_NAME = 'New timer';
 export const TIMER_KINDS: QuickKind[] = ['amrap', 'for_time', 'emom', 'tabata'];
 
-/** Sets with a rest between them exist only for Tabata inside a training block. */
-export function cleanTimer(t: TimerTemplate['timer']): TimerTemplate['timer'] {
-  if (t.kind === 'tabata') return t;
-  const { sets: _s, setRestSec: _r, ...rest } = t;
-  void _s;
-  void _r;
-  return rest;
-}
-
 export function newTimerTemplate(kind: QuickKind = 'tabata'): TimerTemplate {
   const now = Date.now();
-  const timer = cleanTimer(defaultQuick(kind) as TimerTemplate['timer']);
+  const timer = defaultQuick(kind) as TimerTemplate['timer'];
   return { id: uid(), name: autoTimerName(timer), timer, createdAt: now, updatedAt: now };
 }
 

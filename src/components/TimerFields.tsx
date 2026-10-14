@@ -29,7 +29,7 @@ export function Line({ children }: { children: ReactNode }) {
 }
 
 /** The big “sentence” settings of one timer. `compact` is used inside the Mix list. */
-export function TimerFields({ q, onChange, compact, noSets }: { q: QuickTimer; onChange: (q: QuickTimer) => void; compact?: boolean; noSets?: boolean }) {
+export function TimerFields({ q, onChange, compact }: { q: QuickTimer; onChange: (q: QuickTimer) => void; compact?: boolean }) {
   const set = (patch: Partial<QuickTimer>) => onChange({ ...q, ...patch });
   const hasSets = (q.sets ?? 1) > 1;
   let fields: ReactNode = null;
@@ -114,7 +114,7 @@ export function TimerFields({ q, onChange, compact, noSets }: { q: QuickTimer; o
       );
       break;
   }
-  if (q.kind === 'work' || q.kind === 'rest' || (noSets && q.kind !== 'tabata')) return <div className={`sentences${compact ? ' compact-sentences' : ''}`}>{fields}</div>;
+  if (q.kind === 'work' || q.kind === 'rest') return <div className={`sentences${compact ? ' compact-sentences' : ''}`}>{fields}</div>;
   return (
     <div className={`sentences${compact ? ' compact-sentences' : ''}`}>
       {fields}
@@ -133,7 +133,7 @@ export function TimerFields({ q, onChange, compact, noSets }: { q: QuickTimer; o
           </Line>
         </div>
       ) : (
-        <button className="btn ghost small add-sets" onClick={() => set({ sets: 2 })}>
+        <button className="btn ghost small add-sets" onClick={() => set({ sets: 2, setRestSec: q.setRestSec ?? 60 })}>
           <Icon name="plus" /> Add sets (optional)
         </button>
       )}

@@ -170,28 +170,31 @@ export function addExercise(b: Block, exerciseId: string, defaultRest: number): 
 
 /** Timer settings of a Tabata / AMRAP / EMOM / For Time block, in the Timer tab's shape. */
 export function quickFromParams(format: BlockFormat, p: BlockParams): QuickTimer {
+  const sets = { sets: 1 + (p.extraSets ?? 0), setRestSec: p.restBetweenSetsSec ?? 120 };
   switch (format) {
     case 'tabata':
       return { kind: 'tabata', rounds: p.rounds ?? 8, workSec: p.workSec ?? 20, restSec: p.restSec ?? 10, sets: 1 + (p.extraSets ?? 0), setRestSec: p.restBetweenSetsSec ?? 60 };
     case 'amrap':
-      return { kind: 'amrap', minutes: p.timeCapMin ?? 10 };
+      return { kind: 'amrap', minutes: p.timeCapMin ?? 10, ...sets };
     case 'emom':
-      return { kind: 'emom', everySec: p.intervalSec ?? 60, minutes: p.totalMin ?? 10 };
+      return { kind: 'emom', everySec: p.intervalSec ?? 60, minutes: p.totalMin ?? 10, ...sets };
     default:
-      return { kind: 'for_time', minutes: p.timeCapMin ?? 0, everySec: p.signalEverySec ?? 0 };
+      return { kind: 'for_time', minutes: p.timeCapMin ?? 0, everySec: p.signalEverySec ?? 0, ...sets };
   }
 }
 
 export function paramsFromQuick(q: QuickTimer, p: BlockParams): BlockParams {
+  const extra = Math.max(0, (q.sets ?? 1) - 1);
+  const sets = { extraSets: extra || undefined, restBetweenSetsSec: extra ? q.setRestSec : undefined };
   switch (q.kind) {
     case 'tabata':
-      return { ...p, rounds: q.rounds, workSec: q.workSec, restSec: q.restSec, extraSets: Math.max(0, (q.sets ?? 1) - 1), restBetweenSetsSec: q.setRestSec };
+      return { ...p, rounds: q.rounds, workSec: q.workSec, restSec: q.restSec, extraSets: extra, restBetweenSetsSec: q.setRestSec };
     case 'amrap':
-      return { ...p, timeCapMin: q.minutes };
+      return { ...p, timeCapMin: q.minutes, ...sets };
     case 'emom':
-      return { ...p, intervalSec: q.everySec, totalMin: q.minutes };
+      return { ...p, intervalSec: q.everySec, totalMin: q.minutes, ...sets };
     case 'for_time':
-      return { ...p, timeCapMin: q.minutes || undefined, signalEverySec: q.everySec || undefined };
+      return { ...p, timeCapMin: q.minutes || undefined, signalEverySec: q.everySec || undefined, ...sets };
     default:
       return p;
   }

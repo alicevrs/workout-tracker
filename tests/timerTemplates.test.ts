@@ -4,7 +4,8 @@ import { WorkoutDB } from '../src/db/db';
 import { ensureSeeded } from '../src/db/repo';
 import { createBackup, readBackup, restoreBackup } from '../src/lib/backup';
 import { addExercise, linkedBlock, newBlockTemplate } from '../src/lib/blockTemplates';
-import { newProgram } from '../src/lib/program';
+import { describeBlock, estimateBlockSeconds, newProgram } from '../src/lib/program';
+import { createSession } from '../src/lib/session';
 import { emptyPayload, mergePayloads } from '../src/lib/sync/merge';
 import { autoTimerName, newTimerTemplate, syncTimer, unlinkTimer, withTimer } from '../src/lib/timerTemplates';
 
@@ -16,11 +17,33 @@ async function freshDb() {
 }
 
 describe('saved timers', () => {
-  it('start as a Tabata named after its settings; sets stay only on Tabata', () => {
+  it('start as a Tabata named after its settings', () => {
     const t = newTimerTemplate();
     expect(t.timer.kind).toBe('tabata');
     expect(t.name).toBe(autoTimerName(t.timer));
-    expect(newTimerTemplate('amrap').timer.sets).toBeUndefined();
+  });
+
+  it('AMRAP / EMOM / For Time sets become one block per set with a set rest when a workout starts', () => {
+    const t = newTimerTemplate('amrap');
+    t.timer = { ...t.timer, minutes: 8, sets: 3, setRestSec: 90 };
+    const b = withTimer(addExercise(newBlockTemplate().block, 'push-up', 60), t);
+    expect(b.params).toMatchObject({ timeCapMin: 8, extraSets: 2, restBetweenSetsSec: 90 });
+    expect(estimateBlockSeconds(b)).toBe(3 * 8 * 60 + 2 * 90);
+    expect(describeBlock(b)).toContain('3 sets');
+
+    const p = newProgram('W');
+    p.days[0].blocks = [b];
+    const s = createSession({ program: p, day: p.days[0] });
+    expect(s.blocks.map((x) => x.name)).toEqual(['AMRAP · set 1/3', 'AMRAP · set 2/3', 'AMRAP · set 3/3']);
+    expect(new Set(s.blocks.map((x) => x.id)).size).toBe(3);
+    expect(s.blocks.map((x) => x.timer.restBeforeSec ?? 0)).toEqual([0, 90, 90]);
+    expect(s.blocks[1].timer.prepSec).toBe(0);
+    expect(s.blocks.every((x) => !x.params.extraSets && x.entries[0].exerciseId === 'push-up')).toBe(true);
+
+    // one set: unchanged, and going back to one set clears the extra sets
+    const single = withTimer(b, { ...t, timer: { ...t.timer, sets: 1 } });
+    expect(single.params.extraSets).toBeUndefined();
+    expect(createSession({ program: p, day: { ...p.days[0], blocks: [single] } }).blocks).toHaveLength(1);
   });
 
   it('count a training block by time and keep its exercises', () => {

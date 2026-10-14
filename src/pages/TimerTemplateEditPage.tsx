@@ -6,7 +6,7 @@ import { TimerFields } from '../components/TimerFields';
 import { EmptyState, PageHeader, useToast } from '../components/ui';
 import { db } from '../db/db';
 import type { TimerTemplate } from '../db/types';
-import { autoTimerName, cleanTimer, duplicateTimer, NEW_TIMER_NAME, syncTimer, TIMER_KINDS, unlinkTimer } from '../lib/timerTemplates';
+import { autoTimerName, duplicateTimer, NEW_TIMER_NAME, syncTimer, TIMER_KINDS, unlinkTimer } from '../lib/timerTemplates';
 import { defaultQuick, QUICK_LABEL, quickBlocks, quickSeconds, TIMER_INFO } from '../lib/timer/quick';
 import { formatDuration } from '../lib/dates';
 
@@ -60,8 +60,7 @@ export default function TimerTemplateEditPage() {
 
   const t = tpl.timer;
   const nameIsAuto = tpl.name === NEW_TIMER_NAME || tpl.name === autoTimerName(t);
-  const setTimer = (next: TimerTemplate['timer']) => {
-    const timer = cleanTimer(next);
+  const setTimer = (timer: TimerTemplate['timer']) => {
     update({ timer, ...(nameIsAuto ? { name: autoTimerName(timer) } : {}) });
   };
   const total = quickSeconds(quickBlocks([t], 0));
@@ -95,7 +94,7 @@ export default function TimerTemplateEditPage() {
             </button>
           ))}
         </div>
-        <TimerFields noSets q={t} onChange={(q) => setTimer(q as TimerTemplate['timer'])} />
+        <TimerFields q={t} onChange={(q) => setTimer(q as TimerTemplate['timer'])} />
 
         <div className="big-buttons" style={{ paddingTop: 0 }}>
           <button

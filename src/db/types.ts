@@ -119,6 +119,7 @@ export interface BlockParams {
   rounds?: number;
   workSec?: number;
   restSec?: number;
+  /** Sets after the first (Tabata; AMRAP, EMOM and For Time in workouts: split into one block per set when a session starts). */
   extraSets?: number;
   restBetweenSetsSec?: number;
   // amrap / for time

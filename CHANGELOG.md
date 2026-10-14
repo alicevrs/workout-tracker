@@ -194,3 +194,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Training blocks: under “Count by → Time”, pick a **Saved timer**. The block uses it with its own exercises, reps and weights, and follows every later change to the timer (and so do the workouts that use the block, from the next session). “Open timer” edits it; “Set the timer here” sets the times in the block instead.
 - Deleting a timer keeps the current times in the blocks that used it.
 - Saved timers are included in sync and backups.
+- **Sets for AMRAP, EMOM and For Time** in saved timers and training blocks (“Add sets”, with the rest between sets), as in the Timer tab. When a workout starts, each set becomes its own part (“· set 2/3”) with a “Set rest” before it, so the timer, results and history work set by set.
