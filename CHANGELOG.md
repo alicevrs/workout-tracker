@@ -185,4 +185,5 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Syncs on opening, when the app comes back, a few seconds after each change and every 5 minutes; “Sync now” button, status (synced / syncing / error), show and copy the code, turn off on one device, delete the cloud copy.
 - End-to-end encrypted: only encrypted data reaches the server (a free Cloudflare Worker with KV storage, `sync-worker/`).
 - Conflicts: the newest change of each item wins; deletions are carried to the other devices.
+- The sync server is live on the owner's free Cloudflare account (workout-tracker-sync.alicevrs.workers.dev); Settings → Sync can now be turned on.
 

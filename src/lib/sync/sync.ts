@@ -235,7 +235,8 @@ export async function deleteCloudCopy(url = SYNC_URL): Promise<void> {
 
 let timer: number | undefined;
 function schedule(delay = 6000) {
-  if (!getSyncCode() || !SYNC_URL) return;
+  // Automatic runs only in the app (not in tests, which call syncNow themselves).
+  if (typeof window === 'undefined' || !getSyncCode() || !SYNC_URL) return;
   window.clearTimeout(timer);
   timer = window.setTimeout(() => void syncNow(), delay);
 }
