@@ -93,3 +93,23 @@ describe('exercise block editor model', () => {
     expect((await db.programs.get(w.id))!.days[0].blocks[0].templateId).toBeUndefined();
   });
 });
+
+describe('leftover empty blocks', () => {
+  it('removes unnamed blocks without exercises that no workout uses', async () => {
+    const { removeEmptyBlocks, OLD_BLOCK_NAME, addExercise, linkedBlock } = await import('../src/lib/blockTemplates');
+    const { newProgram } = await import('../src/lib/program');
+    const db = await freshDb();
+    const old = newBlockTemplate('sets_reps', 10, OLD_BLOCK_NAME);
+    const fresh = newBlockTemplate();
+    const named = newBlockTemplate('sets_reps', 10, 'Warm-up');
+    const withEx = newBlockTemplate();
+    withEx.block = addExercise(withEx.block, 'push-up', 60);
+    const inWorkout = newBlockTemplate();
+    await db.blockTemplates.bulkAdd([old, fresh, named, withEx, inWorkout]);
+    const p = newProgram('W');
+    p.days[0].blocks = [linkedBlock(inWorkout)];
+    await db.programs.add(p);
+    expect(await removeEmptyBlocks(db)).toBe(2);
+    expect((await db.blockTemplates.toArray()).map((t) => t.id).sort()).toEqual([named.id, withEx.id, inWorkout.id].sort());
+  });
+});

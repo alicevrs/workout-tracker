@@ -5,6 +5,7 @@ import App from './App';
 import { db } from './db/db';
 import { migrateProgramsToWorkouts } from './lib/workouts';
 import { timersFromBlocksOnce } from './lib/timerTemplates';
+import { removeEmptyBlocks } from './lib/blockTemplates';
 import { ensureSeeded, getSettings, requestPersistentStorage, saveSettings } from './db/repo';
 import { ToastProvider } from './components/ui';
 import { startSync } from './lib/sync/sync';
@@ -21,6 +22,7 @@ async function boot() {
     await ensureSeeded();
     await migrateProgramsToWorkouts(db);
     await timersFromBlocksOnce(db);
+    await removeEmptyBlocks(db);
   } catch (e) {
     console.error('Startup migration failed', e);
   }

@@ -11,7 +11,6 @@ import { useVisibleExercises } from '../db/repo';
 import type { ExerciseCategory, MuscleId } from '../db/types';
 
 const CATEGORIES: { value: ExerciseCategory | 'all'; label: string }[] = [
-  { value: 'all', label: 'All' },
   { value: 'strength', label: 'Strength' },
   { value: 'bodyweight', label: 'Bodyweight' },
   { value: 'cardio', label: 'Cardio' },
@@ -25,7 +24,8 @@ export default function ExercisesPage() {
   const navigate = useNavigate();
   const [used, setUsed] = useState<ComponentProps<typeof UsedInSheet>['used']>(null);
   const [query, setQuery] = useState('');
-  const [category, setCategory] = useState<(typeof CATEGORIES)[number]['value']>('all');
+  /** 'all' = no filter: tapping the selected chip again clears it. */
+  const [category, setCategory] = useState<ExerciseCategory | 'all'>('all');
   const [muscle, setMuscle] = useState<MuscleId | ''>('');
 
   const filtered = useMemo(() => {
@@ -86,7 +86,7 @@ export default function ExercisesPage() {
         <SearchField value={query} onChange={setQuery} label="Search exercises by name or equipment" />
         <div className="scroll-x" role="group" aria-label="Category">
           {CATEGORIES.map((c) => (
-            <button key={c.value} className="chip" aria-pressed={category === c.value} onClick={() => setCategory(c.value)}>
+            <button key={c.value} className="chip" aria-pressed={category === c.value} onClick={() => setCategory(category === c.value ? 'all' : c.value)}>
               {c.label}
             </button>
           ))}

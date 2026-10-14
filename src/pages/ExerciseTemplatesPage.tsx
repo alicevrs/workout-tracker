@@ -13,17 +13,14 @@ import { setDraft } from '../lib/drafts';
 import { workoutsUsingBlock } from '../lib/usage';
 
 const CATEGORIES: { value: ExerciseCategory | 'all'; label: string }[] = [
-  { value: 'all', label: 'All' },
   { value: 'strength', label: 'Strength' },
   { value: 'bodyweight', label: 'Bodyweight' },
   { value: 'cardio', label: 'Cardio' },
   { value: 'mobility', label: 'Mobility' },
 ];
 
-/** How blocks are counted: reps, or one of the timers. */
+/** Which timer a block is counted by. */
 const COUNTS: { value: BlockFormat | 'all'; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'sets_reps', label: 'Reps' },
   { value: 'amrap', label: 'AMRAP' },
   { value: 'for_time', label: 'For Time' },
   { value: 'emom', label: 'EMOM' },
@@ -114,14 +111,14 @@ export default function ExerciseTemplatesPage() {
         <SearchField value={query} onChange={setQuery} label="Search training blocks" />
         <div className="scroll-x" role="group" aria-label="Category">
           {CATEGORIES.map((c) => (
-            <button key={c.value} className="chip" aria-pressed={category === c.value} onClick={() => setCategory(c.value)}>
+            <button key={c.value} className="chip" aria-pressed={category === c.value} onClick={() => setCategory(category === c.value ? 'all' : c.value)}>
               {c.label}
             </button>
           ))}
         </div>
         <div className="scroll-x" role="group" aria-label="Count by">
           {COUNTS.map((c) => (
-            <button key={c.value} className="chip" aria-pressed={count === c.value} onClick={() => setCount(c.value)}>
+            <button key={c.value} className="chip" aria-pressed={count === c.value} onClick={() => setCount(count === c.value ? 'all' : c.value)}>
               {c.label}
             </button>
           ))}

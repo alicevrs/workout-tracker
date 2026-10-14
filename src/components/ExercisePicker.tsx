@@ -25,9 +25,9 @@ export function ExercisePicker({ open, onClose, onPick }: { open: boolean; onClo
     <Sheet open={open} onClose={onClose} title="Add exercise">
       <input type="search" placeholder="Search name, muscle or equipment" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search exercises" autoFocus />
       <div className="scroll-x mt-s" role="group" aria-label="Category">
-        {(['all', 'strength', 'bodyweight', 'cardio', 'mobility'] as const).map((c) => (
-          <button key={c} type="button" className="chip" aria-pressed={cat === c} onClick={() => setCat(c)}>
-            {c === 'all' ? 'All' : c[0].toUpperCase() + c.slice(1)}
+        {(['strength', 'bodyweight', 'cardio', 'mobility'] as const).map((c) => (
+          <button key={c} type="button" className="chip" aria-pressed={cat === c} onClick={() => setCat(cat === c ? 'all' : c)}>
+            {c[0].toUpperCase() + c.slice(1)}
           </button>
         ))}
       </div>

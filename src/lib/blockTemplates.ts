@@ -66,6 +66,19 @@ export async function syncTemplate(db: WorkoutDB, t: BlockTemplate): Promise<num
   return n;
 }
 
+/**
+ * Remove leftover empty blocks: no exercises, never named and not used by any workout. They were
+ * created by “New block” before blocks needed a Save. Returns the number removed.
+ */
+export async function removeEmptyBlocks(db: WorkoutDB): Promise<number> {
+  const used = new Set((await db.programs.toArray()).flatMap((p) => p.days.flatMap((d) => d.blocks.map((b) => b.templateId))));
+  const empty = await db.blockTemplates
+    .filter((t) => !t.block.entries.length && (t.name.trim() === '' || t.name === NEW_BLOCK_NAME || t.name === OLD_BLOCK_NAME) && !used.has(t.id))
+    .primaryKeys();
+  if (empty.length) await db.blockTemplates.bulkDelete(empty as string[]);
+  return empty.length;
+}
+
 /** When a template is deleted, its linked parts keep their content as ordinary parts. */
 export async function unlinkTemplate(db: WorkoutDB, templateId: string): Promise<void> {
   await db.transaction('rw', db.programs, async () => {

@@ -79,9 +79,9 @@ export default function TimerTemplatesPage() {
       <div className="stack">
         <SearchField value={query} onChange={setQuery} label="Search timers" />
         <div className="scroll-x" role="group" aria-label="Timer type">
-          {(['all', ...TIMER_KINDS] as const).map((k) => (
-            <button key={k} className="chip" aria-pressed={kind === k} onClick={() => setKind(k)}>
-              {k === 'all' ? 'All' : QUICK_LABEL[k]}
+          {TIMER_KINDS.map((k) => (
+            <button key={k} className="chip" aria-pressed={kind === k} onClick={() => setKind(kind === k ? 'all' : k)}>
+              {QUICK_LABEL[k]}
             </button>
           ))}
         </div>
