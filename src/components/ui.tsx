@@ -7,11 +7,14 @@ export function PageHeader({
   back,
   actions,
   subtitle,
+  confirmLeave,
 }: {
   title: ReactNode;
   back?: string | true;
   actions?: ReactNode;
   subtitle?: ReactNode;
+  /** Unsaved changes: ask before going back (they are discarded). */
+  confirmLeave?: boolean;
 }) {
   const navigate = useNavigate();
   return (
@@ -23,7 +26,7 @@ export function PageHeader({
               <Icon name="back" /> Back
             </button>
           ) : (
-            <Link className="back-link" to={back}>
+            <Link className="back-link" to={back} onClick={(e) => confirmLeave && !confirm('Leave without saving? Your changes will be lost.') && e.preventDefault()}>
               <Icon name="back" size={18} /> Back
             </Link>
           )}

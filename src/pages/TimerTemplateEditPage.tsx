@@ -1,53 +1,21 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Icon } from '../components/Icon';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { InfoButton } from '../components/Library';
 import { TimerFields } from '../components/TimerFields';
 import { EmptyState, PageHeader, useToast } from '../components/ui';
 import { db } from '../db/db';
 import type { TimerTemplate } from '../db/types';
-import { autoTimerName, duplicateTimer, NEW_TIMER_NAME, syncTimer, TIMER_KINDS, unlinkTimer } from '../lib/timerTemplates';
+import { useDraft } from '../lib/drafts';
+import { autoTimerName, NEW_TIMER_NAME, syncTimer, TIMER_KINDS } from '../lib/timerTemplates';
 import { defaultQuick, QUICK_LABEL, quickBlocks, quickSeconds, TIMER_INFO } from '../lib/timer/quick';
 import { formatDuration } from '../lib/dates';
 
-/** Create or edit a saved timer. Saved automatically; linked training blocks follow. */
+/** Create or edit a saved timer. Nothing is stored until Save; linked training blocks follow on save. */
 export default function TimerTemplateEditPage() {
   const { id = '' } = useParams();
   const [params] = useSearchParams();
   const back = params.get('from') || '/workouts/timers';
-  const navigate = useNavigate();
   const toast = useToast();
-  const [tpl, setTpl] = useState<TimerTemplate | null | undefined>(undefined);
-  const saveTimer = useRef<number | undefined>(undefined);
-  const pending = useRef<TimerTemplate | null>(null);
-  const tplRef = useRef<TimerTemplate | null | undefined>(tpl);
-  tplRef.current = tpl;
-
-  useEffect(() => {
-    db.timerTemplates.get(id).then((t) => setTpl(t ?? null));
-  }, [id]);
-
-  const flush = useCallback(async () => {
-    window.clearTimeout(saveTimer.current);
-    if (pending.current) {
-      const t = pending.current;
-      pending.current = null;
-      await db.timerTemplates.put(t);
-      await syncTimer(db, t); // linked training blocks (and their workouts) follow
-    }
-  }, []);
-  useEffect(() => () => void flush(), [flush]);
-
-  const update = (patch: Partial<TimerTemplate>) => {
-    const cur = tplRef.current;
-    if (!cur) return;
-    const next = { ...cur, ...patch, updatedAt: Date.now() };
-    tplRef.current = next;
-    setTpl(next);
-    pending.current = next;
-    window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(flush, 400);
-  };
+  const { item: tpl, setItem, current, dirty, markSaved } = useDraft<TimerTemplate>(`timer:${id}`, () => db.timerTemplates.get(id));
 
   if (tpl === undefined) return <div className="page" />;
   if (tpl === null)
@@ -58,18 +26,29 @@ export default function TimerTemplateEditPage() {
       </div>
     );
 
+  const update = (patch: Partial<TimerTemplate>) => {
+    const cur = current();
+    if (cur) setItem({ ...cur, ...patch });
+  };
   const t = tpl.timer;
   const nameIsAuto = tpl.name === NEW_TIMER_NAME || tpl.name === autoTimerName(t);
-  const setTimer = (timer: TimerTemplate['timer']) => {
-    update({ timer, ...(nameIsAuto ? { name: autoTimerName(timer) } : {}) });
-  };
+  const setTimer = (timer: TimerTemplate['timer']) => update({ timer, ...(nameIsAuto ? { name: autoTimerName(timer) } : {}) });
   const total = quickSeconds(quickBlocks([t], 0));
+
+  const save = async () => {
+    const next = { ...tpl, name: tpl.name.trim() || autoTimerName(t), updatedAt: Date.now() };
+    await db.timerTemplates.put(next);
+    await syncTimer(db, next); // linked training blocks (and their workouts) follow
+    markSaved(next);
+    toast('Timer saved');
+  };
 
   return (
     <div className="page">
       <PageHeader
         title={tpl.name || 'Timer'}
         back={back}
+        confirmLeave={dirty}
         subtitle={total ? `≈ ${formatDuration(total)}` : undefined}
         actions={
           <InfoButton title={QUICK_LABEL[t.kind]}>
@@ -78,7 +57,7 @@ export default function TimerTemplateEditPage() {
                 {p}
               </p>
             ))}
-            <p style={{ margin: 0 }}>Training blocks that use this timer follow every change from their next session. Workouts already done stay as they were.</p>
+            <p style={{ margin: 0 }}>Changes are kept only when you tap Save. Training blocks that use this timer then follow from their next session; workouts already done stay as they were.</p>
           </InfoButton>
         }
       />
@@ -95,33 +74,11 @@ export default function TimerTemplateEditPage() {
           ))}
         </div>
         <TimerFields q={t} onChange={(q) => setTimer(q as TimerTemplate['timer'])} />
-
-        <div className="big-buttons" style={{ paddingTop: 0 }}>
-          <button
-            className="btn small"
-            onClick={async () => {
-              await flush();
-              const copy = duplicateTimer(tpl);
-              await db.timerTemplates.add(copy);
-              toast('Timer duplicated');
-              navigate(`/workouts/timers/${copy.id}`);
-            }}
-          >
-            <Icon name="copy" /> Duplicate
-          </button>
-          <button
-            className="btn ghost small"
-            onClick={async () => {
-              if (!confirm(`Delete “${tpl.name}”? Training blocks that use it keep their current times.`)) return;
-              pending.current = null;
-              await unlinkTimer(db, tpl.id);
-              await db.timerTemplates.delete(tpl.id);
-              navigate(back);
-            }}
-          >
-            <Icon name="trash" /> Delete timer
-          </button>
-        </div>
+      </div>
+      <div className="save-bar">
+        <button className="big-btn" disabled={!dirty} onClick={save}>
+          Save
+        </button>
       </div>
     </div>
   );

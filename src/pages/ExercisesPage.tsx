@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { InfoButton, LibraryList, SearchField } from '../components/Library';
-import { EmptyState, PageHeader } from '../components/ui';
+import { EmptyState, PageHeader, useToast } from '../components/ui';
+import { db } from '../db/db';
+import { uid } from '../lib/ids';
 import { MUSCLES, MUSCLE_LABEL } from '../data/muscles';
 import { useExercises } from '../db/repo';
 import type { ExerciseCategory, MuscleId } from '../db/types';
@@ -18,6 +20,7 @@ const CATEGORIES: { value: ExerciseCategory | 'all' | 'custom'; label: string }[
 
 export default function ExercisesPage() {
   const exercises = useExercises();
+  const toast = useToast();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]['value']>('all');
   const [muscle, setMuscle] = useState<MuscleId | ''>('');
@@ -33,6 +36,22 @@ export default function ExercisesPage() {
     });
   }, [exercises, query, category, muscle]);
 
+  const duplicate = async (id: string) => {
+    const e = await db.exercises.get(id);
+    if (!e) return;
+    await db.exercises.add({ ...e, id: `custom-${uid()}`, name: `${e.name} (copy)`, isCustom: true });
+    toast('Copied to your exercises');
+  };
+  const remove = async (id: string) => {
+    const e = await db.exercises.get(id);
+    if (!e?.isCustom) return;
+    const used = await db.programs.filter((p) => p.days.some((d) => d.blocks.some((b) => b.entries.some((en) => en.exerciseId === id)))).count();
+    const msg = used ? `“${e.name}” is used in ${used} workout(s). Logged sessions keep their data. Delete anyway?` : `Delete “${e.name}”?`;
+    if (!confirm(msg)) return;
+    await db.exercises.delete(id);
+    toast('Exercise deleted');
+  };
+
   return (
     <div className="page">
       <PageHeader
@@ -42,7 +61,7 @@ export default function ExercisesPage() {
         actions={
           <InfoButton title="Exercises">
             <p style={{ margin: 0 }}>The exercise catalogue. Open an exercise to see the muscles it works, your best values and its history.</p>
-            <p style={{ margin: 0 }}>Built-in exercises can be duplicated to make your own version.</p>
+            <p style={{ margin: 0 }}>In the list, the copy icon makes your own version of an exercise and × deletes your own exercises (built-in ones stay).</p>
           </InfoButton>
         }
       />
@@ -83,7 +102,10 @@ export default function ExercisesPage() {
               to: `/exercises/${e.id}`,
               badge: e.isCustom ? 'Mine' : undefined,
               sub: `${e.primaryMuscles.map((m) => MUSCLE_LABEL[m]).join(', ')} · ${e.equipment}`,
+              noDelete: !e.isCustom,
             }))}
+            onDuplicate={duplicate}
+            onDelete={remove}
           />
         )}
       </div>

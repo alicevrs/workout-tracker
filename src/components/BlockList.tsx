@@ -6,6 +6,7 @@ import { useExerciseMap, useProfile } from '../db/repo';
 import type { Block } from '../db/types';
 import { useDragReorder } from '../hooks/useDragReorder';
 import { linkedBlock, newBlockTemplate, templateFromBlock } from '../lib/blockTemplates';
+import { setDraft } from '../lib/drafts';
 import { cloneBlock, describeBlock, FORMAT_INFO } from '../lib/program';
 import { BlockEditor } from './BlockEditor';
 import { Icon } from './Icon';
@@ -16,7 +17,7 @@ import { Sheet, useToast } from './ui';
  * training block open that block (changes there apply to every workout using it); older unlinked
  * parts expand an editor here and can be saved as a block.
  */
-export function BlockList({ blocks, onChange, backTo }: { blocks: Block[]; onChange: (blocks: Block[]) => void; backTo: string }) {
+export function BlockList({ blocks, onChange, backTo, workoutId }: { blocks: Block[]; onChange: (blocks: Block[]) => void; backTo: string; workoutId: string }) {
   const navigate = useNavigate();
   const profile = useProfile();
   const exercises = useExerciseMap();
@@ -41,11 +42,11 @@ export function BlockList({ blocks, onChange, backTo }: { blocks: Block[]; onCha
     setAdding(false);
   };
   const openLinked = (templateId: string) => navigate(`/workouts/blocks/${templateId}?from=${encodeURIComponent(backTo)}`);
-  const newLinked = async () => {
+  /** A new block is stored (and added to this workout) only when it is saved. */
+  const newLinked = () => {
     const t = newBlockTemplate('sets_reps', profile.defaultPrepSec);
-    await db.blockTemplates.add(t);
-    onChange([...blocks, linkedBlock(t)]);
-    openLinked(t.id);
+    setDraft(`block:${t.id}`, t, true);
+    navigate(`/workouts/blocks/${t.id}?draft=1&addTo=${encodeURIComponent(workoutId)}&from=${encodeURIComponent(backTo)}`);
   };
 
   return (

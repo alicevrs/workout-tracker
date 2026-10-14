@@ -9,10 +9,12 @@ export interface LibraryItem {
   sub?: string;
   to: string;
   badge?: string;
+  /** Built-in items (catalogue exercises) cannot be deleted. */
+  noDelete?: boolean;
 }
 
-/** Plain list of a library (workout templates, exercise templates, exercises): tap to open, copy icon to duplicate. */
-export function LibraryList({ items, onDuplicate, empty }: { items: LibraryItem[]; onDuplicate?: (id: string) => void; empty?: ReactNode }) {
+/** Plain list of a library (workouts, training blocks, timers, exercises): tap to open, copy icon to duplicate, × to delete. */
+export function LibraryList({ items, onDuplicate, onDelete, empty }: { items: LibraryItem[]; onDuplicate?: (id: string) => void; onDelete?: (id: string) => void; empty?: ReactNode }) {
   if (!items.length) return <p className="small muted lib-empty">{empty}</p>;
   return (
     <ul className="lib-list">
@@ -30,6 +32,14 @@ export function LibraryList({ items, onDuplicate, empty }: { items: LibraryItem[
               <Icon name="copy" size={20} />
             </button>
           )}
+          {onDelete &&
+            (it.noDelete ? (
+              <span className="lib-action-gap" aria-hidden />
+            ) : (
+              <button className="btn icon ghost" onClick={() => onDelete(it.id)} aria-label={`Delete ${it.name}`}>
+                <Icon name="x" size={20} />
+              </button>
+            ))}
         </li>
       ))}
     </ul>

@@ -6,6 +6,7 @@ import { InfoButton, LibraryList, SearchField } from '../components/Library';
 import { PageHeader, Sheet, useToast } from '../components/ui';
 import { db } from '../db/db';
 import { formatDuration } from '../lib/dates';
+import { setDraft } from '../lib/drafts';
 import { cloneProgram, estimateBlockSeconds } from '../lib/program';
 import { TEMPLATES } from '../lib/templates';
 import { newWorkout, workoutDay } from '../lib/workouts';
@@ -29,10 +30,10 @@ export default function WorkoutTemplatesPage() {
       });
   }, [workouts, query]);
 
-  const create = async () => {
+  const create = () => {
     const w = newWorkout();
-    await db.programs.add(w);
-    navigate(`/workouts/${w.id}`);
+    setDraft(`workout:${w.id}`, w, true); // stored only when saved
+    navigate(`/workouts/${w.id}?draft=1`);
   };
   const duplicate = async (id: string) => {
     const w = await db.programs.get(id);
@@ -41,7 +42,12 @@ export default function WorkoutTemplatesPage() {
     copy.days = copy.days.map((d) => ({ ...d, name: copy.name }));
     await db.programs.add(copy);
     toast('Workout duplicated');
-    navigate(`/workouts/${copy.id}`);
+  };
+  const remove = async (id: string) => {
+    const w = await db.programs.get(id);
+    if (!w || !confirm(`Delete “${w.name}”? Logged sessions are kept.`)) return;
+    await db.programs.delete(id);
+    toast('Workout deleted');
   };
 
   return (
@@ -52,7 +58,7 @@ export default function WorkoutTemplatesPage() {
         actions={
           <InfoButton title="Workouts">
             <p style={{ margin: 0 }}>Whole workouts, ready to start from Home → Start a workout.</p>
-            <p style={{ margin: 0 }}>Open one to change it. The copy icon makes a duplicate to adapt.</p>
+            <p style={{ margin: 0 }}>Open one to change it, then tap Save. In the list, the copy icon duplicates a workout and × deletes it.</p>
           </InfoButton>
         }
       />
@@ -62,7 +68,7 @@ export default function WorkoutTemplatesPage() {
         </button>
       </div>
       {(workouts?.length ?? 0) > 6 && <SearchField value={query} onChange={setQuery} label="Search workouts" />}
-      <LibraryList items={items} onDuplicate={duplicate} empty={query ? 'No workout matches.' : 'No workouts yet.'} />
+      <LibraryList items={items} onDuplicate={duplicate} onDelete={remove} empty={query ? 'No workout matches.' : 'No workouts yet.'} />
       <div className="row" style={{ justifyContent: 'center' }}>
         <button className="btn small ghost" onClick={() => setSamples(true)}>
           <Icon name="plus" /> Add sample workouts

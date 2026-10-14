@@ -1,18 +1,15 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { BodyMap } from '../components/BodyMap';
 import { ExerciseHistory } from '../components/ExerciseHistory';
 import { Icon } from '../components/Icon';
-import { EmptyState, PageHeader, useToast } from '../components/ui';
+import { EmptyState, PageHeader } from '../components/ui';
 import { MUSCLE_LABEL } from '../data/muscles';
 import { db } from '../db/db';
-import { uid } from '../lib/ids';
 import { exerciseIntensity } from '../lib/muscleLoad';
 
 export default function ExerciseDetailPage() {
   const { id = '' } = useParams();
-  const navigate = useNavigate();
-  const toast = useToast();
   const exercise = useLiveQuery(() => db.exercises.get(id), [id]);
 
   if (exercise === undefined) return <div className="page" />;
@@ -23,26 +20,6 @@ export default function ExerciseDetailPage() {
         <EmptyState title="Exercise not found" />
       </div>
     );
-
-  const duplicate = async () => {
-    const copy = { ...exercise, id: `custom-${uid()}`, name: `${exercise.name} (copy)`, isCustom: true };
-    await db.exercises.add(copy);
-    toast('Copied to your exercises');
-    navigate(`/exercises/${copy.id}/edit`);
-  };
-
-  const remove = async () => {
-    const used = await db.programs
-      .filter((p) => p.days.some((d) => d.blocks.some((b) => b.entries.some((en) => en.exerciseId === id))))
-      .count();
-    const msg = used
-      ? `This exercise is used in ${used} program(s). Logged sessions keep their data. Delete anyway?`
-      : `Delete “${exercise.name}”?`;
-    if (!confirm(msg)) return;
-    await db.exercises.delete(id);
-    toast('Exercise deleted');
-    navigate('/exercises');
-  };
 
   return (
     <div className="page">
@@ -55,11 +32,7 @@ export default function ExerciseDetailPage() {
             <Link className="btn" to={`/exercises/${id}/edit`}>
               <Icon name="edit" /> Edit
             </Link>
-          ) : (
-            <button className="btn" onClick={duplicate}>
-              <Icon name="copy" /> Duplicate
-            </button>
-          )
+          ) : undefined
         }
       />
       <div className="grid two">
@@ -105,13 +78,6 @@ export default function ExerciseDetailPage() {
           </section>
         )}
       </div>
-      {exercise.isCustom && (
-        <div className="mt">
-          <button className="btn danger" onClick={remove}>
-            <Icon name="trash" /> Delete exercise
-          </button>
-        </div>
-      )}
     </div>
   );
 }

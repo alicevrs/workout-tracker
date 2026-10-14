@@ -195,3 +195,10 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Deleting a timer keeps the current times in the blocks that used it.
 - Saved timers are included in sync and backups.
 - **Sets for AMRAP, EMOM and For Time** in saved timers and training blocks (“Add sets”, with the rest between sets), as in the Timer tab. When a workout starts, each set becomes its own part (“· set 2/3”) with a “Set rest” before it, so the timer, results and history work set by set.
+
+## Save button and list actions (2026-10-14)
+- Workouts, training blocks and timers are no longer saved automatically. Changes are kept only when you tap the yellow **Save** button (always in view at the bottom; greyed out when there is nothing to save). Going Back with unsaved changes asks first, then discards them.
+- **New workout / New block / New timer** appear in their list only after the first Save.
+- In a workout, **New block** opens the new block; it is added to the workout when the block is saved. Opening a block from a workout (or a timer from a block) and coming back keeps the changes not yet saved there.
+- Lists of workouts, training blocks, timers and exercises: a **×** to delete next to the copy icon to duplicate (built-in exercises can only be duplicated). Duplicates appear in the list right away.
+- The Duplicate and Delete buttons inside workouts, blocks, timers and exercises were removed (they are in the lists now).

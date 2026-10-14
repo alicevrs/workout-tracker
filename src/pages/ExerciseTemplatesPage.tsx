@@ -8,7 +8,8 @@ import { db } from '../db/db';
 import { MUSCLES } from '../data/muscles';
 import { useExerciseMap, useProfile } from '../db/repo';
 import type { ExerciseCategory, MuscleId } from '../db/types';
-import { duplicateTemplate, newBlockTemplate } from '../lib/blockTemplates';
+import { duplicateTemplate, newBlockTemplate, unlinkTemplate } from '../lib/blockTemplates';
+import { setDraft } from '../lib/drafts';
 import { describeBlock, FORMAT_INFO } from '../lib/program';
 
 const CATEGORIES: { value: ExerciseCategory | 'all'; label: string }[] = [
@@ -43,18 +44,23 @@ export default function ExerciseTemplatesPage() {
       .map((t) => ({ id: t.id, name: t.name, to: `/workouts/blocks/${t.id}`, badge: FORMAT_INFO[t.block.format].short, sub: describeBlock(t.block) }));
   }, [templates, query, exercises, category, muscle]);
 
-  const create = async () => {
+  const create = () => {
     const t = newBlockTemplate('sets_reps', profile.defaultPrepSec);
-    await db.blockTemplates.add(t);
-    navigate(`/workouts/blocks/${t.id}`);
+    setDraft(`block:${t.id}`, t, true); // stored only when saved
+    navigate(`/workouts/blocks/${t.id}?draft=1`);
   };
   const duplicate = async (id: string) => {
     const t = await db.blockTemplates.get(id);
     if (!t) return;
-    const copy = duplicateTemplate(t);
-    await db.blockTemplates.add(copy);
+    await db.blockTemplates.add(duplicateTemplate(t));
     toast('Training block duplicated');
-    navigate(`/workouts/blocks/${copy.id}`);
+  };
+  const remove = async (id: string) => {
+    const t = await db.blockTemplates.get(id);
+    if (!t || !confirm(`Delete “${t.name}”? Workouts that use it keep their current version.`)) return;
+    await unlinkTemplate(db, id);
+    await db.blockTemplates.delete(id);
+    toast('Training block deleted');
   };
 
   return (
@@ -69,7 +75,7 @@ export default function ExerciseTemplatesPage() {
               timer, with weights.
             </p>
             <p style={{ margin: 0 }}>Add them to workouts. Change a block once and every workout that uses it follows from the next session.</p>
-            <p style={{ margin: 0 }}>The copy icon makes a duplicate to adapt.</p>
+            <p style={{ margin: 0 }}>In the list, the copy icon duplicates a block and × deletes it.</p>
           </InfoButton>
         }
       />
@@ -101,6 +107,7 @@ export default function ExerciseTemplatesPage() {
         <LibraryList
           items={items}
           onDuplicate={duplicate}
+          onDelete={remove}
           empty={query || category !== 'all' || muscle ? 'No block matches.' : 'No training blocks yet. You can also save any part of a workout as a block.'}
         />
       </div>
