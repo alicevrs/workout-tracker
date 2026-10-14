@@ -203,3 +203,9 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Lists of workouts, training blocks, timers and exercises: a **×** to delete next to the copy icon to duplicate (built-in exercises can only be duplicated). Duplicates appear in the list right away.
 - The Duplicate and Delete buttons inside workouts, blocks, timers and exercises were removed (they are in the lists now).
 - **Timers from your training blocks:** once, when the new version opens, every training block counted by Tabata, AMRAP, EMOM or For Time gets a saved timer with its own settings (blocks with the same settings share one) and is linked to it, so the timers you already use are in Workouts → Timers without typing them again.
+
+## Filters, “where used” and editable exercises (2026-10-14)
+- Timers list: filter by type (All, AMRAP, For Time, EMOM, Tabata) under the search.
+- Training blocks list: a second filter row for how the block is counted (All, Reps, AMRAP, For Time, EMOM, Tabata), combined with the category and muscle-group filters.
+- New **link** icon in the lists: for an exercise or a timer it shows the training blocks that use it; for a training block, the workouts that use it. Each name opens that item.
+- Every exercise, built-in ones included, can now be edited (Edit on the exercise page) and deleted (× in the list). A deleted built-in exercise disappears from lists and pickers, but past workouts still show its name. Changed and deleted built-in exercises are kept when the catalogue is updated and are synced to the other devices.

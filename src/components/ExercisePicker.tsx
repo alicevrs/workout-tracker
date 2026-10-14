@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MUSCLE_LABEL } from '../data/muscles';
-import { useExercises } from '../db/repo';
+import { useVisibleExercises } from '../db/repo';
 import type { ExerciseCategory } from '../db/types';
 import { Sheet } from './ui';
 
 export function ExercisePicker({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (id: string) => void }) {
-  const exercises = useExercises();
+  const exercises = useVisibleExercises();
   const [q, setQ] = useState('');
   const [cat, setCat] = useState<ExerciseCategory | 'all'>('all');
   const list = useMemo(() => {

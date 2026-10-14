@@ -25,12 +25,13 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export const SEED_EXERCISES = seedExercises as Exercise[];
 
-/** Insert or refresh the built-in catalog. Custom exercises are never touched. */
+/** Insert or refresh the built-in catalog. Custom exercises and built-ins the user changed or deleted are never touched. */
 export async function ensureSeeded(database = db): Promise<void> {
   const row = await database.kv.get('seedVersion');
   if ((row?.value as number | undefined) === SEED_VERSION) return;
   await database.transaction('rw', database.exercises, database.kv, async () => {
-    await database.exercises.bulkPut(SEED_EXERCISES);
+    const own = new Set((await database.exercises.filter((e) => !!e.edited).primaryKeys()) as string[]);
+    await database.exercises.bulkPut(SEED_EXERCISES.filter((e) => !own.has(e.id)));
     await database.kv.put({ key: 'seedVersion', value: SEED_VERSION });
   });
 }
@@ -68,6 +69,14 @@ export function useSettings(): Settings {
 export function useExercises(): Exercise[] | undefined {
   return useLiveQuery(() => db.exercises.orderBy('name').toArray(), []);
 }
+
+/** Exercises to choose from (built-ins the user deleted are left out). */
+export function useVisibleExercises(): Exercise[] | undefined {
+  return useLiveQuery(() => db.exercises.orderBy('name').filter((e) => !e.hidden).toArray(), []);
+}
+
+/** The user's own data in the exercises table: custom exercises and changed or deleted built-ins. */
+export const isOwnExercise = (e: Exercise) => e.isCustom || !!e.edited;
 
 export function useExerciseMap(): Map<string, Exercise> {
   const list = useExercises();

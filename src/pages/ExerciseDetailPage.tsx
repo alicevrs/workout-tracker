@@ -28,11 +28,9 @@ export default function ExerciseDetailPage() {
         back="/exercises"
         subtitle={`${exercise.category} · ${exercise.equipment}`}
         actions={
-          exercise.isCustom ? (
-            <Link className="btn" to={`/exercises/${id}/edit`}>
-              <Icon name="edit" /> Edit
-            </Link>
-          ) : undefined
+          <Link className="btn" to={`/exercises/${id}/edit`}>
+            <Icon name="edit" /> Edit
+          </Link>
         }
       />
       <div className="grid two">

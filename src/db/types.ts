@@ -39,6 +39,11 @@ export interface Exercise {
   tracking?: Tracking;
   /** Optional MET override used for calorie estimates (mainly cardio). */
   met?: number;
+  /** Built-in exercise changed by the user: kept when the catalogue is refreshed, and synced. */
+  edited?: boolean;
+  /** Built-in exercise deleted by the user: hidden from lists and pickers, kept so past workouts still show its name. */
+  hidden?: boolean;
+  updatedAt?: number;
 }
 
 // ---------- Planning ----------

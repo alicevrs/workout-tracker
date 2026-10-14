@@ -1,15 +1,16 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ComponentProps } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icon';
-import { InfoButton, LibraryList, SearchField } from '../components/Library';
+import { InfoButton, LibraryList, SearchField, UsedInSheet } from '../components/Library';
 import { PageHeader, useToast } from '../components/ui';
 import { db } from '../db/db';
 import { MUSCLES } from '../data/muscles';
 import { useExerciseMap, useProfile } from '../db/repo';
-import type { ExerciseCategory, MuscleId } from '../db/types';
+import type { BlockFormat, ExerciseCategory, MuscleId } from '../db/types';
 import { duplicateTemplate, newBlockTemplate, unlinkTemplate } from '../lib/blockTemplates';
 import { setDraft } from '../lib/drafts';
+import { workoutsUsingBlock } from '../lib/usage';
 import { describeBlock, FORMAT_INFO } from '../lib/program';
 
 const CATEGORIES: { value: ExerciseCategory | 'all'; label: string }[] = [
@@ -18,6 +19,16 @@ const CATEGORIES: { value: ExerciseCategory | 'all'; label: string }[] = [
   { value: 'bodyweight', label: 'Bodyweight' },
   { value: 'cardio', label: 'Cardio' },
   { value: 'mobility', label: 'Mobility' },
+];
+
+/** How blocks are counted: reps, or one of the timers. */
+const COUNTS: { value: BlockFormat | 'all'; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'sets_reps', label: 'Reps' },
+  { value: 'amrap', label: 'AMRAP' },
+  { value: 'for_time', label: 'For Time' },
+  { value: 'emom', label: 'EMOM' },
+  { value: 'tabata', label: 'Tabata' },
 ];
 
 /** Library of training blocks (ready-made parts of a workout). */
@@ -30,6 +41,8 @@ export default function ExerciseTemplatesPage() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<ExerciseCategory | 'all'>('all');
   const [muscle, setMuscle] = useState<MuscleId | ''>('');
+  const [count, setCount] = useState<BlockFormat | 'all'>('all');
+  const [used, setUsed] = useState<ComponentProps<typeof UsedInSheet>['used']>(null);
 
   const items = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -38,11 +51,12 @@ export default function ExerciseTemplatesPage() {
         const exs = t.block.entries.map((e) => exercises.get(e.exerciseId)).filter((x) => !!x);
         if (q && !t.name.toLowerCase().includes(q) && !exs.some((x) => x.name.toLowerCase().includes(q))) return false;
         if (category !== 'all' && !exs.some((x) => x.category === category)) return false;
+        if (count !== 'all' && t.block.format !== count) return false;
         if (muscle && !exs.some((x) => x.primaryMuscles.includes(muscle) || x.secondaryMuscles.includes(muscle))) return false;
         return true;
       })
       .map((t) => ({ id: t.id, name: t.name, to: `/workouts/blocks/${t.id}`, badge: FORMAT_INFO[t.block.format].short, sub: describeBlock(t.block) }));
-  }, [templates, query, exercises, category, muscle]);
+  }, [templates, query, exercises, category, muscle, count]);
 
   const create = () => {
     const t = newBlockTemplate('sets_reps', profile.defaultPrepSec);
@@ -54,6 +68,16 @@ export default function ExerciseTemplatesPage() {
     if (!t) return;
     await db.blockTemplates.add(duplicateTemplate(t));
     toast('Training block duplicated');
+  };
+  const showUsage = async (id: string) => {
+    const t = await db.blockTemplates.get(id);
+    const workouts = await workoutsUsingBlock(db, id);
+    setUsed({
+      title: t?.name ?? 'Training block',
+      intro: 'Used in these workouts. Changing the block changes them too.',
+      empty: 'Not used in any workout.',
+      items: workouts.map((w) => ({ id: w.id, name: w.name, to: `/workouts/${w.id}` })),
+    });
   };
   const remove = async (id: string) => {
     const t = await db.blockTemplates.get(id);
@@ -75,7 +99,7 @@ export default function ExerciseTemplatesPage() {
               timer, with weights.
             </p>
             <p style={{ margin: 0 }}>Add them to workouts. Change a block once and every workout that uses it follows from the next session.</p>
-            <p style={{ margin: 0 }}>In the list, the copy icon duplicates a block and × deletes it.</p>
+            <p style={{ margin: 0 }}>In the list, the link icon shows the workouts that use a block, the copy icon duplicates it and × deletes it.</p>
           </InfoButton>
         }
       />
@@ -93,6 +117,13 @@ export default function ExerciseTemplatesPage() {
             </button>
           ))}
         </div>
+        <div className="scroll-x" role="group" aria-label="Count by">
+          {COUNTS.map((c) => (
+            <button key={c.value} className="chip" aria-pressed={count === c.value} onClick={() => setCount(c.value)}>
+              {c.label}
+            </button>
+          ))}
+        </div>
         <label className="field">
           <span className="sr-only">Muscle group</span>
           <select value={muscle} onChange={(e) => setMuscle(e.target.value as MuscleId | '')}>
@@ -106,11 +137,13 @@ export default function ExerciseTemplatesPage() {
         </label>
         <LibraryList
           items={items}
+          onLinks={showUsage}
           onDuplicate={duplicate}
           onDelete={remove}
-          empty={query || category !== 'all' || muscle ? 'No block matches.' : 'No training blocks yet. You can also save any part of a workout as a block.'}
+          empty={query || category !== 'all' || count !== 'all' || muscle ? 'No block matches.' : 'No training blocks yet. You can also save any part of a workout as a block.'}
         />
       </div>
+      <UsedInSheet used={used} onClose={() => setUsed(null)} />
     </div>
   );
 }

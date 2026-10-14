@@ -1,12 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ComponentProps } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
-import { InfoButton, LibraryList, SearchField } from '../components/Library';
+import { InfoButton, LibraryList, SearchField, UsedInSheet } from '../components/Library';
 import { EmptyState, PageHeader, useToast } from '../components/ui';
 import { db } from '../db/db';
 import { uid } from '../lib/ids';
+import { blocksUsingExercise } from '../lib/usage';
 import { MUSCLES, MUSCLE_LABEL } from '../data/muscles';
-import { useExercises } from '../db/repo';
+import { useVisibleExercises } from '../db/repo';
 import type { ExerciseCategory, MuscleId } from '../db/types';
 
 const CATEGORIES: { value: ExerciseCategory | 'all' | 'custom'; label: string }[] = [
@@ -19,8 +20,9 @@ const CATEGORIES: { value: ExerciseCategory | 'all' | 'custom'; label: string }[
 ];
 
 export default function ExercisesPage() {
-  const exercises = useExercises();
+  const exercises = useVisibleExercises();
   const toast = useToast();
+  const [used, setUsed] = useState<ComponentProps<typeof UsedInSheet>['used']>(null);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]['value']>('all');
   const [muscle, setMuscle] = useState<MuscleId | ''>('');
@@ -39,17 +41,34 @@ export default function ExercisesPage() {
   const duplicate = async (id: string) => {
     const e = await db.exercises.get(id);
     if (!e) return;
-    await db.exercises.add({ ...e, id: `custom-${uid()}`, name: `${e.name} (copy)`, isCustom: true });
+    const { edited: _e, hidden: _h, ...rest } = e;
+    void _e;
+    void _h;
+    await db.exercises.add({ ...rest, id: `custom-${uid()}`, name: `${e.name} (copy)`, isCustom: true, updatedAt: Date.now() });
     toast('Copied to your exercises');
   };
   const remove = async (id: string) => {
     const e = await db.exercises.get(id);
-    if (!e?.isCustom) return;
-    const used = await db.programs.filter((p) => p.days.some((d) => d.blocks.some((b) => b.entries.some((en) => en.exerciseId === id)))).count();
-    const msg = used ? `“${e.name}” is used in ${used} workout(s). Logged sessions keep their data. Delete anyway?` : `Delete “${e.name}”?`;
+    if (!e) return;
+    const blocks = await blocksUsingExercise(db, id);
+    const msg = blocks.length
+      ? `“${e.name}” is used in these training blocks: ${blocks.map((b) => b.name).join(', ')}. They and logged sessions keep it. Delete anyway?`
+      : `Delete “${e.name}”?`;
     if (!confirm(msg)) return;
-    await db.exercises.delete(id);
+    // Built-in exercises would come back with the next catalogue update, so they are hidden instead.
+    if (e.isCustom) await db.exercises.delete(id);
+    else await db.exercises.put({ ...e, hidden: true, edited: true, updatedAt: Date.now() });
     toast('Exercise deleted');
+  };
+  const showUsage = async (id: string) => {
+    const e = await db.exercises.get(id);
+    const blocks = await blocksUsingExercise(db, id);
+    setUsed({
+      title: e?.name ?? 'Exercise',
+      intro: 'Used in these training blocks. Changing the exercise changes it there too.',
+      empty: 'Not used in any training block.',
+      items: blocks.map((b) => ({ id: b.id, name: b.name, to: `/workouts/blocks/${b.id}?from=${encodeURIComponent('/exercises')}` })),
+    });
   };
 
   return (
@@ -61,7 +80,7 @@ export default function ExercisesPage() {
         actions={
           <InfoButton title="Exercises">
             <p style={{ margin: 0 }}>The exercise catalogue. Open an exercise to see the muscles it works, your best values and its history.</p>
-            <p style={{ margin: 0 }}>In the list, the copy icon makes your own version of an exercise and × deletes your own exercises (built-in ones stay).</p>
+            <p style={{ margin: 0 }}>Open an exercise and tap Edit to change it. In the list, the link icon shows the training blocks that use it, the copy icon duplicates it and × deletes it.</p>
           </InfoButton>
         }
       />
@@ -102,13 +121,14 @@ export default function ExercisesPage() {
               to: `/exercises/${e.id}`,
               badge: e.isCustom ? 'Mine' : undefined,
               sub: `${e.primaryMuscles.map((m) => MUSCLE_LABEL[m]).join(', ')} · ${e.equipment}`,
-              noDelete: !e.isCustom,
             }))}
+            onLinks={showUsage}
             onDuplicate={duplicate}
             onDelete={remove}
           />
         )}
       </div>
+      <UsedInSheet used={used} onClose={() => setUsed(null)} />
     </div>
   );
 }

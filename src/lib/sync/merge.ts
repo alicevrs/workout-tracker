@@ -18,7 +18,7 @@ export interface Tombstone {
 
 export interface SyncPayload {
   v: 1;
-  /** Custom exercises only (the built-in catalogue ships with the app). */
+  /** Custom exercises and built-ins the user changed or deleted (the catalogue ships with the app). */
   exercises: Exercise[];
   programs: Program[];
   blockTemplates: BlockTemplate[];

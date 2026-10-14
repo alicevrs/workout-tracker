@@ -14,7 +14,7 @@ export const BACKUP_APP_ID = 'workout-tracker';
 export const BACKUP_SCHEMA_VERSION = 1;
 
 export interface BackupData {
-  exercises: Exercise[]; // custom exercises only; the built-in catalog ships with the app
+  exercises: Exercise[]; // custom exercises and changed/deleted built-ins; the catalog ships with the app
   programs: Program[];
   /** Exercise templates (added later in format 1; missing in older files). */
   blockTemplates: BlockTemplate[];
@@ -43,7 +43,7 @@ export const MIGRATIONS: Record<number, Migration> = {};
 
 export async function createBackup(db: WorkoutDB, now = new Date()): Promise<BackupFile> {
   const [exercises, programs, blockTemplates, timerTemplates, sessions, bodyWeights, profileRow, settingsRow] = await Promise.all([
-    db.exercises.filter((e) => e.isCustom).toArray(),
+    db.exercises.filter((e) => e.isCustom || !!e.edited).toArray(),
     db.programs.toArray(),
     db.blockTemplates.toArray(),
     db.timerTemplates.toArray(),
@@ -135,7 +135,7 @@ function normalize(file: AnyRecord): BackupFile {
     schemaVersion: file.schemaVersion as number,
     exportedAt: typeof file.exportedAt === 'string' ? file.exportedAt : '',
     data: {
-      exercises: list<Exercise>('exercises', (e) => typeof e.id === 'string' && typeof e.name === 'string').map((e) => ({ ...e, isCustom: true })),
+      exercises: list<Exercise>('exercises', (e) => typeof e.id === 'string' && typeof e.name === 'string').map((e) => ({ ...e, isCustom: e.edited ? !!e.isCustom : true })),
       programs: list<Program>('programs', (p) => typeof p.id === 'string' && Array.isArray(p.days)),
       blockTemplates: list<BlockTemplate>('blockTemplates', (t) => typeof t.id === 'string' && isObj(t.block)),
       timerTemplates: list<TimerTemplate>('timerTemplates', (t) => typeof t.id === 'string' && isObj(t.timer)),

@@ -32,13 +32,6 @@ export default function ExerciseEditPage() {
   }, [id]);
 
   if (!ex) return <div className="page" />;
-  if (id && !ex.isCustom)
-    return (
-      <div className="page">
-        <PageHeader title="Edit exercise" back={`/exercises/${id}`} />
-        <p className="muted">Built-in exercises can’t be edited. Duplicate it to make your own version.</p>
-      </div>
-    );
 
   const set = <K extends keyof Exercise>(k: K, v: Exercise[K]) => setEx({ ...ex, [k]: v });
 
@@ -59,7 +52,9 @@ export default function ExerciseEditPage() {
     e.preventDefault();
     if (!ex.name.trim()) return setError('Please enter a name.');
     if (ex.primaryMuscles.length === 0) return setError('Choose at least one primary muscle.');
-    const record: Exercise = { ...ex, name: ex.name.trim(), id: ex.id || `custom-${uid()}`, isCustom: true };
+    // A changed built-in stays in the catalogue, marked as edited so it is kept and synced.
+    const builtIn = !!ex.id && !ex.isCustom;
+    const record: Exercise = { ...ex, name: ex.name.trim(), id: ex.id || `custom-${uid()}`, isCustom: !builtIn, ...(builtIn ? { edited: true } : {}), updatedAt: Date.now() };
     await db.exercises.put(record);
     toast('Exercise saved');
     navigate(`/exercises/${record.id}`, { replace: true });

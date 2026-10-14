@@ -72,7 +72,7 @@ export function onSyncStatus(l: (s: SyncStatus) => void): () => void {
 
 export async function buildLocalPayload(db: WorkoutDB, tombstones: Tombstone[], profileAt?: number): Promise<SyncPayload> {
   const [exercises, programs, blockTemplates, timerTemplates, sessions, bodyWeights, profileRow] = await Promise.all([
-    db.exercises.filter((e) => e.isCustom).toArray(),
+    db.exercises.filter((e) => e.isCustom || !!e.edited).toArray(),
     db.programs.toArray(),
     db.blockTemplates.toArray(),
     db.timerTemplates.toArray(),
@@ -251,15 +251,16 @@ function remember(t: SyncTable, id: string, deleted: boolean) {
 export function installSyncHooks(db: WorkoutDB): void {
   for (const t of SYNC_TABLES) {
     const table = db[t] as unknown as { hook: (ev: string, fn: (...a: unknown[]) => void) => void };
-    // The built-in exercise catalogue is not synced (it ships with the app).
-    const builtIn = (obj: unknown) => t === 'exercises' && !(obj as { isCustom?: boolean } | undefined)?.isCustom;
+    // The built-in exercise catalogue is not synced (it ships with the app), unless the user changed or deleted an exercise.
+    const builtIn = (obj: unknown, mods?: unknown) =>
+      t === 'exercises' && !(obj as { isCustom?: boolean } | undefined)?.isCustom && !(obj as { edited?: boolean } | undefined)?.edited && !(mods as { edited?: boolean } | undefined)?.edited;
     table.hook('creating', (pk, obj) => {
       if (applying || builtIn(obj)) return;
       remember(t, String(pk), false);
       schedule();
     });
-    table.hook('updating', (_mods, _pk, obj) => {
-      if (!applying && !builtIn(obj)) schedule();
+    table.hook('updating', (mods, _pk, obj) => {
+      if (!applying && !builtIn(obj, mods)) schedule();
     });
     table.hook('deleting', (pk, obj) => {
       if (applying || builtIn(obj)) return;
