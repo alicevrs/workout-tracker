@@ -174,3 +174,9 @@ Choices made while building the app, with the reason for each.
 - **Joining** checks that a cloud copy exists for the code first, so a mistyped code cannot silently create a second, empty vault.
 - The worker address is a build-time constant (`src/lib/sync/config.ts`, or `VITE_SYNC_URL`); until it is set, Settings says sync is not set up.
 
+
+## Saved timers (Workouts → Timers)
+- Structure wanted by the user: exercises + timers → training blocks → workouts. Saved timers are a new table `timerTemplates` (Dexie version 3): `{ id, name, timer }`, where `timer` has the Timer tab's `QuickTimer` shape (AMRAP, For Time, EMOM, Tabata only; Work/Rest/Mix are Timer-tab items).
+- **Linking like blocks → workouts:** a training block stores `Block.timerId`; saving a timer rewrites the format and timer settings of every linked block (`withTimer`, exercises, reps and weights kept) and then runs `syncTemplate`, so workouts follow too. Changing the timer in the block's own fields (format chips, “Count by → Reps”, timer settings in Advanced settings) unlinks it. Deleting a timer unlinks its blocks and keeps their times.
+- **Sets only for Tabata:** a training block has sets with a rest between them only in the Tabata format (`extraSets`); AMRAP, EMOM and For Time blocks run once. The timer editor therefore offers “Add sets” only for Tabata. Repeating AMRAP/EMOM/For Time inside a block would need engine and logging changes; not done.
+- Sync and backups carry `timerTemplates` (backup format 1, optional key). A copy uploaded by an older app version has no `timerTemplates`; the merge treats it as empty and keeps this device's timers, so updating every device restores them in the cloud.

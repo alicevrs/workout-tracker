@@ -187,3 +187,10 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Conflicts: the newest change of each item wins; deletions are carried to the other devices.
 - The sync server is live on the owner's free Cloudflare account (workout-tracker-sync.alicevrs.workers.dev); Settings → Sync can now be turned on.
 
+
+## Saved timers (2026-10-14)
+- Workouts page: new yellow **Timers** button between Exercises and Training blocks.
+- Timers: save preset Tabata, AMRAP, EMOM and For Time timers with their rounds, minutes and rests (Tabata also with sets). Same big boxes as the Timer tab; the name fills in from the settings until you type your own. Search, duplicate and delete like the other libraries.
+- Training blocks: under “Count by → Time”, pick a **Saved timer**. The block uses it with its own exercises, reps and weights, and follows every later change to the timer (and so do the workouts that use the block, from the next session). “Open timer” edits it; “Set the timer here” sets the times in the block instead.
+- Deleting a timer keeps the current times in the blocks that used it.
+- Saved timers are included in sync and backups.

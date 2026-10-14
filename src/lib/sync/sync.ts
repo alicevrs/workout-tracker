@@ -71,15 +71,16 @@ export function onSyncStatus(l: (s: SyncStatus) => void): () => void {
 // ---------- payload ----------
 
 export async function buildLocalPayload(db: WorkoutDB, tombstones: Tombstone[], profileAt?: number): Promise<SyncPayload> {
-  const [exercises, programs, blockTemplates, sessions, bodyWeights, profileRow] = await Promise.all([
+  const [exercises, programs, blockTemplates, timerTemplates, sessions, bodyWeights, profileRow] = await Promise.all([
     db.exercises.filter((e) => e.isCustom).toArray(),
     db.programs.toArray(),
     db.blockTemplates.toArray(),
+    db.timerTemplates.toArray(),
     db.sessions.toArray(),
     db.bodyWeights.toArray(),
     db.kv.get('profile'),
   ]);
-  return { v: 1, exercises, programs, blockTemplates, sessions, bodyWeights, profile: profileRow?.value as Profile | undefined, profileAt, tombstones };
+  return { v: 1, exercises, programs, blockTemplates, timerTemplates, sessions, bodyWeights, profile: profileRow?.value as Profile | undefined, profileAt, tombstones };
 }
 
 let applying = false;
@@ -88,7 +89,7 @@ let applying = false;
 export async function applyMerged(db: WorkoutDB, local: SyncPayload, merged: SyncPayload): Promise<void> {
   applying = true;
   try {
-    await db.transaction('rw', [db.exercises, db.programs, db.blockTemplates, db.sessions, db.bodyWeights, db.kv], async () => {
+    await db.transaction('rw', [db.exercises, db.programs, db.blockTemplates, db.timerTemplates, db.sessions, db.bodyWeights, db.kv], async () => {
       for (const t of SYNC_TABLES) {
         const table = db[t] as unknown as { bulkPut: (rows: unknown[]) => Promise<unknown>; bulkDelete: (ids: string[]) => Promise<unknown> };
         const before = new Map((local[t] as { id: string }[]).map((r) => [r.id, JSON.stringify(r)]));

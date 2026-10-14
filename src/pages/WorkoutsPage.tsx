@@ -2,10 +2,11 @@ import { Link } from 'react-router-dom';
 import { InfoButton } from '../components/Library';
 import { PageHeader } from '../components/ui';
 
-type Level = 'workouts' | 'blocks' | 'exercises';
+type Level = 'workouts' | 'blocks' | 'timers' | 'exercises';
 
 const LEVELS: { id: Level; label: string; to: string; pink?: boolean }[] = [
   { id: 'exercises', label: 'Exercises', to: '/exercises' },
+  { id: 'timers', label: 'Timers', to: '/workouts/timers' },
   { id: 'blocks', label: 'Training blocks', to: '/workouts/blocks' },
   { id: 'workouts', label: 'Workouts', to: '/workouts/templates', pink: true },
 ];
@@ -23,7 +24,10 @@ export default function WorkoutsPage() {
               <strong>Exercises</strong>: the catalogue (single movements, muscles, history).
             </p>
             <p style={{ margin: 0 }}>
-              <strong>Training blocks</strong>: one or more exercises, already set with reps or a timer and weights.
+              <strong>Timers</strong>: preset timers with rounds, minutes and rests.
+            </p>
+            <p style={{ margin: 0 }}>
+              <strong>Training blocks</strong>: exercises combined with reps or a timer, and weights.
             </p>
             <p style={{ margin: 0 }}>
               <strong>Workouts</strong>: whole workouts made of blocks, started from Home.

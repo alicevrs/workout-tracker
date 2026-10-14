@@ -19,6 +19,8 @@ const WorkoutEditPage = lazy(() => import('./pages/WorkoutEditPage'));
 const WorkoutTemplatesPage = lazy(() => import('./pages/WorkoutTemplatesPage'));
 const ExerciseTemplatesPage = lazy(() => import('./pages/ExerciseTemplatesPage'));
 const ExerciseTemplateEditPage = lazy(() => import('./pages/ExerciseTemplateEditPage'));
+const TimerTemplatesPage = lazy(() => import('./pages/TimerTemplatesPage'));
+const TimerTemplateEditPage = lazy(() => import('./pages/TimerTemplateEditPage'));
 const WorkoutPage = lazy(() => import('./pages/WorkoutPage'));
 const TimerPage = lazy(() => import('./pages/TimerPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
@@ -82,6 +84,8 @@ export default function App() {
             <Route path="/workouts/templates" element={<WorkoutTemplatesPage />} />
             <Route path="/workouts/blocks" element={<ExerciseTemplatesPage />} />
             <Route path="/workouts/blocks/:id" element={<ExerciseTemplateEditPage />} />
+            <Route path="/workouts/timers" element={<TimerTemplatesPage />} />
+            <Route path="/workouts/timers/:id" element={<TimerTemplateEditPage />} />
             <Route path="/workouts/exercise-templates" element={<Navigate to="/workouts/blocks" replace />} />
             <Route path="/workouts/:id" element={<WorkoutEditPage />} />
             <Route path="/programs" element={<Navigate to="/workouts" replace />} />

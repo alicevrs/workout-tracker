@@ -148,6 +148,8 @@ export interface Block {
   timer: TimerOptions;
   /** Part of a workout template linked to an exercise block: it follows that block's changes. */
   templateId?: string;
+  /** Training block whose timer comes from a saved timer: it follows that timer's changes. */
+  timerId?: string;
 }
 
 export interface ProgramDay {
@@ -174,6 +176,25 @@ export interface BlockTemplate {
   name: string;
   block: Block;
   notes?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** Saved timer (Workouts → Timers): a preset Tabata / AMRAP / EMOM / For Time to use in training blocks. */
+export interface TimerTemplate {
+  id: string;
+  name: string;
+  /** Same shape as the Timer tab's settings (`QuickTimer` in lib/timer/quick.ts). */
+  timer: {
+    kind: 'amrap' | 'for_time' | 'emom' | 'tabata';
+    minutes?: number;
+    everySec?: number;
+    rounds?: number;
+    workSec?: number;
+    restSec?: number;
+    sets?: number;
+    setRestSec?: number;
+  };
   createdAt: number;
   updatedAt: number;
 }

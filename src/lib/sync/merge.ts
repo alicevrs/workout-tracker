@@ -5,9 +5,9 @@
 // removed everywhere unless it was changed after it was deleted. Tombstones older than 180 days
 // are forgotten.
 
-import type { BlockTemplate, BodyWeight, Exercise, Profile, Program, Session } from '../../db/types';
+import type { BlockTemplate, BodyWeight, Exercise, Profile, Program, Session, TimerTemplate } from '../../db/types';
 
-export const SYNC_TABLES = ['exercises', 'programs', 'blockTemplates', 'sessions', 'bodyWeights'] as const;
+export const SYNC_TABLES = ['exercises', 'programs', 'blockTemplates', 'timerTemplates', 'sessions', 'bodyWeights'] as const;
 export type SyncTable = (typeof SYNC_TABLES)[number];
 
 export interface Tombstone {
@@ -22,6 +22,8 @@ export interface SyncPayload {
   exercises: Exercise[];
   programs: Program[];
   blockTemplates: BlockTemplate[];
+  /** Saved timers (missing in copies uploaded by older app versions). */
+  timerTemplates: TimerTemplate[];
   sessions: Session[];
   bodyWeights: BodyWeight[];
   profile?: Profile;
@@ -34,7 +36,7 @@ type Rec = { id: string; updatedAt?: number };
 const TOMBSTONE_TTL = 180 * 24 * 3600_000;
 
 export function emptyPayload(): SyncPayload {
-  return { v: 1, exercises: [], programs: [], blockTemplates: [], sessions: [], bodyWeights: [], tombstones: [] };
+  return { v: 1, exercises: [], programs: [], blockTemplates: [], timerTemplates: [], sessions: [], bodyWeights: [], tombstones: [] };
 }
 
 function mergeRecords<T extends Rec>(local: T[], remote: T[]): T[] {
@@ -74,6 +76,7 @@ export function mergePayloads(local: SyncPayload, remote: SyncPayload, now = Dat
     exercises: applyTombstones('exercises', mergeRecords(local.exercises, remote.exercises), tombs),
     programs: applyTombstones('programs', mergeRecords(local.programs, remote.programs), tombs),
     blockTemplates: applyTombstones('blockTemplates', mergeRecords(local.blockTemplates, remote.blockTemplates), tombs),
+    timerTemplates: applyTombstones('timerTemplates', mergeRecords(local.timerTemplates ?? [], remote.timerTemplates ?? []), tombs),
     sessions: applyTombstones('sessions', mergeRecords(local.sessions, remote.sessions), tombs),
     bodyWeights: applyTombstones('bodyWeights', mergeRecords(local.bodyWeights, remote.bodyWeights), tombs),
     profile: remoteProfileNewer ? remote.profile : local.profile,
@@ -90,6 +93,7 @@ export function canonical(p: SyncPayload): string {
     exercises: sort(p.exercises),
     programs: sort(p.programs),
     blockTemplates: sort(p.blockTemplates),
+    timerTemplates: sort(p.timerTemplates ?? []),
     sessions: sort(p.sessions),
     bodyWeights: sort(p.bodyWeights),
     tombstones: [...p.tombstones].sort((a, b) => `${a.t}:${a.id}`.localeCompare(`${b.t}:${b.id}`)),

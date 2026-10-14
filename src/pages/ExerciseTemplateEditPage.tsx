@@ -1,5 +1,6 @@
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { BlockEditor, SetTargetsEditor } from '../components/BlockEditor';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { Icon } from '../components/Icon';
@@ -33,7 +34,8 @@ import {
 } from '../lib/blockTemplates';
 import { formatDuration } from '../lib/dates';
 import { estimateBlockSeconds } from '../lib/program';
-import { REST_OPTIONS, SET_OPTIONS } from '../lib/timer/quick';
+import { describeQuick, QUICK_LABEL, REST_OPTIONS, SET_OPTIONS } from '../lib/timer/quick';
+import { withTimer } from '../lib/timerTemplates';
 import { fromDisplayWeight, toDisplayWeight } from '../lib/units';
 
 const STRUCTURE_HINT: Record<Structure, string> = {
@@ -42,6 +44,13 @@ const STRUCTURE_HINT: Record<Structure, string> = {
   circuit: 'Go through all exercises one after the other, rest, and repeat for each round.',
 };
 const TIME_LABEL: Partial<Record<BlockFormat, string>> = { timed_sets: 'Timed sets', tabata: 'Tabata', amrap: 'AMRAP', emom: 'EMOM', for_time: 'For Time' };
+
+/** The block without its link to a saved timer (its times become its own). */
+function unlinkTimer(b: Block): Block {
+  const next = { ...b };
+  delete next.timerId;
+  return next;
+}
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
@@ -71,6 +80,7 @@ export default function ExerciseTemplateEditPage() {
   const tplRef = useRef<BlockTemplate | null | undefined>(tpl);
   tplRef.current = tpl;
   const listRef = useRef<HTMLDivElement>(null);
+  const timers = useLiveQuery(() => db.timerTemplates.orderBy('name').toArray(), []) ?? [];
 
   useEffect(() => {
     db.blockTemplates.get(id).then((t) => setTpl(t ?? null));
@@ -118,6 +128,7 @@ export default function ExerciseTemplateEditPage() {
     );
 
   const b = tpl.block;
+  const linkedTimer = b.timerId ? timers.find((t) => t.id === b.timerId) : undefined;
   const countBy = countByOf(b);
   const structured = hasStructure(b.format);
   const total = estimateBlockSeconds(b);
@@ -201,13 +212,33 @@ export default function ExerciseTemplateEditPage() {
           <Segmented<'reps' | 'time'>
             label="Count by"
             value={countBy}
-            onChange={(c) => setBlock(withFormat(b, c === 'reps' ? 'sets_reps' : 'tabata'))}
+            onChange={(c) => setBlock(unlinkTimer(withFormat(b, c === 'reps' ? 'sets_reps' : 'tabata')))}
             options={[
               { value: 'reps', label: 'Reps' },
               { value: 'time', label: 'Time' },
             ]}
           />
           {countBy === 'time' && (
+            <label className="field mt-s">
+              Saved timer
+              <select
+                value={linkedTimer?.id ?? ''}
+                onChange={(e) => {
+                  const t = timers.find((x) => x.id === e.target.value);
+                  setBlock(t ? withTimer(b, t) : unlinkTimer(b));
+                }}
+              >
+                <option value="">Set the timer here</option>
+                {timers.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {countBy === 'time' && !timers.length && <p className="tiny faint" style={{ margin: '6px 0 0' }}>Timers saved in Workouts → Timers appear here.</p>}
+          {countBy === 'time' && !linkedTimer && (
             <div className="scroll-x mt-s" role="group" aria-label="Timer">
               {TIME_FORMATS.filter((f) => f !== 'timed_sets' || b.format === 'timed_sets').map((f) => (
                 <button key={f} className="chip" aria-pressed={b.format === f} onClick={() => setBlock(withFormat(b, f))}>
@@ -217,7 +248,19 @@ export default function ExerciseTemplateEditPage() {
             </div>
           )}
           <div className="mt">
-            {structured ? (
+            {linkedTimer ? (
+              <div className="linked-timer">
+                <p className="small" style={{ margin: 0 }}>
+                  <strong>{QUICK_LABEL[linkedTimer.timer.kind]}</strong> · {describeQuick(linkedTimer.timer)}
+                </p>
+                <p className="tiny faint" style={{ margin: '4px 0 8px' }}>
+                  Changes to this timer update the block.
+                </p>
+                <Link className="btn small" to={`/workouts/timers/${linkedTimer.id}?from=${encodeURIComponent(`/workouts/blocks/${tpl.id}`)}`}>
+                  Open timer
+                </Link>
+              </div>
+            ) : structured ? (
               <div className="sentences compact-sentences">
                 <Line>
                   <Pick small value={setsOf(b)} options={SET_OPTIONS} format={mins} onChange={(v) => setBlock(withSetsRest(b, v, restOf(b)))} label="Sets" />
@@ -278,7 +321,12 @@ export default function ExerciseTemplateEditPage() {
         <details className="advanced" open={isAdvanced(b)}>
           <summary>Advanced settings</summary>
           {isAdvanced(b) && <p className="small muted">This block uses settings the simple form above cannot show. Edit them here.</p>}
-          <BlockEditor hideName hideOptional block={b} onChange={setBlock} />
+          <BlockEditor
+            hideName
+            hideOptional
+            block={b}
+            onChange={(next) => setBlock(next.format !== b.format || JSON.stringify(next.params) !== JSON.stringify(b.params) ? unlinkTimer(next) : next)}
+          />
         </details>
 
         <div className="big-buttons" style={{ paddingTop: 0 }}>
