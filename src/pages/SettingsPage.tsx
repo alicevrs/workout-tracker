@@ -5,6 +5,7 @@ import { TimerSettings } from '../components/TimerSettings';
 import { WeightLog } from '../components/WeightLog';
 import { EnergyInfo } from '../components/EnergyInfo';
 import { BackupPanel } from '../components/BackupPanel';
+import { SyncPanel } from '../components/SyncPanel';
 import { ImportPanel } from '../components/ImportPanel';
 import { Suspense, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -25,6 +26,12 @@ export default function SettingsPage() {
             Profile
           </h2>
           <ProfileForm />
+        </section>
+        <section className="card" aria-labelledby="sync-h" id="sync">
+          <h2 id="sync-h" className="mb">
+            Sync
+          </h2>
+          <SyncPanel />
         </section>
         <section className="card" aria-labelledby="backup-h" id="backup">
           <h2 id="backup-h" className="mb">

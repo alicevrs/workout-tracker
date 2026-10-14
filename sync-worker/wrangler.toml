@@ -1,0 +1,13 @@
+# Cloudflare Worker that stores the encrypted sync copy. Deploy: npx wrangler deploy (from this folder).
+name = "workout-tracker-sync"
+main = "sync-worker.js"
+compatibility_date = "2026-01-01"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGIN = "https://alicevrs.github.io, http://localhost:4173, http://localhost:5173"
+
+# Filled in by `npx wrangler kv namespace create SYNC`
+[[kv_namespaces]]
+binding = "SYNC"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"

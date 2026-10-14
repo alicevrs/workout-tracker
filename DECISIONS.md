@@ -164,3 +164,13 @@ Choices made while building the app, with the reason for each.
 - No examples in the UI (user's rule): hints, placeholders and ⓘ texts describe, they do not quote sample exercises or values.
 - “Count by → Time” lists only the Timer tab's formats. Timed sets (each exercise a number of fixed-time sets with rest) was dropped from the choice because Tabata covers the common case; existing timed-sets blocks still show it.
 
+## Sync between devices
+- **Server:** a Cloudflare Worker with Workers KV (free plan), `sync-worker/sync-worker.js`. One encrypted blob per vault (`data:<vaultId>`, version in KV metadata) plus `auth:<vaultId>` = SHA-256 of the access token; the first upload claims the vault. CORS only for the app's origins. Max 20 MB per upload.
+- **Keys:** a random 20-character Crockford base32 sync code (100 bits). PBKDF2-SHA256 (200,000 rounds) turns it into an AES-GCM key and two hashes: the vault id and the access token. The server never sees the code or readable data. The code is typed or pasted on the other device (Universal Clipboard works between Mac and iPhone); a lost code cannot be recovered, but every device keeps its data and a new code can be started.
+- **Payload:** the same tables as backups (custom exercises, programs, training blocks, sessions, body weights, profile) plus tombstones, gzipped (fflate) then encrypted. Device preferences (settings, sync state) are not synced.
+- **Merge, not overwrite:** each sync downloads, merges (newer `updatedAt` wins; records without `updatedAt` keep this device's copy), writes only changed records locally and uploads only when the merged copy differs from the cloud. KV is eventually consistent, so the version check (HTTP 409 → merge again) is best effort; because every device keeps its full data and merges, a lost race is fixed by the next sync instead of losing data.
+- **Deletions:** Dexie hooks record tombstones `{table, id, at}` in localStorage; a record is removed everywhere unless it was edited after the deletion. Re-creating a record with the same id clears its tombstone. Tombstones are dropped after 180 days. “Replace” backup imports clear tables without tombstones, so on a synced device the other devices' data merges back in.
+- **When:** at start, when the app becomes visible or goes back online, 6 s after a local change (debounced), every 5 min while visible. iPhone web apps cannot sync in the background.
+- **Joining** checks that a cloud copy exists for the code first, so a mistyped code cannot silently create a second, empty vault.
+- The worker address is a build-time constant (`src/lib/sync/config.ts`, or `VITE_SYNC_URL`); until it is set, Settings says sync is not set up.
+

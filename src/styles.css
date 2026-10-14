@@ -1496,6 +1496,38 @@ details.advanced summary {
 .block-fields {
   padding: 12px;
 }
+.sync-code {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: clamp(1.1rem, 5.4vw, 1.5rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 12px;
+  border: 1px solid var(--accent);
+  user-select: all;
+  -webkit-user-select: all;
+  overflow-wrap: anywhere;
+}
+.sync-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex-shrink: 0;
+}
+.sync-dot.idle {
+  background: var(--good);
+}
+.sync-dot.syncing {
+  background: var(--accent);
+}
+.sync-dot.error {
+  background: var(--bad);
+}
+.big-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .big-btn-note {
   max-width: 260px;
   text-align: center;

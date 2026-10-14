@@ -6,6 +6,7 @@ import { db } from './db/db';
 import { migrateProgramsToWorkouts } from './lib/workouts';
 import { ensureSeeded, getSettings, requestPersistentStorage, saveSettings } from './db/repo';
 import { ToastProvider } from './components/ui';
+import { startSync } from './lib/sync/sync';
 import '@fontsource/inter/latin-400.css';
 import '@fontsource/inter/latin-500.css';
 import '@fontsource/inter/latin-600.css';
@@ -33,7 +34,7 @@ async function boot() {
   }
 }
 
-void boot();
+void boot().then(startSync);
 
 // Opening screen: stays 3 s from the start of loading, then fades out.
 const splash = document.getElementById('splash');

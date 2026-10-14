@@ -66,7 +66,28 @@ The app asks the browser to keep its storage permanently (“persistent storage�
 
 ## 3. Move data between iPhone and Mac
 
-Each device keeps its own data. To copy everything from one to the other:
+### Automatic sync (recommended)
+
+Settings → **Sync** keeps every device in step automatically, for free:
+
+1. On the first device: **Turn on sync**. The app shows a **sync code** (20 characters). Copy it and keep it somewhere safe (a password manager or Notes) — nobody can recover it.
+2. On every other device: Settings → Sync → **I have a code**, paste or type the code → **Join**.
+
+From then on each device syncs when the app opens, when you come back to it, a few seconds after every change and every 5 minutes while open. Workouts, training blocks, logged sessions, activities, custom exercises, the weight log and the profile are synced; device preferences (sounds, timer settings) are not. When the same item was changed on two devices, the most recent change wins; deletions reach every device.
+
+Privacy: the data is encrypted on the device with a key made from the sync code before it leaves it. The sync server (a free Cloudflare Worker, `sync-worker/`) only stores unreadable data.
+
+**Setting up the server (once, by the developer):** create a free Cloudflare account, then in `sync-worker/`:
+```bash
+npx wrangler login
+npx wrangler kv namespace create SYNC   # put the printed id into wrangler.toml
+npx wrangler deploy
+```
+Put the printed `https://workout-tracker-sync.<subdomain>.workers.dev` address into `src/lib/sync/config.ts` and publish the app. Free limits (1,000 uploads and 100,000 requests a day) are far above what one person uses.
+
+### Backup files
+
+Each device keeps its own data. To copy everything from one to the other by hand:
 
 1. **On the iPhone:** Settings → **Backup** → **Export backup…**. The share sheet opens:
    - **Save to Files → iCloud Drive** (keeps a copy in the cloud), or

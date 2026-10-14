@@ -180,3 +180,9 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Timer home: one ⓘ at the top (same place as on Workouts) with a short summary of the timers; the detailed explanations stay in the ⓘ inside each timer. The format buttons are now centered without side icons.
 - Workouts page: buttons in the order Exercises, Training blocks (yellow), Workouts (pink), without counts.
 
+## Automatic sync between devices (2026-10-14)
+- Settings → **Sync**: turn it on with a new sync code on one device, then join with the same code on the others. Data then stays the same everywhere: workouts, training blocks, sessions, activities, custom exercises, weight log and profile.
+- Syncs on opening, when the app comes back, a few seconds after each change and every 5 minutes; “Sync now” button, status (synced / syncing / error), show and copy the code, turn off on one device, delete the cloud copy.
+- End-to-end encrypted: only encrypted data reaches the server (a free Cloudflare Worker with KV storage, `sync-worker/`).
+- Conflicts: the newest change of each item wins; deletions are carried to the other devices.
+
