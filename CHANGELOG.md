@@ -219,3 +219,7 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 ## Minutes and seconds in timers (2026-10-15)
 - Every time box (AMRAP time, For Time cap, EMOM interval and length, Tabata work and rest, rest between sets, Mix work/rest items, rest in training blocks) now shows minutes:seconds. Tap the part before the colon to pick the minutes, the part after it to pick the seconds (5 s steps): any time such as 2:40 takes two taps.
 - Labels show times with seconds where needed (“2:40 min”).
+
+## Duplicate opens a copy to edit (2026-10-15)
+- The copy icon in the lists no longer adds a copy right away: it opens the copy (workout, training block, timer or exercise) with all the settings of the original. Change what you like and tap Save; leave without saving and nothing is added.
+- A copied timer whose name was made from its settings keeps an automatic name, so it follows the copy's new settings.

@@ -40,8 +40,9 @@ export default function WorkoutTemplatesPage() {
     if (!w) return;
     const copy = cloneProgram(w);
     copy.days = copy.days.map((d) => ({ ...d, name: copy.name }));
-    await db.programs.add(copy);
-    toast('Workout duplicated');
+    // The copy opens as a draft: it is stored only when saved.
+    setDraft(`workout:${copy.id}`, copy, true);
+    navigate(`/workouts/${copy.id}?draft=1`);
   };
   const remove = async (id: string) => {
     const w = await db.programs.get(id);

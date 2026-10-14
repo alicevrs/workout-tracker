@@ -1,11 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useState, type ComponentProps } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { InfoButton, LibraryList, SearchField, UsedInSheet } from '../components/Library';
 import { EmptyState, PageHeader, useToast } from '../components/ui';
 import { db } from '../db/db';
-import { uid } from '../lib/ids';
 import { blocksUsingExercise } from '../lib/usage';
 import { MUSCLES } from '../data/muscles';
 import { useVisibleExercises } from '../db/repo';
@@ -23,6 +22,7 @@ export default function ExercisesPage() {
   const exercises = useVisibleExercises();
   const usedIds = useLiveQuery(async () => new Set((await db.blockTemplates.toArray()).flatMap((b) => b.block.entries.map((e) => e.exerciseId))), []);
   const toast = useToast();
+  const navigate = useNavigate();
   const [used, setUsed] = useState<ComponentProps<typeof UsedInSheet>['used']>(null);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]['value']>('all');
@@ -38,15 +38,8 @@ export default function ExercisesPage() {
     });
   }, [exercises, query, category, muscle]);
 
-  const duplicate = async (id: string) => {
-    const e = await db.exercises.get(id);
-    if (!e) return;
-    const { edited: _e, hidden: _h, ...rest } = e;
-    void _e;
-    void _h;
-    await db.exercises.add({ ...rest, id: `custom-${uid()}`, name: `${e.name} (copy)`, isCustom: true, updatedAt: Date.now() });
-    toast('Copied to your exercises');
-  };
+  // The copy opens in the exercise form: it is stored only when saved.
+  const duplicate = (id: string) => navigate(`/exercises/new?copy=${encodeURIComponent(id)}`);
   const remove = async (id: string) => {
     const e = await db.exercises.get(id);
     if (!e) return;

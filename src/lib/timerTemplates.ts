@@ -24,7 +24,9 @@ export const autoTimerName = (t: TimerTemplate['timer']) => `${QUICK_LABEL[t.kin
 
 export function duplicateTimer(t: TimerTemplate): TimerTemplate {
   const now = Date.now();
-  return { ...structuredClone(t), id: uid(), name: `${t.name} (copy)`, createdAt: now, updatedAt: now };
+  // A name made from the settings stays automatic, so it follows the copy's new settings.
+  const name = t.name === autoTimerName(t.timer) ? t.name : `${t.name} (copy)`;
+  return { ...structuredClone(t), id: uid(), name, createdAt: now, updatedAt: now };
 }
 
 /** The block counted by this timer (exercises, reps and weights are kept), linked to it. */

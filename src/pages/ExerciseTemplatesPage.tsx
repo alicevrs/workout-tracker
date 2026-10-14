@@ -66,8 +66,10 @@ export default function ExerciseTemplatesPage() {
   const duplicate = async (id: string) => {
     const t = await db.blockTemplates.get(id);
     if (!t) return;
-    await db.blockTemplates.add(duplicateTemplate(t));
-    toast('Training block duplicated');
+    // The copy opens as a draft: it is stored only when saved.
+    const copy = duplicateTemplate(t);
+    setDraft(`block:${copy.id}`, copy, true);
+    navigate(`/workouts/blocks/${copy.id}?draft=1`);
   };
   const showUsage = async (id: string) => {
     const t = await db.blockTemplates.get(id);

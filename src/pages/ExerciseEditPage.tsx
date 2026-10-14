@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader, useToast } from '../components/ui';
 import { MUSCLES } from '../data/muscles';
 import { db } from '../db/db';
@@ -21,15 +21,28 @@ const EQUIPMENT = ['barbell', 'dumbbell', 'kettlebell', 'cable', 'machine', 'smi
 
 export default function ExerciseEditPage() {
   const { id } = useParams();
+  const [params] = useSearchParams();
+  /** Duplicate: the new exercise starts from this one. */
+  const copyOf = id ? null : params.get('copy');
   const navigate = useNavigate();
   const toast = useToast();
-  const [ex, setEx] = useState<Exercise | null>(id ? null : { ...EMPTY });
+  const [ex, setEx] = useState<Exercise | null>(id || copyOf ? null : { ...EMPTY });
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!id) return;
-    db.exercises.get(id).then((e) => setEx(e ?? { ...EMPTY }));
-  }, [id]);
+    if (id) {
+      db.exercises.get(id).then((e) => setEx(e ?? { ...EMPTY }));
+    } else if (copyOf) {
+      db.exercises.get(copyOf).then((e) => {
+        if (!e) return setEx({ ...EMPTY });
+        const { edited: _e, hidden: _h, updatedAt: _u, ...rest } = e;
+        void _e;
+        void _h;
+        void _u;
+        setEx({ ...rest, id: '', name: `${e.name} (copy)`, isCustom: true });
+      });
+    }
+  }, [id, copyOf]);
 
   if (!ex) return <div className="page" />;
 

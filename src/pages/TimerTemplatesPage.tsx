@@ -35,8 +35,10 @@ export default function TimerTemplatesPage() {
   const duplicate = async (id: string) => {
     const t = await db.timerTemplates.get(id);
     if (!t) return;
-    await db.timerTemplates.add(duplicateTimer(t));
-    toast('Timer duplicated');
+    // The copy opens as a draft: it is stored only when saved.
+    const copy = duplicateTimer(t);
+    setDraft(`timer:${copy.id}`, copy, true);
+    navigate(`/workouts/timers/${copy.id}?draft=1`);
   };
   const showUsage = async (id: string) => {
     const t = await db.timerTemplates.get(id);
