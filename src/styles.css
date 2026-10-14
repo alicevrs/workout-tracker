@@ -2160,24 +2160,11 @@ kbd {
   }
 }
 
-/* Explicit Save in the editors (workouts, training blocks, timers): stays in view above the tab bar. */
+/* Explicit Save in the editors (workouts, training blocks, timers): after the content, never over it. */
 .save-bar {
-  position: sticky;
-  bottom: calc(var(--nav-h) + var(--safe-bottom) + 10px);
-  z-index: 15;
   display: flex;
   justify-content: center;
-  padding-top: 16px;
-  pointer-events: none;
-}
-.save-bar .big-btn {
-  pointer-events: auto;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.7);
-}
-@media (min-width: 900px) {
-  .save-bar {
-    bottom: 20px;
-  }
+  padding: 24px 0 8px;
 }
 
 .lib-actions {

@@ -223,3 +223,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 ## Duplicate opens a copy to edit (2026-10-15)
 - The copy icon in the lists no longer adds a copy right away: it opens the copy (workout, training block, timer or exercise) with all the settings of the original. Change what you like and tap Save; leave without saving and nothing is added.
 - A copied timer whose name was made from its settings keeps an automatic name, so it follows the copy's new settings.
+- Fixed: the Save button could cover settings when a page got longer (for example after Add sets). It now always sits below the content of the page.
