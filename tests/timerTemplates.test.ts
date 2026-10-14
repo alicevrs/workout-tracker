@@ -94,3 +94,42 @@ describe('saved timers', () => {
     expect(mergePayloads(local, old as ReturnType<typeof emptyPayload>).timerTemplates).toHaveLength(1);
   });
 });
+
+describe('timers from existing training blocks', () => {
+  it('creates one timer per distinct setting, links the blocks and their workouts, and is stable across devices', async () => {
+    const { timersFromBlocks } = await import('../src/lib/timerTemplates');
+    const make = async () => {
+      const db = await freshDb();
+      const a = newBlockTemplate('tabata', 10, 'Abs');
+      a.id = 'ba';
+      a.block.params = { rounds: 4, workSec: 40, restSec: 0, extraSets: 3, restBetweenSetsSec: 20 };
+      const b = newBlockTemplate('tabata', 10, 'Core');
+      b.id = 'bb';
+      b.block.params = { ...a.block.params };
+      const c = newBlockTemplate('emom', 10, 'Hip thrust');
+      c.id = 'bc';
+      c.block.params = { totalMin: 12, intervalSec: 120 };
+      const d = newBlockTemplate('sets_reps', 10, 'Squat');
+      d.id = 'bd';
+      await db.blockTemplates.bulkAdd([a, b, c, d]);
+      const p = newProgram('W');
+      p.days[0].blocks = [linkedBlock(c)];
+      await db.programs.add(p);
+      return { db, p };
+    };
+    const { db, p } = await make();
+    expect(await timersFromBlocks(db)).toBe(2);
+    const timers = await db.timerTemplates.toArray();
+    expect(timers.map((t) => t.name).sort()).toEqual(['EMOM Every 2:00 for 12 min', 'Tabata 4 × 0:40 / 0:00 · 4 sets, rest 0:20']);
+    const blocks = await db.blockTemplates.toArray();
+    expect(blocks.find((x) => x.id === 'ba')!.block.timerId).toBe(blocks.find((x) => x.id === 'bb')!.block.timerId);
+    expect(blocks.find((x) => x.id === 'bd')!.block.timerId).toBeUndefined();
+    expect(blocks.find((x) => x.id === 'ba')!.block.params).toMatchObject({ rounds: 4, workSec: 40, restSec: 0, extraSets: 3, restBetweenSetsSec: 20 });
+    expect((await db.programs.get(p.id))!.days[0].blocks[0].timerId).toBe(blocks.find((x) => x.id === 'bc')!.block.timerId);
+    // nothing left to convert; another device makes the same timer ids
+    expect(await timersFromBlocks(db)).toBe(0);
+    const other = await make();
+    await timersFromBlocks(other.db);
+    expect((await other.db.timerTemplates.toArray()).map((t) => t.id).sort()).toEqual(timers.map((t) => t.id).sort());
+  });
+});

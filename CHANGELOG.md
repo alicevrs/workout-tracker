@@ -202,3 +202,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - In a workout, **New block** opens the new block; it is added to the workout when the block is saved. Opening a block from a workout (or a timer from a block) and coming back keeps the changes not yet saved there.
 - Lists of workouts, training blocks, timers and exercises: a **×** to delete next to the copy icon to duplicate (built-in exercises can only be duplicated). Duplicates appear in the list right away.
 - The Duplicate and Delete buttons inside workouts, blocks, timers and exercises were removed (they are in the lists now).
+- **Timers from your training blocks:** once, when the new version opens, every training block counted by Tabata, AMRAP, EMOM or For Time gets a saved timer with its own settings (blocks with the same settings share one) and is linked to it, so the timers you already use are in Workouts → Timers without typing them again.
