@@ -11,13 +11,12 @@ import { MUSCLES } from '../data/muscles';
 import { useVisibleExercises } from '../db/repo';
 import type { ExerciseCategory, MuscleId } from '../db/types';
 
-const CATEGORIES: { value: ExerciseCategory | 'all' | 'custom'; label: string }[] = [
+const CATEGORIES: { value: ExerciseCategory | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'strength', label: 'Strength' },
   { value: 'bodyweight', label: 'Bodyweight' },
   { value: 'cardio', label: 'Cardio' },
   { value: 'mobility', label: 'Mobility' },
-  { value: 'custom', label: 'Mine' },
 ];
 
 export default function ExercisesPage() {
@@ -32,8 +31,7 @@ export default function ExercisesPage() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (exercises ?? []).filter((e) => {
-      if (category === 'custom' && !e.isCustom) return false;
-      if (category !== 'all' && category !== 'custom' && e.category !== category) return false;
+      if (category !== 'all' && e.category !== category) return false;
       if (muscle && !e.primaryMuscles.includes(muscle) && !e.secondaryMuscles.includes(muscle)) return false;
       if (q && !e.name.toLowerCase().includes(q) && !e.equipment.toLowerCase().includes(q)) return false;
       return true;
@@ -112,8 +110,8 @@ export default function ExercisesPage() {
           </select>
         </label>
         {exercises && filtered.length === 0 ? (
-          <EmptyState icon="search" title={category === 'custom' && !query ? 'No custom exercises yet' : 'No exercises match'}>
-            {category === 'custom' ? 'Create your own exercise with New exercise.' : 'Try a different search or filter.'}
+          <EmptyState icon="search" title="No exercises match">
+            Try a different search or filter.
           </EmptyState>
         ) : (
           <LibraryList
@@ -121,7 +119,6 @@ export default function ExercisesPage() {
               id: e.id,
               name: e.name,
               to: `/exercises/${e.id}`,
-              badge: e.isCustom ? 'Mine' : undefined,
               unused: !!usedIds && !usedIds.has(e.id),
             }))}
             onLinks={showUsage}

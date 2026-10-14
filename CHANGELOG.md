@@ -214,3 +214,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - The link icon is faded when the item is not used anywhere (an exercise or timer in no training block, a block in no workout).
 - Link, duplicate and × are closer together at the right edge.
 - Lists show less: timers and training blocks only their name (no type tag, no second line); exercises without the muscles/equipment line; workouts only their approximate duration.
+- Exercises: the “Mine” tag and the “Mine” filter were removed. Every exercise, yours included, belongs to the category chosen when it is created (Strength, Bodyweight, Cardio, Mobility).
