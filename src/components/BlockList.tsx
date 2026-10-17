@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../db/db';
 import { useExerciseMap, useProfile } from '../db/repo';
@@ -17,6 +17,24 @@ import { Sheet, useToast } from './ui';
  * training block open that block (changes there apply to every workout using it); older unlinked
  * parts expand an editor here and can be saved as a block.
  */
+/** A name with a small icon after it; the icon stays on the line of the last word instead of wrapping alone. */
+function NameWithIcon({ name, icon }: { name: string; icon: ReactNode }) {
+  if (!icon) return <>{name}</>;
+  const cut = name.trimEnd().lastIndexOf(' ');
+  const head = cut >= 0 ? name.slice(0, cut + 1) : '';
+  const last = cut >= 0 ? name.slice(cut + 1) : name;
+  return (
+    <>
+      {head}
+      <span style={{ whiteSpace: 'nowrap' }}>
+        {last}
+        {'\u00a0'}
+        {icon}
+      </span>
+    </>
+  );
+}
+
 export function BlockList({ blocks, onChange, backTo, workoutId }: { blocks: Block[]; onChange: (blocks: Block[]) => void; backTo: string; workoutId: string }) {
   const navigate = useNavigate();
   const profile = useProfile();
@@ -76,8 +94,10 @@ export function BlockList({ blocks, onChange, backTo, workoutId }: { blocks: Blo
               >
                 <span className="mix-pill-text">
                   <span className="mix-pill-name">
-                    {b.name ?? FORMAT_INFO[b.format].label}
-                    {b.templateId && <Icon name="link" size={14} title="Training block: changes apply to every workout that uses it" />}
+                    <NameWithIcon
+                      name={b.name ?? FORMAT_INFO[b.format].label}
+                      icon={b.templateId ? <Icon name="link" size={14} title="Training block: changes apply to every workout that uses it" /> : null}
+                    />
                   </span>
                   <span className="mix-pill-desc">
                     {FORMAT_INFO[b.format].short} · {describeBlock(b)}

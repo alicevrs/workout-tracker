@@ -260,3 +260,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 ## No optional parts (2026-10-18)
 - “Optional” is gone everywhere: no Optional tag in workouts and sessions, no Optional setting for parts, and “Log a past workout” no longer asks which optional blocks were done (it logs every part as planned).
 - During a workout every part has **Skip today** (tap again to include it), so you decide on the day what to leave out.
+- Workout parts: the link icon after a part's name stays on the line of the last word instead of wrapping onto a line of its own.
