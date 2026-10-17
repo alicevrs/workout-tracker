@@ -1471,6 +1471,10 @@ div.ring-wrap {
 .pick-row .btn {
   color: #111;
 }
+.pick-row .grow {
+  flex: 1;
+  min-width: 0;
+}
 .pick-row.dragging {
   position: relative;
   z-index: 2;

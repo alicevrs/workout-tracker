@@ -25,6 +25,8 @@ export default function ExerciseEditPage() {
   const [params] = useSearchParams();
   /** Duplicate: the new exercise starts from this one. */
   const copyOf = id ? null : params.get('copy');
+  const from = params.get('from');
+  const keep = from ? `?from=${encodeURIComponent(from)}` : '';
   const navigate = useNavigate();
   const toast = useToast();
   const [ex, setEx] = useState<Exercise | null>(id || copyOf ? null : { ...EMPTY });
@@ -71,12 +73,12 @@ export default function ExerciseEditPage() {
     const record: Exercise = { ...ex, name: ex.name.trim(), id: ex.id || `custom-${uid()}`, isCustom: !builtIn, ...(builtIn ? { edited: true } : {}), updatedAt: Date.now() };
     await db.exercises.put(record);
     toast('Exercise saved');
-    navigate(`/exercises/${record.id}`, { replace: true });
+    navigate(`/exercises/${record.id}${keep}`, { replace: true });
   };
 
   return (
     <div className="page">
-      <PageHeader title={id ? 'Edit exercise' : 'New exercise'} back={id ? `/exercises/${id}` : '/exercises'} />
+      <PageHeader title={id ? 'Edit exercise' : 'New exercise'} back={id ? `/exercises/${id}${keep}` : '/exercises'} />
       <form onSubmit={save} className="stack">
         <div className="card form-grid">
           <label className="field full">

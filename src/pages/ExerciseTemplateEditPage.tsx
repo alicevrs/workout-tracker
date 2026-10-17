@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { BlockEditor, SetTargetsEditor } from '../components/BlockEditor';
+import { SetTargetsEditor } from '../components/BlockEditor';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { Icon } from '../components/Icon';
 import { InfoButton } from '../components/Library';
@@ -19,7 +19,6 @@ import {
   exerciseCountBy,
   hasStructure,
   linkedBlock,
-  isAdvanced,
   NEW_BLOCK_NAME,
   OLD_BLOCK_NAME,
   paramsFromQuick,
@@ -92,6 +91,8 @@ export default function ExerciseTemplateEditPage() {
   const listRef = useRef<HTMLDivElement>(null);
   const timers = useLiveQuery(() => db.timerTemplates.orderBy('name').toArray(), []) ?? [];
 
+  /** This page, to come back to with the unsaved changes kept. */
+  const selfUrl = encodeURIComponent(withDraftParam(location.pathname + location.search));
   const update = (patch: Partial<BlockTemplate>) => {
     const cur = current();
     if (cur) setItem({ ...cur, ...patch });
@@ -184,6 +185,14 @@ export default function ExerciseTemplateEditPage() {
             {b.entries.map((e, i) => (
               <div key={e.id} data-drag-index={i} className={`pick-row${drag?.index === i ? ' dragging' : ''}`} style={rowStyle(i)} {...handle(i)}>
                 <span className="grow">{exercises.get(e.exerciseId)?.name ?? 'Unknown exercise'}</span>
+                <Link
+                  className="btn icon small ghost"
+                  to={`/exercises/${e.exerciseId}?from=${selfUrl}`}
+                  aria-label={`Open ${exercises.get(e.exerciseId)?.name ?? 'exercise'}`}
+                  onPointerDown={(ev) => ev.stopPropagation()}
+                >
+                  <Icon name="edit" />
+                </Link>
                 <button
                   className="btn icon small ghost"
                   aria-label="Remove exercise"
@@ -239,11 +248,22 @@ export default function ExerciseTemplateEditPage() {
               </button>
             </div>
           )}
-          {countBy === 'time' && (
+          {countBy === 'time' && linkedTimer && (
+            <div className="pick-row mt-s">
+              <span className="grow">{linkedTimer.name}</span>
+              <Link className="btn icon small ghost" to={`/workouts/timers/${linkedTimer.id}?from=${selfUrl}`} aria-label={`Open ${linkedTimer.name}`}>
+                <Icon name="edit" />
+              </Link>
+              <button className="btn icon small ghost" aria-label="Remove timer" onClick={() => setBlock(unlinkTimer(b))}>
+                <Icon name="x" />
+              </button>
+            </div>
+          )}
+          {countBy === 'time' && !linkedTimer && (
             <label className="field mt-s">
               Saved timer
               <select
-                value={linkedTimer?.id ?? ''}
+                value=''
                 onChange={(e) => {
                   const t = timers.find((x) => x.id === e.target.value);
                   setBlock(t ? withTimer(b, t) : unlinkTimer(b));
@@ -258,7 +278,7 @@ export default function ExerciseTemplateEditPage() {
               </select>
             </label>
           )}
-          {countBy === 'time' && !timers.length && <p className="tiny faint" style={{ margin: '6px 0 0' }}>Timers saved in Workouts → Timers appear here.</p>}
+          {countBy === 'time' && !linkedTimer && !timers.length && <p className="tiny faint" style={{ margin: '6px 0 0' }}>Timers saved in Workouts → Timers appear here.</p>}
           {countBy === 'time' && !linkedTimer && (
             <div className="scroll-x mt-s" role="group" aria-label="Timer">
               {TIME_FORMATS.filter((f) => f !== 'timed_sets' || b.format === 'timed_sets').map((f) => (
@@ -269,13 +289,7 @@ export default function ExerciseTemplateEditPage() {
             </div>
           )}
           <div className="mt">
-            {linkedTimer ? (
-              <div className="linked-timer">
-                <Link className="btn small" to={`/workouts/timers/${linkedTimer.id}?from=${encodeURIComponent(withDraftParam(location.pathname + location.search))}`}>
-                  Open timer
-                </Link>
-              </div>
-            ) : structured ? (
+            {linkedTimer ? null : structured ? (
               <div className="sentences compact-sentences">
                 <Line>
                   <Pick small value={setsOf(b)} options={SET_OPTIONS} format={mins} onChange={(v) => setBlock(withSetsRest(b, v, restOf(b)))} label="Sets" />
@@ -345,16 +359,6 @@ export default function ExerciseTemplateEditPage() {
           <textarea value={b.note ?? ''} placeholder="Optional" onChange={(e) => setBlock({ ...b, note: e.target.value || undefined })} />
         </label>
 
-        <details className="advanced" open={isAdvanced(b)}>
-          <summary>Advanced settings</summary>
-          {isAdvanced(b) && <p className="small muted">This block uses settings the simple form above cannot show. Edit them here.</p>}
-          <BlockEditor
-            hideName
-            hideOptional
-            block={b}
-            onChange={(next) => setBlock(next.format !== b.format || JSON.stringify(next.params) !== JSON.stringify(b.params) ? unlinkTimer(next) : next)}
-          />
-        </details>
       </div>
       <div className="save-bar">
         <button className="big-btn" disabled={!dirty} onClick={save}>

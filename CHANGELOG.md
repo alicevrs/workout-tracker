@@ -244,3 +244,8 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - On iPhone, a sheet with a search box (such as Add exercise in a training block) now moves above the keyboard and fits the space that is still visible, so the results are not hidden under the keyboard. Applies to every sheet in the app.
 - Training blocks: under a chosen saved timer only the Open timer button remains (no repeated description, no extra note).
 - Training blocks counted by time: step 3 is now **Weight and reps**. The time comes from the timer, so there is no time field; per exercise you set the weight and, optionally, the approximate reps per round or interval. Those reps count in the volume (also for Tabata rounds, which used to log no reps).
+
+## Training block editor, simpler (2026-10-17)
+- “Advanced settings” removed from training blocks.
+- Exercise rows: the × is at the right edge, with a pencil next to it that opens the exercise (see it, Edit it); Back returns to the block with its unsaved changes.
+- A chosen saved timer now shows as a yellow row like the exercises, with a pencil to open (and change) the timer and a × to remove it; the timer list appears again after removing it. The separate Open timer button is gone.

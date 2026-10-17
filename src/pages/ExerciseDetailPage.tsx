@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { BodyMap } from '../components/BodyMap';
 import { ExerciseHistory } from '../components/ExerciseHistory';
 import { Icon } from '../components/Icon';
@@ -10,13 +10,18 @@ import { exerciseIntensity } from '../lib/muscleLoad';
 
 export default function ExerciseDetailPage() {
   const { id = '' } = useParams();
+  const [params] = useSearchParams();
+  /** Opened from a training block: Back returns there. */
+  const from = params.get('from');
+  const back = from || '/exercises';
+  const keep = from ? `?from=${encodeURIComponent(from)}` : '';
   const exercise = useLiveQuery(() => db.exercises.get(id), [id]);
 
   if (exercise === undefined) return <div className="page" />;
   if (!exercise)
     return (
       <div className="page">
-        <PageHeader title="Exercise" back="/exercises" />
+        <PageHeader title="Exercise" back={back} />
         <EmptyState title="Exercise not found" />
       </div>
     );
@@ -25,10 +30,10 @@ export default function ExerciseDetailPage() {
     <div className="page">
       <PageHeader
         title={exercise.name}
-        back="/exercises"
+        back={back}
         subtitle={`${exercise.category} · ${exercise.equipment}`}
         actions={
-          <Link className="btn" to={`/exercises/${id}/edit`}>
+          <Link className="btn" to={`/exercises/${id}/edit${keep}`}>
             <Icon name="edit" /> Edit
           </Link>
         }
