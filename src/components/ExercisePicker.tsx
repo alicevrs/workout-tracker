@@ -2,10 +2,11 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MUSCLE_LABEL } from '../data/muscles';
 import { useVisibleExercises } from '../db/repo';
+import { exerciseCountBy, type CountBy } from '../lib/blockTemplates';
 import type { ExerciseCategory } from '../db/types';
 import { Sheet } from './ui';
 
-export function ExercisePicker({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (id: string) => void }) {
+export function ExercisePicker({ open, onClose, onPick, only }: { open: boolean; onClose: () => void; onPick: (id: string) => void; /** Only exercises counted this way. */ only?: CountBy }) {
   const exercises = useVisibleExercises();
   const [q, setQ] = useState('');
   const [cat, setCat] = useState<ExerciseCategory | 'all'>('all');
@@ -14,12 +15,13 @@ export function ExercisePicker({ open, onClose, onPick }: { open: boolean; onClo
     return (exercises ?? []).filter(
       (e) =>
         (cat === 'all' || e.category === cat) &&
+        (!only || exerciseCountBy(e) === only) &&
         (!query ||
           e.name.toLowerCase().includes(query) ||
           e.primaryMuscles.some((m) => MUSCLE_LABEL[m].toLowerCase().includes(query)) ||
           e.equipment.includes(query)),
     );
-  }, [exercises, q, cat]);
+  }, [exercises, q, cat, only]);
 
   return (
     <Sheet open={open} onClose={onClose} title="Add exercise">

@@ -113,3 +113,16 @@ describe('leftover empty blocks', () => {
     expect((await db.blockTemplates.toArray()).map((t) => t.id).sort()).toEqual([named.id, withEx.id, inWorkout.id].sort());
   });
 });
+
+describe('count by follows the exercises', () => {
+  it('reps for Weight × reps, time for timed exercises, nothing without exercises', async () => {
+    const { blockKind, exerciseCountBy, addExercise } = await import('../src/lib/blockTemplates');
+    const { SEED_EXERCISES } = await import('../src/db/repo');
+    const map = new Map(SEED_EXERCISES.map((e) => [e.id, e]));
+    expect(exerciseCountBy(map.get('push-up'))).toBe('reps');
+    expect(exerciseCountBy(map.get('dead-hang'))).toBe('time');
+    const empty = newBlockTemplate().block;
+    expect(blockKind(empty, map)).toBeNull();
+    expect(blockKind(addExercise(empty, 'dead-hang', 60), map)).toBe('time');
+  });
+});

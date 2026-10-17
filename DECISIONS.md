@@ -206,3 +206,9 @@ Choices made while building the app, with the reason for each.
 ## How an exercise is logged
 - Three options (user's choice): `weight_reps`, `weight_time`, `time_distance`. “Reps (bodyweight)” merged into Weight × reps and “Time” became Weight × time, because weight is optional anyway (empty = bodyweight). The set log shows a weight column for both weight options; progress already compares weight first, then reps or time.
 - Migration: the catalogue JSON was rewritten (`SEED_VERSION` 4); the user's own and edited exercises are rewritten at startup (`migrateTracking`); `trackingOf` maps old values everywhere they are read, so data from an older device or backup still works.
+
+## Count by follows the exercises
+- User's choice (asked explicitly, with the trade-off): a block's counting is derived from its exercises' “Logged as” — reps exercises only as sets × reps with rest, timed exercises only with a timer. Reps exercises can therefore no longer be put in an EMOM or AMRAP in the simple editor (the Advanced settings still allow any format).
+- One kind per block: the first exercise sets the format (`countAs`: sets_reps, or Tabata unless a timer is already set), and the picker filters by `exerciseCountBy`. Empty blocks show no counting step.
+- Existing blocks are never converted automatically (that would silently change workouts): a mismatch shows a notice with a one-tap switch, applied only on Save.
+- Timed exercises in AMRAP / For Time / EMOM store a time per round or interval in `durationSec`.

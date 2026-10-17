@@ -14,7 +14,9 @@ import type { Block, BlockFormat, BlockTemplate, ExerciseEntry, Program } from '
 import { useDragReorder } from '../hooks/useDragReorder';
 import {
   addExercise,
+  blockKind,
   countByOf,
+  exerciseCountBy,
   hasStructure,
   linkedBlock,
   isAdvanced,
@@ -30,6 +32,7 @@ import {
   withFormat,
   withSetsRest,
   withStructure,
+  type CountBy,
   type Structure,
 } from '../lib/blockTemplates';
 import { formatDuration } from '../lib/dates';
@@ -137,13 +140,19 @@ export default function ExerciseTemplateEditPage() {
 
   const b = tpl.block;
   const linkedTimer = b.timerId ? timers.find((t) => t.id === b.timerId) : undefined;
+  // How the block is counted follows its exercises (Logged as): reps, or time with a timer.
+  const kind = blockKind(b, exercises);
   const countBy = countByOf(b);
+  const mismatch = !!kind && kind !== countBy;
   const structured = hasStructure(b.format);
   const total = estimateBlockSeconds(b);
   const autoName = (block: Block) => block.entries.map((e) => exercises.get(e.exerciseId)?.name ?? '').filter(Boolean).join(' / ');
   const nameIsAuto = tpl.name === NEW_BLOCK_NAME || tpl.name === OLD_BLOCK_NAME || tpl.name === autoName(b);
   const setEntry = (entryId: string, patch: Partial<ExerciseEntry>) => setBlock({ ...b, entries: b.entries.map((e) => (e.id === entryId ? { ...e, ...patch } : e)) });
   const changeEntries = (block: Block) => update({ block, ...(nameIsAuto ? { name: autoName(block) || NEW_BLOCK_NAME } : {}) });
+  /** Count the block the way its exercises are logged: sets × reps, or a timer (Tabata unless one is set). */
+  const countAs = (block: Block, k: CountBy): Block =>
+    k === 'reps' ? unlinkTimer(withFormat(block, 'sets_reps')) : countByOf(block) === 'time' ? block : unlinkTimer(withFormat(block, 'tabata'));
 
   return (
     <div className="page">
@@ -156,8 +165,9 @@ export default function ExerciseTemplateEditPage() {
           <InfoButton title="Training blocks">
             <p style={{ margin: 0 }}>A block is a ready-made piece of a workout. Build it in order:</p>
             <p style={{ margin: 0 }}>
-              <strong>1.</strong> pick the exercises from the catalogue; <strong>2.</strong> with more than one, choose how they are combined; <strong>3.</strong> count by reps
-              (sets, reps, rest) or by time with one of the timers; <strong>4.</strong> add reps and weights; then notes if you like.
+              <strong>1.</strong> pick the exercises from the catalogue; <strong>2.</strong> with more than one, choose how they are combined; <strong>3.</strong> set how it is
+              counted: exercises logged by reps use sets, reps and rest, exercises logged by time use one of the timers (this follows “Logged as” of the exercises, and a block holds
+              only one of the two kinds); <strong>4.</strong> add reps or times and weights; then notes if you like.
             </p>
             <p style={{ margin: 0 }}>Changes are kept only when you tap Save. Workouts that use this block then follow from their next session; workouts already done stay as they were.</p>
           </InfoButton>
@@ -217,16 +227,18 @@ export default function ExerciseTemplateEditPage() {
           </Step>
         )}
 
-        <Step n={b.entries.length > 1 ? 3 : 2} title="Count by">
-          <Segmented<'reps' | 'time'>
-            label="Count by"
-            value={countBy}
-            onChange={(c) => setBlock(unlinkTimer(withFormat(b, c === 'reps' ? 'sets_reps' : 'tabata')))}
-            options={[
-              { value: 'reps', label: 'Reps' },
-              { value: 'time', label: 'Time' },
-            ]}
-          />
+        {b.entries.length > 0 && (
+        <Step n={b.entries.length > 1 ? 3 : 2} title={countBy === 'reps' ? 'Count by reps' : 'Count by time'}>
+          {mismatch && (
+            <div className="banner">
+              <p className="small" style={{ margin: 0 }}>
+                {kind === 'reps' ? 'These exercises are logged by reps, but this block still uses a timer.' : 'These exercises are logged by time, but this block still uses sets and reps.'}
+              </p>
+              <button className="btn small mt-s" onClick={() => setBlock(countAs(b, kind))}>
+                {kind === 'reps' ? 'Count by reps' : 'Count by time'}
+              </button>
+            </div>
+          )}
           {countBy === 'time' && (
             <label className="field mt-s">
               Saved timer
@@ -285,16 +297,24 @@ export default function ExerciseTemplateEditPage() {
             )}
           </div>
         </Step>
+        )}
 
         {b.entries.length > 0 && (
-          <Step n={b.entries.length > 1 ? 4 : 3} title={b.format === 'tabata' ? 'Weight' : b.format === 'timed_sets' ? 'Time and weight' : 'Reps and weight'}>
+          <Step n={b.entries.length > 1 ? 4 : 3} title={b.format === 'tabata' ? 'Weight' : b.format === 'timed_sets' || kind === 'time' ? 'Time and weight' : 'Reps and weight'}>
             <div className="stack" style={{ gap: 10 }}>
               {b.entries.map((e) => (
                 <div key={e.id} className="target-row">
                   <div className="target-name">{exercises.get(e.exerciseId)?.name ?? 'Exercise'}</div>
                   <div className="form-grid">
-                    {b.format === 'timed_sets' ? (
-                      <NumberField label="Time (s)" value={e.durationSec} onChange={(v) => setEntry(e.id, { durationSec: v })} inputMode="numeric" stepper step={5} />
+                    {b.format === 'timed_sets' || (kind === 'time' && b.format !== 'tabata' && b.format !== 'sets_reps') ? (
+                      <NumberField
+                        label={b.format === 'emom' ? 'Time per interval (s)' : b.format === 'timed_sets' ? 'Time (s)' : 'Time per round (s)'}
+                        value={e.durationSec}
+                        onChange={(v) => setEntry(e.id, { durationSec: v })}
+                        inputMode="numeric"
+                        stepper
+                        step={5}
+                      />
                     ) : b.format !== 'tabata' ? (
                       <NumberField
                         label={b.format === 'sets_reps' ? 'Reps' : b.format === 'emom' ? 'Reps per interval' : 'Reps per round'}
@@ -346,9 +366,13 @@ export default function ExerciseTemplateEditPage() {
       <ExercisePicker
         open={picking}
         onClose={() => setPicking(false)}
+        only={kind ?? undefined}
         onPick={(exerciseId) => {
           const cur = current();
-          if (cur) changeEntries(addExercise(cur.block, exerciseId, profile.defaultRestSec));
+          if (!cur) return;
+          // The first exercise decides how the block is counted.
+          const block = cur.block.entries.length ? cur.block : countAs(cur.block, exerciseCountBy(exercises.get(exerciseId)));
+          changeEntries(addExercise(block, exerciseId, profile.defaultRestSec));
         }}
       />
     </div>

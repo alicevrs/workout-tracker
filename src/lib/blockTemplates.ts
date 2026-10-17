@@ -7,7 +7,8 @@
 // sessions keep their own copy and never change.
 
 import type { WorkoutDB } from '../db/db';
-import type { Block, BlockFormat, BlockParams, BlockTemplate, ExerciseEntry, Grouping } from '../db/types';
+import { trackingOf } from '../db/repo';
+import type { Block, BlockFormat, BlockParams, BlockTemplate, Exercise, ExerciseEntry, Grouping } from '../db/types';
 import { uid } from './ids';
 import { cloneBlock, defaultParams, FORMAT_INFO, newBlock, newEntry } from './program';
 import type { QuickTimer } from './timer/quick';
@@ -111,6 +112,15 @@ export function structureOf(b: Block): Structure {
 }
 
 export const countByOf = (b: Block): CountBy => (b.format === 'sets_reps' ? 'reps' : 'time');
+
+/** How an exercise is counted in a block: by reps (Weight × reps) or by time (Weight × time, Time and distance). */
+export const exerciseCountBy = (e: Pick<Exercise, 'tracking'> | undefined): CountBy => (trackingOf(e) === 'weight_reps' ? 'reps' : 'time');
+
+/** How a block must be counted, from its first exercise (a block holds one kind only); null without exercises. */
+export function blockKind(b: Block, exercises: Map<string, Exercise>): CountBy | null {
+  const first = b.entries[0];
+  return first ? exerciseCountBy(exercises.get(first.exerciseId)) : null;
+}
 
 /** Settings the simple editor cannot show (intervals, drop sets, mixed groups): use the full editor. */
 export function isAdvanced(b: Block): boolean {

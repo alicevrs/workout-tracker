@@ -233,3 +233,9 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 ## Weight × time (2026-10-17)
 - Exercises: “Logged as” now has three options: **Weight × reps**, **Weight × time** and **Time and distance**. Weight is optional in both weight options (leave it empty for bodyweight), so timed exercises with a weight can be tracked and compared by weight.
 - Exercises that were “Reps (bodyweight)” are now Weight × reps; those that were “Time” are now Weight × time (built-in catalogue and your own exercises).
+
+## Count by follows the exercises (2026-10-17)
+- Training blocks: the Reps / Time switch is gone. How a block is counted comes from “Logged as” of its exercises: Weight × reps → count by reps (sets, reps, rest); Weight × time or Time and distance → count by time with a timer (AMRAP, For Time, EMOM, Tabata or a saved timer).
+- The first exercise decides; after that, “Add exercise” lists only exercises of the same kind.
+- Timed exercises in AMRAP, For Time and EMOM blocks get a time per round / interval instead of reps.
+- Existing blocks that do not match (e.g. a timer with exercises logged by reps) keep working as they are; their page shows a notice with a button to switch.
