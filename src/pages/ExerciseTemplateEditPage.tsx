@@ -326,7 +326,7 @@ export default function ExerciseTemplateEditPage() {
           <Step
             n={b.entries.length > 1 ? 4 : 3}
             title={
-              b.entries.every(distanceEx) ? 'Incline and speed' : b.format === 'timed_sets' ? 'Time and weight' : b.format === 'tabata' || kind === 'time' ? 'Weight and reps' : 'Reps and weight'
+              b.entries.every(distanceEx) ? 'Incline, speed and distance' : b.format === 'timed_sets' ? 'Time and weight' : b.format === 'tabata' || kind === 'time' ? 'Weight and reps' : 'Reps and weight'
             }
           >
             <div className="stack" style={{ gap: 10 }}>
@@ -334,10 +334,11 @@ export default function ExerciseTemplateEditPage() {
                 <div key={e.id} className="target-row">
                   <div className="target-name">{exercises.get(e.exerciseId)?.name ?? 'Exercise'}</div>
                   {distanceEx(e) ? (
-                    // Time × distance (treadmill and similar): the timer sets the time; targets are incline and speed.
+                    // Time × distance (treadmill and similar): the timer sets the time; targets are incline, speed and distance.
                     <div className="form-grid">
                       <NumberField label="Incline (%)" placeholder="none" value={e.incline} onChange={(v) => setEntry(e.id, { incline: v })} stepper step={0.5} />
                       <NumberField label="Speed (km/h)" placeholder="none" value={e.speedKmh} onChange={(v) => setEntry(e.id, { speedKmh: v })} stepper step={0.5} />
+                      <NumberField label="Distance (km)" placeholder="none" value={e.distanceKm} onChange={(v) => setEntry(e.id, { distanceKm: v })} stepper step={0.5} />
                     </div>
                   ) : (
                   <div className="form-grid">

@@ -105,6 +105,8 @@ export interface ExerciseEntry {
   incline?: number;
   /** Time × distance exercises: target speed in km/h. */
   speedKmh?: number;
+  /** Time × distance exercises: target distance in km. */
+  distanceKm?: number;
 }
 
 export interface IntervalSegment {

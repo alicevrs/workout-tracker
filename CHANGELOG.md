@@ -266,3 +266,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Exercises: “Time and distance” is now called **Time × distance**.
 - Training blocks: for Time × distance exercises step 3 asks **Incline (%)** and **Speed (km/h)** instead of weight and reps. The timer shows them next to the exercise while you train.
 - The reps field of timed blocks is now just “Reps” (no “approx.”).
+- Time × distance exercises in training blocks also have a **Distance (km)** target, next to incline and speed (shown in the timer too).
