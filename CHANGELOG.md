@@ -261,3 +261,8 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - “Optional” is gone everywhere: no Optional tag in workouts and sessions, no Optional setting for parts, and “Log a past workout” no longer asks which optional blocks were done (it logs every part as planned).
 - During a workout every part has **Skip today** (tap again to include it), so you decide on the day what to leave out.
 - Workout parts: the link icon after a part's name stays on the line of the last word instead of wrapping onto a line of its own.
+
+## Time × distance targets (2026-10-18)
+- Exercises: “Time and distance” is now called **Time × distance**.
+- Training blocks: for Time × distance exercises step 3 asks **Incline (%)** and **Speed (km/h)** instead of weight and reps. The timer shows them next to the exercise while you train.
+- The reps field of timed blocks is now just “Reps” (no “approx.”).

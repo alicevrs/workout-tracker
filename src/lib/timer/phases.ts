@@ -55,7 +55,7 @@ function entryInfo(e: ExerciseEntry | undefined, n = 1): Partial<Phase> {
     targetDurationSec: t.durationSec,
     warmup: t.warmup || undefined,
     toFailure: t.toFailure || undefined,
-    note: e.note,
+    note: [e.incline !== undefined ? `${e.incline}% incline` : '', e.speedKmh !== undefined ? `${e.speedKmh} km/h` : '', e.note ?? ''].filter(Boolean).join(' · ') || undefined,
   };
 }
 

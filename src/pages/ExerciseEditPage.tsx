@@ -109,7 +109,7 @@ export default function ExerciseEditPage() {
             <select value={trackingOf(ex)} onChange={(e) => set('tracking', e.target.value as Tracking)}>
               <option value="weight_reps">Weight × reps</option>
               <option value="weight_time">Weight × time</option>
-              <option value="time_distance">Time and distance</option>
+              <option value="time_distance">Time × distance</option>
             </select>
           </label>
         </div>

@@ -9,7 +9,7 @@ import { ClockPick, Line, Pick, TimerFields, mins } from '../components/TimerFie
 import { EmptyState, NumberField, PageHeader, Segmented, useToast } from '../components/ui';
 import { getDraft, setDraft, useDraft, withDraftParam } from '../lib/drafts';
 import { db } from '../db/db';
-import { useExerciseMap, useProfile } from '../db/repo';
+import { trackingOf, useExerciseMap, useProfile } from '../db/repo';
 import type { Block, BlockFormat, BlockTemplate, ExerciseEntry, Program } from '../db/types';
 import { useDragReorder } from '../hooks/useDragReorder';
 import {
@@ -151,6 +151,8 @@ export default function ExerciseTemplateEditPage() {
   const total = estimateBlockSeconds(b);
   const autoName = (block: Block) => block.entries.map((e) => exercises.get(e.exerciseId)?.name ?? '').filter(Boolean).join(' / ');
   const nameIsAuto = tpl.name === NEW_BLOCK_NAME || tpl.name === OLD_BLOCK_NAME || tpl.name === autoName(b);
+  /** Time × distance exercise: targets are incline and speed instead of weight and reps. */
+  const distanceEx = (e: ExerciseEntry) => trackingOf(exercises.get(e.exerciseId)) === 'time_distance';
   /** Targets set per set / interval: the exercise's own reps and weight are not used. */
   const perSet = (e: ExerciseEntry) => !!e.setTargets?.length;
   /** EMOM: intervals that go to the i-th exercise (they take turns). */
@@ -321,11 +323,23 @@ export default function ExerciseTemplateEditPage() {
         )}
 
         {b.entries.length > 0 && (
-          <Step n={b.entries.length > 1 ? 4 : 3} title={b.format === 'timed_sets' ? 'Time and weight' : b.format === 'tabata' || kind === 'time' ? 'Weight and reps' : 'Reps and weight'}>
+          <Step
+            n={b.entries.length > 1 ? 4 : 3}
+            title={
+              b.entries.every(distanceEx) ? 'Incline and speed' : b.format === 'timed_sets' ? 'Time and weight' : b.format === 'tabata' || kind === 'time' ? 'Weight and reps' : 'Reps and weight'
+            }
+          >
             <div className="stack" style={{ gap: 10 }}>
               {b.entries.map((e, i) => (
                 <div key={e.id} className="target-row">
                   <div className="target-name">{exercises.get(e.exerciseId)?.name ?? 'Exercise'}</div>
+                  {distanceEx(e) ? (
+                    // Time × distance (treadmill and similar): the timer sets the time; targets are incline and speed.
+                    <div className="form-grid">
+                      <NumberField label="Incline (%)" placeholder="none" value={e.incline} onChange={(v) => setEntry(e.id, { incline: v })} stepper step={0.5} />
+                      <NumberField label="Speed (km/h)" placeholder="none" value={e.speedKmh} onChange={(v) => setEntry(e.id, { speedKmh: v })} stepper step={0.5} />
+                    </div>
+                  ) : (
                   <div className="form-grid">
                     {b.format === 'timed_sets' ? (
                       <NumberField label="Time (s)" value={e.durationSec} onChange={(v) => setEntry(e.id, { durationSec: v })} inputMode="numeric" stepper step={5} />
@@ -352,7 +366,7 @@ export default function ExerciseTemplateEditPage() {
                     {(b.format === 'tabata' || kind === 'time') && (
                       // The time comes from the timer; reps are only an estimate, for the volume.
                       <NumberField
-                        label="Reps (approx.)"
+                        label="Reps"
                         placeholder="none"
                         value={e.reps}
                         onChange={(v) => setEntry(e.id, { reps: v })}
@@ -361,7 +375,8 @@ export default function ExerciseTemplateEditPage() {
                       />
                     )}
                   </div>
-                  {(b.format === 'sets_reps' || b.format === 'timed_sets' || b.format === 'emom') && (
+                  )}
+                  {!distanceEx(e) && (b.format === 'sets_reps' || b.format === 'timed_sets' || b.format === 'emom') && (
                     <SetTargetsEditor entry={e} unit={unit} perInterval={b.format === 'emom'} count={intervalsFor(i)} onChange={(patch) => setEntry(e.id, patch)} />
                   )}
                 </div>

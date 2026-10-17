@@ -99,8 +99,12 @@ export interface ExerciseEntry {
    * of this exercise uses setTargets[n-1].
    */
   setTargets?: SetTarget[];
-  /** Free note shown while training, e.g. "18% incline · 4 km/h". */
+  /** Free note shown while training. */
   note?: string;
+  /** Time × distance exercises (treadmill and similar): target incline in percent. */
+  incline?: number;
+  /** Time × distance exercises: target speed in km/h. */
+  speedKmh?: number;
 }
 
 export interface IntervalSegment {
