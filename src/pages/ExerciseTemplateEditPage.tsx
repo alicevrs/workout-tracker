@@ -144,7 +144,9 @@ export default function ExerciseTemplateEditPage() {
   // How the block is counted follows its exercises (Logged as): reps, or time with a timer.
   const kind = blockKind(b, exercises);
   const countBy = countByOf(b);
-  const mismatch = !!kind && kind !== countBy;
+  // Reps exercises: sets and rest set here, or a saved timer (which then sets the number of sets).
+  // Timed exercises: always a timer. Older blocks that break this show a notice with a fix.
+  const mismatch = kind === 'time' ? countBy === 'reps' : kind === 'reps' && countBy === 'time' && !linkedTimer;
   const structured = hasStructure(b.format);
   const total = estimateBlockSeconds(b);
   const autoName = (block: Block) => block.entries.map((e) => exercises.get(e.exerciseId)?.name ?? '').filter(Boolean).join(' / ');
@@ -167,8 +169,8 @@ export default function ExerciseTemplateEditPage() {
             <p style={{ margin: 0 }}>A block is a ready-made piece of a workout. Build it in order:</p>
             <p style={{ margin: 0 }}>
               <strong>1.</strong> pick the exercises from the catalogue; <strong>2.</strong> with more than one, choose how they are combined; <strong>3.</strong> set how it is
-              counted: exercises logged by reps use sets, reps and rest, exercises logged by time use one of the timers (this follows “Logged as” of the exercises, and a block holds
-              only one of the two kinds); <strong>4.</strong> add reps or times and weights; then notes if you like.
+              counted: exercises logged by reps use sets and rest set here, or a saved timer that sets the number of sets; exercises logged by time always use a timer (this
+              follows “Logged as” of the exercises, and a block holds only one of the two kinds); <strong>4.</strong> add reps or times and weights; then notes if you like.
             </p>
             <p style={{ margin: 0 }}>Changes are kept only when you tap Save. Workouts that use this block then follow from their next session; workouts already done stay as they were.</p>
           </InfoButton>
@@ -237,39 +239,40 @@ export default function ExerciseTemplateEditPage() {
         )}
 
         {b.entries.length > 0 && (
-        <Step n={b.entries.length > 1 ? 3 : 2} title={countBy === 'reps' ? 'Count by reps' : 'Count by time'}>
+        <Step n={b.entries.length > 1 ? 3 : 2} title={kind === 'time' ? 'Count by time' : 'Count by reps'}>
           {mismatch && (
             <div className="banner">
               <p className="small" style={{ margin: 0 }}>
-                {kind === 'reps' ? 'These exercises are logged by reps, but this block still uses a timer.' : 'These exercises are logged by time, but this block still uses sets and reps.'}
+                {kind === 'reps'
+                  ? 'This block uses a timer that is not one of your saved timers. Choose a saved timer, or set sets and rest here.'
+                  : 'These exercises are logged by time, but this block still uses sets and reps.'}
               </p>
-              <button className="btn small mt-s" onClick={() => setBlock(countAs(b, kind))}>
-                {kind === 'reps' ? 'Count by reps' : 'Count by time'}
+              <button className="btn small mt-s" onClick={() => kind && setBlock(countAs(b, kind))}>
+                {kind === 'reps' ? 'Set sets and rest here' : 'Count by time'}
               </button>
             </div>
           )}
-          {countBy === 'time' && linkedTimer && (
+          {linkedTimer ? (
             <div className="pick-row mt-s">
               <span className="grow">{linkedTimer.name}</span>
               <Link className="btn icon small ghost" to={`/workouts/timers/${linkedTimer.id}?from=${selfUrl}`} aria-label={`Open ${linkedTimer.name}`}>
                 <Icon name="edit" />
               </Link>
-              <button className="btn icon small ghost" aria-label="Remove timer" onClick={() => setBlock(unlinkTimer(b))}>
+              <button className="btn icon small ghost" aria-label="Remove timer" onClick={() => setBlock(kind === 'reps' ? countAs(unlinkTimer(b), 'reps') : unlinkTimer(b))}>
                 <Icon name="x" />
               </button>
             </div>
-          )}
-          {countBy === 'time' && !linkedTimer && (
+          ) : (
             <label className="field mt-s">
               Saved timer
               <select
-                value=''
+                value=""
                 onChange={(e) => {
                   const t = timers.find((x) => x.id === e.target.value);
-                  setBlock(t ? withTimer(b, t) : unlinkTimer(b));
+                  if (t) setBlock(withTimer(b, t));
                 }}
               >
-                <option value="">Set the timer here</option>
+                <option value="">{kind === 'reps' ? 'None: set sets and rest here' : 'None: set the timer here'}</option>
                 {timers.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
@@ -278,8 +281,8 @@ export default function ExerciseTemplateEditPage() {
               </select>
             </label>
           )}
-          {countBy === 'time' && !linkedTimer && !timers.length && <p className="tiny faint" style={{ margin: '6px 0 0' }}>Timers saved in Workouts → Timers appear here.</p>}
-          {countBy === 'time' && !linkedTimer && (
+          {!linkedTimer && !timers.length && <p className="tiny faint" style={{ margin: '6px 0 0' }}>Timers saved in Workouts → Timers appear here.</p>}
+          {kind === 'time' && !linkedTimer && (
             <div className="scroll-x mt-s" role="group" aria-label="Timer">
               {TIME_FORMATS.filter((f) => f !== 'timed_sets' || b.format === 'timed_sets').map((f) => (
                 <button key={f} className="chip" aria-pressed={b.format === f} onClick={() => setBlock(withFormat(b, f))}>
@@ -288,22 +291,24 @@ export default function ExerciseTemplateEditPage() {
               ))}
             </div>
           )}
-          <div className="mt">
-            {linkedTimer ? null : structured ? (
-              <div className="sentences compact-sentences">
-                <Line>
-                  <Pick small value={setsOf(b)} options={SET_OPTIONS} format={mins} onChange={(v) => setBlock(withSetsRest(b, v, restOf(b)))} label="Sets" />
-                  <span>{structureOf(b) === 'sequence' || b.entries.length < 2 ? 'sets' : 'rounds'}</span>
-                </Line>
-                <Line>
-                  <ClockPick small value={restOf(b)} maxMin={15} onChange={(v) => setBlock(withSetsRest(b, setsOf(b), v))} label="Rest" />
-                  <span>rest</span>
-                </Line>
-              </div>
-            ) : (
-              <TimerFields compact q={quickFromParams(b.format, b.params)} onChange={(q) => setBlock({ ...b, params: paramsFromQuick(q, b.params) })} />
-            )}
-          </div>
+          {!linkedTimer && !mismatch && (
+            <div className="mt">
+              {structured ? (
+                <div className="sentences compact-sentences">
+                  <Line>
+                    <Pick small value={setsOf(b)} options={SET_OPTIONS} format={mins} onChange={(v) => setBlock(withSetsRest(b, v, restOf(b)))} label="Sets" />
+                    <span>{structureOf(b) === 'sequence' || b.entries.length < 2 ? 'sets' : 'rounds'}</span>
+                  </Line>
+                  <Line>
+                    <ClockPick small value={restOf(b)} maxMin={15} onChange={(v) => setBlock(withSetsRest(b, setsOf(b), v))} label="Rest" />
+                    <span>rest</span>
+                  </Line>
+                </div>
+              ) : (
+                <TimerFields compact q={quickFromParams(b.format, b.params)} onChange={(q) => setBlock({ ...b, params: paramsFromQuick(q, b.params) })} />
+              )}
+            </div>
+          )}
         </Step>
         )}
 
