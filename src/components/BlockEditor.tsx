@@ -339,15 +339,38 @@ function SegmentsEditor({ params, onChange }: { params: BlockParams; onChange: (
 }
 
 /** Per-set targets: warm-up sets, pyramids, a last set to failure, or per-interval targets in EMOM. */
-export function SetTargetsEditor({ entry, unit, perInterval, onChange }: { entry: ExerciseEntry; unit: WeightUnit; perInterval: boolean; onChange: (p: Partial<ExerciseEntry>) => void }) {
+export function SetTargetsEditor({
+  entry,
+  unit,
+  perInterval,
+  count,
+  onChange,
+}: {
+  entry: ExerciseEntry;
+  unit: WeightUnit;
+  perInterval: boolean;
+  /** How many intervals this exercise gets (EMOM), so each one has its own row. */
+  count?: number;
+  onChange: (p: Partial<ExerciseEntry>) => void;
+}) {
   const on = !!entry.setTargets?.length;
   const rows = entry.setTargets ?? [];
   const word = perInterval ? 'interval' : 'set';
   const set = (i: number, patch: Partial<SetTarget>) => onChange({ setTargets: rows.map((r, k) => (k === i ? { ...r, ...patch } : r)) });
+  // The rows take over the exercise's own reps and weight (shown as “none” while they are on);
+  // turning them off puts the first row's values back.
   const toggle = (checked: boolean) => {
-    if (!checked) return onChange({ setTargets: undefined });
-    const n = perInterval ? 4 : Math.max(1, entry.sets);
-    onChange({ setTargets: Array.from({ length: n }, () => ({ reps: entry.reps, weight: entry.targetWeight, durationSec: entry.durationSec })), sets: perInterval ? entry.sets : n });
+    if (!checked) {
+      const first = rows[0];
+      return onChange({ setTargets: undefined, reps: first?.reps ?? entry.reps, targetWeight: first?.weight ?? entry.targetWeight });
+    }
+    const n = perInterval ? Math.max(1, count ?? 4) : Math.max(1, entry.sets);
+    onChange({
+      setTargets: Array.from({ length: n }, () => ({ reps: entry.reps, weight: entry.targetWeight, durationSec: entry.durationSec })),
+      sets: perInterval ? entry.sets : n,
+      reps: undefined,
+      targetWeight: undefined,
+    });
   };
   return (
     <div className="mt-s">

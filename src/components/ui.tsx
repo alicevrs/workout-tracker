@@ -99,6 +99,7 @@ export function NumberField({
   inputMode = 'decimal',
   hideLabel = false,
   suffix,
+  disabled = false,
 }: {
   value: number | undefined;
   onChange: (v: number | undefined) => void;
@@ -111,6 +112,8 @@ export function NumberField({
   inputMode?: 'decimal' | 'numeric';
   hideLabel?: boolean;
   suffix?: string;
+  /** Greyed out and not editable (the value is set elsewhere). */
+  disabled?: boolean;
 }) {
   const [text, setText] = useState(value === undefined ? '' : String(value));
   const last = useRef(value);
@@ -150,18 +153,19 @@ export function NumberField({
       value={text}
       placeholder={placeholder}
       aria-label={hideLabel ? label : undefined}
+      disabled={disabled}
       onChange={(e) => commit(e.target.value)}
       onFocus={(e) => e.target.select()}
     />
   );
 
   const body = stepper ? (
-    <div className="stepper">
-      <button type="button" aria-label={`Decrease ${label}`} onClick={() => bump(-1)}>
+    <div className={`stepper${disabled ? ' disabled' : ''}`}>
+      <button type="button" aria-label={`Decrease ${label}`} disabled={disabled} onClick={() => bump(-1)}>
         −
       </button>
       {input}
-      <button type="button" aria-label={`Increase ${label}`} onClick={() => bump(1)}>
+      <button type="button" aria-label={`Increase ${label}`} disabled={disabled} onClick={() => bump(1)}>
         +
       </button>
     </div>
@@ -171,7 +175,7 @@ export function NumberField({
 
   if (hideLabel) return body;
   return (
-    <label className="field">
+    <label className={`field${disabled ? ' field-disabled' : ''}`}>
       <span>
         {label}
         {suffix && <span className="faint"> ({suffix})</span>}

@@ -151,6 +151,14 @@ export default function ExerciseTemplateEditPage() {
   const total = estimateBlockSeconds(b);
   const autoName = (block: Block) => block.entries.map((e) => exercises.get(e.exerciseId)?.name ?? '').filter(Boolean).join(' / ');
   const nameIsAuto = tpl.name === NEW_BLOCK_NAME || tpl.name === OLD_BLOCK_NAME || tpl.name === autoName(b);
+  /** Targets set per set / interval: the exercise's own reps and weight are not used. */
+  const perSet = (e: ExerciseEntry) => !!e.setTargets?.length;
+  /** EMOM: intervals that go to the i-th exercise (they take turns). */
+  const intervalsFor = (i: number) => {
+    if (b.format !== 'emom') return undefined;
+    const total = Math.floor(Math.round((b.params.totalMin ?? 10) * 60) / Math.max(5, b.params.intervalSec ?? 60));
+    return Math.max(1, Math.floor((total - i - 1) / Math.max(1, b.entries.length)) + 1);
+  };
   const setEntry = (entryId: string, patch: Partial<ExerciseEntry>) => setBlock({ ...b, entries: b.entries.map((e) => (e.id === entryId ? { ...e, ...patch } : e)) });
   const changeEntries = (block: Block) => update({ block, ...(nameIsAuto ? { name: autoName(block) || NEW_BLOCK_NAME } : {}) });
   /** Count the block the way its exercises are logged: sets × reps, or a timer (Tabata unless one is set). */
@@ -315,7 +323,7 @@ export default function ExerciseTemplateEditPage() {
         {b.entries.length > 0 && (
           <Step n={b.entries.length > 1 ? 4 : 3} title={b.format === 'timed_sets' ? 'Time and weight' : b.format === 'tabata' || kind === 'time' ? 'Weight and reps' : 'Reps and weight'}>
             <div className="stack" style={{ gap: 10 }}>
-              {b.entries.map((e) => (
+              {b.entries.map((e, i) => (
                 <div key={e.id} className="target-row">
                   <div className="target-name">{exercises.get(e.exerciseId)?.name ?? 'Exercise'}</div>
                   <div className="form-grid">
@@ -324,7 +332,9 @@ export default function ExerciseTemplateEditPage() {
                     ) : b.format === 'tabata' || kind === 'time' ? null : (
                       <NumberField
                         label={b.format === 'sets_reps' ? 'Reps' : b.format === 'emom' ? 'Reps per interval' : 'Reps per round'}
-                        value={e.reps}
+                        value={perSet(e) ? undefined : e.reps}
+                        placeholder="none"
+                        disabled={perSet(e)}
                         onChange={(v) => setEntry(e.id, { reps: v })}
                         inputMode="numeric"
                         stepper
@@ -333,7 +343,8 @@ export default function ExerciseTemplateEditPage() {
                     <NumberField
                       label={`Weight (${unit})`}
                       placeholder="none"
-                      value={toDisplayWeight(e.targetWeight, unit)}
+                      disabled={perSet(e)}
+                      value={perSet(e) ? undefined : toDisplayWeight(e.targetWeight, unit)}
                       onChange={(v) => setEntry(e.id, { targetWeight: fromDisplayWeight(v, unit) })}
                       stepper
                       step={unit === 'kg' ? 2.5 : 5}
@@ -351,7 +362,7 @@ export default function ExerciseTemplateEditPage() {
                     )}
                   </div>
                   {(b.format === 'sets_reps' || b.format === 'timed_sets' || b.format === 'emom') && (
-                    <SetTargetsEditor entry={e} unit={unit} perInterval={b.format === 'emom'} onChange={(patch) => setEntry(e.id, patch)} />
+                    <SetTargetsEditor entry={e} unit={unit} perInterval={b.format === 'emom'} count={intervalsFor(i)} onChange={(patch) => setEntry(e.id, patch)} />
                   )}
                 </div>
               ))}
