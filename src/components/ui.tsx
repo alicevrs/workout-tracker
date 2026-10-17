@@ -181,6 +181,28 @@ export function NumberField({
   );
 }
 
+/**
+ * The part of the screen not covered by the on-screen keyboard. iPhone does not shrink the page
+ * when the keyboard opens, so sheets follow the visual viewport to stay above it.
+ */
+function useVisibleArea(active: boolean): { top: number; height: number } | null {
+  const [area, setArea] = useState<{ top: number; height: number } | null>(null);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!active || !vv) return;
+    const update = () => setArea({ top: vv.offsetTop, height: vv.height });
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+      setArea(null);
+    };
+  }, [active]);
+  return area;
+}
+
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
   useEffect(() => {
     if (!open) return;
@@ -188,9 +210,12 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
+  const area = useVisibleArea(open);
   if (!open) return null;
+  // While the keyboard is open the sheet sits on top of it, sized to what is still visible.
+  const keyboard = !!area && area.height < window.innerHeight - 80;
   return (
-    <div className="sheet-backdrop" onClick={onClose}>
+    <div className={`sheet-backdrop${keyboard ? ' with-keyboard' : ''}`} style={area ? { top: area.top, height: area.height, bottom: 'auto' } : undefined} onClick={onClose}>
       <div className="sheet" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <div className="row between mb">
           <h2>{title}</h2>

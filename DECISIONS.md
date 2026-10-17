@@ -212,3 +212,4 @@ Choices made while building the app, with the reason for each.
 - One kind per block: the first exercise sets the format (`countAs`: sets_reps, or Tabata unless a timer is already set), and the picker filters by `exerciseCountBy`. Empty blocks show no counting step.
 - Existing blocks are never converted automatically (that would silently change workouts): a mismatch shows a notice with a one-tap switch, applied only on Save.
 - Timed exercises in AMRAP / For Time / EMOM store a time per round or interval in `durationSec`.
+- **Sheets and the iPhone keyboard:** iOS does not shrink the page when the keyboard opens, so a sheet fixed to the bottom ended up under it. `Sheet` follows `window.visualViewport` (offsetTop and height, updated on resize/scroll) and places its backdrop over the visible area only; the sheet then sits right above the keyboard with at most 96 % of the remaining height. Without `visualViewport` it behaves as before.

@@ -825,6 +825,10 @@ button.chip[aria-pressed='true'] {
   padding: 16px 16px calc(16px + var(--safe-bottom));
   animation: slide-up 0.2s ease;
 }
+.sheet-backdrop.with-keyboard .sheet {
+  max-height: 96%;
+  padding-bottom: 12px;
+}
 @media (min-width: 700px) {
   .sheet-backdrop {
     align-items: center;
