@@ -62,7 +62,8 @@ export function applyCompleted(
         entry.sets.push({
           exerciseId: entry.exerciseId,
           setNumber: entry.sets.length + 1,
-          reps: isEmom ? p.targetReps : undefined,
+          // Tabata / interval rounds keep the planned (approximate) reps, so they count in the volume.
+          reps: p.targetReps,
           weight: p.targetWeight,
           durationSec: isEmom ? p.targetDurationSec : elapsedSec,
           warmup: p.warmup,
