@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { BodyMap } from '../components/BodyMap';
 import { PageHeader, useToast } from '../components/ui';
+import { exerciseIntensity } from '../lib/muscleLoad';
 import { MUSCLES } from '../data/muscles';
 import { db } from '../db/db';
 import type { Exercise, ExerciseCategory, MuscleId, Tracking } from '../db/types';
@@ -134,6 +136,10 @@ export default function ExerciseEditPage() {
               );
             })}
           </ul>
+          {/* Live preview: updates as muscles are tapped above. */}
+          <div className="mt">
+            <BodyMap values={exerciseIntensity(ex)} compact />
+          </div>
         </fieldset>
         <div className="card">
           <label className="field">
