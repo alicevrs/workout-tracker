@@ -256,3 +256,7 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 
 ## Saved timers in the Timer tab (2026-10-17)
 - Timer tab: after choosing AMRAP, For Time, EMOM or Tabata, a menu at the top lists your saved timers of that type. Picking one fills in its settings, ready for Start timer. The menu shows the saved timer whose settings match the current ones; changing a value afterwards changes only this run, not the saved timer.
+
+## No optional parts (2026-10-18)
+- “Optional” is gone everywhere: no Optional tag in workouts and sessions, no Optional setting for parts, and “Log a past workout” no longer asks which optional blocks were done (it logs every part as planned).
+- During a workout every part has **Skip today** (tap again to include it), so you decide on the day what to leave out.

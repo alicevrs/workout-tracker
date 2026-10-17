@@ -187,18 +187,16 @@ export default function WorkoutPage() {
             <section key={b.id} className="card block-card" aria-label={label} style={b.skipped ? { opacity: 0.5 } : undefined}>
               <div className="card-title">
                 <div style={{ minWidth: 0 }}>
-                  <span className="chip primary">{FORMAT_INFO[b.format].short}</span> {b.optional && <span className="chip">Optional</span>} <strong>{label}</strong>
+                  <span className="chip primary">{FORMAT_INFO[b.format].short}</span> <strong>{label}</strong>
                   <div className="small muted">
                     {describeBlock(performedToBlock(b))}
                     {b.durationSec ? ` · ${formatClock(b.durationSec)} timed` : ''}
                   </div>
                 </div>
                 <div className="row wrap" style={{ justifyContent: 'flex-end' }}>
-                  {b.optional && (
-                    <button className="btn small" onClick={() => updateBlock(b.id, (f) => ({ ...f, skipped: !f.skipped }))} aria-pressed={!b.skipped}>
-                      {b.skipped ? 'Include' : 'Skip today'}
-                    </button>
-                  )}
+                  <button className="btn small" onClick={() => updateBlock(b.id, (f) => ({ ...f, skipped: !f.skipped }))} aria-pressed={!b.skipped}>
+                    {b.skipped ? 'Include' : 'Skip today'}
+                  </button>
                   <button className="btn small" aria-expanded={open} onClick={() => setEditing(open ? null : b.id)} aria-label={open ? 'Close plan editor' : `Edit plan of ${label}`}>
                     <Icon name="edit" /> {open ? 'Close' : 'Plan'}
                   </button>

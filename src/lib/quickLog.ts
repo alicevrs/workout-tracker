@@ -23,13 +23,10 @@ export function completeBlocks(blocks: PerformedBlock[], indexes: number[], star
   return { blocks: out, seconds: (t - startAt) / 1000 };
 }
 
-/**
- * A finished session for a whole program day, ending now (or at `endAt`).
- * Optional blocks are included only if listed in `includeOptional`.
- */
-export function loggedDaySession(program: Program | undefined, day: ProgramDay, opts: { includeOptional?: string[]; endAt?: number } = {}): Session {
+/** A finished session for a whole program day (every block, as planned), ending now (or at `endAt`). */
+export function loggedDaySession(program: Program | undefined, day: ProgramDay, opts: { endAt?: number } = {}): Session {
   const draft = createSession({ program, day, now: 0 });
-  const blocks = draft.blocks.map((b, i) => (b.optional && !opts.includeOptional?.includes(day.blocks[i].id) ? { ...b, skipped: true } : b));
+  const blocks = draft.blocks;
   const idx = blocks.map((b, i) => (b.skipped ? -1 : i)).filter((i) => i >= 0);
   const { seconds } = completeBlocks(blocks, idx, 0);
   const end = opts.endAt ?? Date.now();

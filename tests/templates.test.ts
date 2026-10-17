@@ -78,9 +78,8 @@ describe('my training week, as the timer runs it', () => {
     expect(p.map((x) => `${x.kind}${x.durationSec}`)).toEqual(['work80', 'rest40', 'work80', 'rest40', 'work80', 'rest40', 'work80']);
   });
 
-  it('bulgarian split squat: 8 minutes alternating legs, no rest, optional', () => {
+  it('bulgarian split squat: 8 minutes alternating legs, no rest', () => {
     const b = blockOf('Legs & glutes A', 'Bulgarian split squat');
-    expect(b.optional).toBe(true);
     const p = blockPhases(b, 0).filter((x) => x.kind !== 'prep');
     expect(p.map((x) => x.label)).toEqual(['Right leg', 'Left leg', 'Right leg', 'Left leg', 'Right leg', 'Left leg', 'Right leg', 'Left leg']);
   });
@@ -132,14 +131,12 @@ describe('log as done', () => {
     expect(kcal.kcal).toBeGreaterThan(200);
   });
 
-  it('skips optional blocks unless they were done', () => {
-    const without = loggedDaySession(workout('Legs & glutes A'), day('Legs & glutes A'));
-    const opt = without.blocks.find((b) => b.name === 'Bulgarian split squat')!;
-    expect(opt.skipped).toBe(true);
-    expect(opt.entries[0].sets).toHaveLength(0);
-    const withOpt = loggedDaySession(workout('Legs & glutes A'), day('Legs & glutes A'), { includeOptional: [day('Legs & glutes A').blocks.find((b) => b.name === 'Bulgarian split squat')!.id] });
-    expect(withOpt.blocks.find((b) => b.name === 'Bulgarian split squat')!.entries[0].sets).toHaveLength(8);
-    expect(withOpt.endedAt! - withOpt.startedAt).toBeGreaterThan(without.endedAt! - without.startedAt);
+  it('logs every block, with no optional ones', () => {
+    const s = loggedDaySession(workout('Legs & glutes A'), day('Legs & glutes A'));
+    const b = s.blocks.find((x) => x.name === 'Bulgarian split squat')!;
+    expect(b.skipped).toBeFalsy();
+    expect(b.entries[0].sets).toHaveLength(8);
+    expect(day('Legs & glutes A').blocks.some((x) => x.optional)).toBe(false);
   });
 
   it('logs the hip thrust sets with their own weights and reps', () => {

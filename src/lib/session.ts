@@ -70,7 +70,6 @@ export function blockToPerformed(b: Block): PerformedBlock {
   return {
     id: b.id,
     name: b.name,
-    optional: b.optional,
     format: b.format,
     params: structuredClone(b.params),
     timer: { ...b.timer },

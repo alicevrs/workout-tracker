@@ -11,7 +11,7 @@ import { NumberField } from './ui';
 
 const CONDITIONING: BlockFormat[] = ['tabata', 'amrap', 'emom', 'for_time', 'intervals'];
 
-export function BlockEditor({ block, onChange, hideName, hideOptional }: { block: Block; onChange: (b: Block) => void; hideName?: boolean; hideOptional?: boolean }) {
+export function BlockEditor({ block, onChange, hideName }: { block: Block; onChange: (b: Block) => void; hideName?: boolean }) {
   const profile = useProfile();
   const exercises = useExerciseMap();
   const [picking, setPicking] = useState<null | { replace?: string }>(null);
@@ -264,12 +264,6 @@ export function BlockEditor({ block, onChange, hideName, hideOptional }: { block
         </div>
       </details>
 
-      {!hideOptional && (
-        <label className="check-row">
-          <input type="checkbox" checked={!!block.optional} onChange={(e) => onChange({ ...block, optional: e.target.checked || undefined })} />
-          Optional block (do it only when there is time)
-        </label>
-      )}
       <label className="field">
         Note
         <input value={block.note ?? ''} placeholder="Optional" onChange={(e) => onChange({ ...block, note: e.target.value || undefined })} />

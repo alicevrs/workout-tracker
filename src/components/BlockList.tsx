@@ -62,7 +62,7 @@ export function BlockList({ blocks, onChange, backTo, workoutId }: { blocks: Blo
                 role="button"
                 tabIndex={0}
                 aria-expanded={open}
-                className={`mix-pill block-pill${b.optional ? ' optional' : ''}`}
+                className="mix-pill block-pill"
                 {...handle(bi)}
                 onClick={() => !wasDragged() && (b.templateId ? openLinked(b.templateId) : setOpenBlock(open ? null : b.id))}
                 onKeyDown={(e) => {
@@ -77,7 +77,6 @@ export function BlockList({ blocks, onChange, backTo, workoutId }: { blocks: Blo
                 <span className="mix-pill-text">
                   <span className="mix-pill-name">
                     {b.name ?? FORMAT_INFO[b.format].label}
-                    {b.optional && <span className="lib-badge dark">Optional</span>}
                     {b.templateId && <Icon name="link" size={14} title="Training block: changes apply to every workout that uses it" />}
                   </span>
                   <span className="mix-pill-desc">

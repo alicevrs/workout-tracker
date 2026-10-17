@@ -77,7 +77,7 @@ function legsA(): ProgramDay {
         'Bulgarian split squat',
         [entry('bulgarian-split-squat', 'intervals', { targetWeight: 8 })],
         { segments: [seg('Right leg', 'work', 60), seg('Left leg', 'work', 60)], repeats: 4 },
-        { optional: true, note: '4 minutes per leg, alternating every minute, no rest' },
+        { note: '4 minutes per leg, alternating every minute, no rest' },
       ),
       block('timed_sets', 'Leg press', [entry('leg-press', 'timed_sets', { sets: 4, durationSec: 60, restSec: 30, targetWeight: 80 })]),
       timed('Stretching', 'stretching-routine', 5 * 60),
@@ -102,7 +102,7 @@ function legsB(): ProgramDay {
         'Abduction / adduction',
         [entry('hip-abduction-machine', 'intervals', { targetWeight: 60 }), entry('hip-adduction-machine', 'intervals', { targetWeight: 30 })],
         { segments: abAd, repeats: 1 },
-        { optional: true, note: '4 × abduction and 3 × adduction, 1 min each, 15 s to change machine' },
+        { note: '4 × abduction and 3 × adduction, 1 min each, 15 s to change machine' },
       ),
       block(
         'intervals',

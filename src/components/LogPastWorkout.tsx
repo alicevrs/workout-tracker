@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { db } from '../db/db';
 import type { Program, ProgramDay } from '../db/types';
 import { pad, toDateKey } from '../lib/dates';
-import { FORMAT_INFO } from '../lib/program';
 import { loggedDaySession } from '../lib/quickLog';
 import { createSession } from '../lib/session';
 import { Icon } from './Icon';
@@ -41,7 +40,6 @@ export function LogPastWorkout({
   const [date, setDate] = useState(initialDate ?? toDateKey(Date.now()));
   const [time, setTime] = useState('');
   const [choice, setChoice] = useState<string>(fixedDay?.id ?? '');
-  const [include, setInclude] = useState<string[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -49,18 +47,16 @@ export function LogPastWorkout({
     const now = new Date();
     setTime(`${pad(now.getHours())}:${pad(now.getMinutes())}`);
     setChoice(fixedDay?.id ?? '');
-    setInclude([]);
   }, [open, initialDate, fixedDay?.id]);
 
   const picked = days.find((d) => d.day.id === choice);
-  const optional = picked?.day.blocks.filter((b) => b.optional) ?? [];
   const today = toDateKey(Date.now());
   const endAt = Math.min(at(date, time), Date.now());
   const future = date > today;
 
   const logAsPlanned = async () => {
     if (!picked) return;
-    const s = loggedDaySession(picked.program, picked.day, { includeOptional: include, endAt });
+    const s = loggedDaySession(picked.program, picked.day, { endAt });
     await db.sessions.add(s);
     onClose();
     toast(`${picked.day.name} logged`);
@@ -70,11 +66,10 @@ export function LogPastWorkout({
   const enterSets = async () => {
     let s;
     if (picked) {
-      const planned = loggedDaySession(picked.program, picked.day, { includeOptional: include, endAt });
+      const planned = loggedDaySession(picked.program, picked.day, { endAt });
       const fresh = createSession({ program: picked.program, day: picked.day, now: planned.startedAt });
       s = {
         ...fresh,
-        blocks: fresh.blocks.map((b, i) => (b.optional && !include.includes(picked.day.blocks[i].id) ? { ...b, skipped: true } : b)),
         status: 'completed' as const,
         endedAt: planned.endedAt,
       };
@@ -123,19 +118,6 @@ export function LogPastWorkout({
         </div>
       )}
 
-      {optional.length > 0 && (
-        <div className="mb">
-          <h3 className="small muted" style={{ marginBottom: 6 }}>
-            Optional blocks done
-          </h3>
-          {optional.map((b) => (
-            <label key={b.id} className="check-row">
-              <input type="checkbox" checked={include.includes(b.id)} onChange={(e) => setInclude(e.target.checked ? [...include, b.id] : include.filter((x) => x !== b.id))} />
-              {b.name ?? FORMAT_INFO[b.format].label}
-            </label>
-          ))}
-        </div>
-      )}
 
       {future && (
         <div className="banner warn mb" role="alert">
