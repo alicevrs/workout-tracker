@@ -229,3 +229,7 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Exercises, timers and training blocks (and the exercise picker): the “All” chip is gone. No yellow chip = no filter; tap a chip to filter, tap it again to remove the filter.
 - Training blocks: the “Reps” chip was removed; the second row filters by timer only (AMRAP, For Time, EMOM, Tabata).
 - Empty leftover blocks (“New exercise block” / “New training block” with no exercises, not used by any workout), created by New block before blocks needed a Save, are removed when the app opens.
+
+## Weight × time (2026-10-17)
+- Exercises: “Logged as” now has three options: **Weight × reps**, **Weight × time** and **Time and distance**. Weight is optional in both weight options (leave it empty for bodyweight), so timed exercises with a weight can be tracked and compared by weight.
+- Exercises that were “Reps (bodyweight)” are now Weight × reps; those that were “Time” are now Weight × time (built-in catalogue and your own exercises).

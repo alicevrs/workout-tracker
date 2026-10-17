@@ -24,8 +24,13 @@ export type MuscleId =
 
 export type ExerciseCategory = 'strength' | 'bodyweight' | 'cardio' | 'mobility';
 
-/** What a set of this exercise is usually measured in. Drives which inputs the log shows first. */
-export type Tracking = 'weight_reps' | 'reps' | 'time' | 'time_distance';
+/**
+ * What a set of this exercise is measured in. Drives which inputs the log shows. Weight is always
+ * optional (left empty for bodyweight). Older data may still say 'reps' (= weight_reps) or
+ * 'time' (= weight_time); read it through `trackingOf`.
+ */
+export type Tracking = 'weight_reps' | 'weight_time' | 'time_distance';
+export type LegacyTracking = Tracking | 'reps' | 'time';
 
 export interface Exercise {
   id: string;
@@ -36,7 +41,7 @@ export interface Exercise {
   secondaryMuscles: MuscleId[];
   isCustom: boolean;
   notes?: string;
-  tracking?: Tracking;
+  tracking?: LegacyTracking;
   /** Optional MET override used for calorie estimates (mainly cardio). */
   met?: number;
   /** Built-in exercise changed by the user: kept when the catalogue is refreshed, and synced. */

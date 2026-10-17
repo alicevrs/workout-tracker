@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Exercise, PerformedBlock, PerformedEntry, SetRecord, WeightUnit } from '../db/types';
 import { formatClock, formatShortDate } from '../lib/dates';
 import { plannedSet } from '../lib/session';
+import { trackingOf } from '../db/repo';
 import { compareSet, isDone } from '../lib/stats';
 import { fromDisplayWeight, toDisplayWeight } from '../lib/units';
 import { Icon } from './Icon';
@@ -11,13 +12,13 @@ export type PrevLookup = (exerciseId: string) => { date: number; sets: SetRecord
 
 type Col = 'weight' | 'reps' | 'time' | 'distance';
 
-function columnsFor(ex: Exercise | undefined, entry: PerformedEntry, format: PerformedBlock['format']): Col[] {
-  const tracking = ex?.tracking ?? 'weight_reps';
+export function columnsFor(ex: Exercise | undefined, entry: PerformedEntry, format: PerformedBlock['format']): Col[] {
+  const tracking = trackingOf(ex);
   const planned = entry.planned;
   const cols: Col[] = [];
   const anyWeight = entry.sets.some((s) => s.weight) || !!planned?.targetWeight;
-  const timeBased = tracking === 'time' || tracking === 'time_distance' || format === 'tabata' || format === 'intervals' || format === 'timed_sets' || (!!planned?.durationSec && !planned?.reps);
-  if (tracking === 'weight_reps' || anyWeight) cols.push('weight');
+  const timeBased = tracking === 'weight_time' || tracking === 'time_distance' || format === 'tabata' || format === 'intervals' || format === 'timed_sets' || (!!planned?.durationSec && !planned?.reps);
+  if (tracking !== 'time_distance' || anyWeight) cols.push('weight');
   if (!timeBased || planned?.reps || entry.sets.some((s) => s.reps)) cols.push('reps');
   if (timeBased || entry.sets.some((s) => s.durationSec)) cols.push('time');
   if (tracking === 'time_distance') cols.push('distance');

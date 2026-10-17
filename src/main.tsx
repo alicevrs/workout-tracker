@@ -6,7 +6,7 @@ import { db } from './db/db';
 import { migrateProgramsToWorkouts } from './lib/workouts';
 import { timersFromBlocksOnce } from './lib/timerTemplates';
 import { removeEmptyBlocks } from './lib/blockTemplates';
-import { ensureSeeded, getSettings, requestPersistentStorage, saveSettings } from './db/repo';
+import { ensureSeeded, getSettings, migrateTracking, requestPersistentStorage, saveSettings } from './db/repo';
 import { ToastProvider } from './components/ui';
 import { startSync } from './lib/sync/sync';
 import '@fontsource/inter/latin-400.css';
@@ -20,6 +20,7 @@ import './styles.css';
 async function boot() {
   try {
     await ensureSeeded();
+    await migrateTracking();
     await migrateProgramsToWorkouts(db);
     await timersFromBlocksOnce(db);
     await removeEmptyBlocks(db);

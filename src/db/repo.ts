@@ -1,10 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import seedExercises from '../data/exercises.json';
 import { db } from './db';
-import type { Exercise, Profile, Settings } from './types';
+import type { Exercise, Profile, Settings, Tracking } from './types';
 
 /** Bump when the bundled exercise catalog changes so existing installs get the update. */
-export const SEED_VERSION = 3;
+export const SEED_VERSION = 4;
 
 export const DEFAULT_PROFILE: Profile = {
   sex: 'unspecified',
@@ -68,6 +68,19 @@ export function useSettings(): Settings {
 
 export function useExercises(): Exercise[] | undefined {
   return useLiveQuery(() => db.exercises.orderBy('name').toArray(), []);
+}
+
+/** How an exercise is logged, with the older values mapped to the current ones. */
+export function trackingOf(e: Pick<Exercise, 'tracking'> | undefined): Tracking {
+  const t = e?.tracking;
+  return t === 'time' || t === 'weight_time' ? 'weight_time' : t === 'time_distance' ? 'time_distance' : 'weight_reps';
+}
+
+/** Rewrite the user's own exercises that still use the older tracking values. Returns how many changed. */
+export async function migrateTracking(database = db): Promise<number> {
+  const old = await database.exercises.filter((e) => e.tracking === 'reps' || e.tracking === 'time').toArray();
+  if (old.length) await database.exercises.bulkPut(old.map((e) => ({ ...e, tracking: trackingOf(e) })));
+  return old.length;
 }
 
 /** Exercises to choose from (built-ins the user deleted are left out). */

@@ -52,3 +52,21 @@ describe('where items are used', () => {
     expect((await workoutsUsingBlock(db, bt.id)).map((p) => p.name)).toEqual(['Upper']);
   });
 });
+
+describe('how exercises are logged', () => {
+  it('has three options; older “reps” and “time” become weight × reps and weight × time', async () => {
+    const { trackingOf, migrateTracking, SEED_EXERCISES } = await import('../src/db/repo');
+    expect(trackingOf({ tracking: 'reps' })).toBe('weight_reps');
+    expect(trackingOf({ tracking: 'time' })).toBe('weight_time');
+    expect(trackingOf({})).toBe('weight_reps');
+    expect(new Set(SEED_EXERCISES.map((e) => e.tracking))).toEqual(new Set(['weight_reps', 'weight_time', 'time_distance']));
+    const db = await freshDb();
+    await db.exercises.bulkPut([
+      { id: 'custom-a', name: 'A', category: 'strength', equipment: 'none', primaryMuscles: ['abs'], secondaryMuscles: [], isCustom: true, tracking: 'time' },
+      { id: 'custom-b', name: 'B', category: 'bodyweight', equipment: 'none', primaryMuscles: ['abs'], secondaryMuscles: [], isCustom: true, tracking: 'reps' },
+    ]);
+    expect(await migrateTracking(db)).toBe(2);
+    expect((await db.exercises.get('custom-a'))!.tracking).toBe('weight_time');
+    expect((await db.exercises.get('custom-b'))!.tracking).toBe('weight_reps');
+  });
+});

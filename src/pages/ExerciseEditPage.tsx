@@ -4,6 +4,7 @@ import { PageHeader, useToast } from '../components/ui';
 import { MUSCLES } from '../data/muscles';
 import { db } from '../db/db';
 import type { Exercise, ExerciseCategory, MuscleId, Tracking } from '../db/types';
+import { trackingOf } from '../db/repo';
 import { uid } from '../lib/ids';
 
 const EMPTY: Exercise = {
@@ -101,10 +102,9 @@ export default function ExerciseEditPage() {
           </label>
           <label className="field full">
             Logged as
-            <select value={ex.tracking ?? 'weight_reps'} onChange={(e) => set('tracking', e.target.value as Tracking)}>
+            <select value={trackingOf(ex)} onChange={(e) => set('tracking', e.target.value as Tracking)}>
               <option value="weight_reps">Weight × reps</option>
-              <option value="reps">Reps (bodyweight)</option>
-              <option value="time">Time</option>
+              <option value="weight_time">Weight × time</option>
               <option value="time_distance">Time and distance</option>
             </select>
           </label>
