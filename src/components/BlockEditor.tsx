@@ -163,7 +163,7 @@ export function BlockEditor({ block, onChange, hideName, hideOptional }: { block
                 {block.format === 'timed_sets' ? (
                   <NumberField label="Duration" suffix="s" value={e.durationSec} onChange={(v) => setEntry(e.id, { durationSec: v })} inputMode="numeric" />
                 ) : (
-                  <NumberField label={conditioning ? 'Reps per round' : 'Reps'} value={e.reps} onChange={(v) => setEntry(e.id, { reps: v })} inputMode="numeric" />
+                  <NumberField label={conditioning ? 'Reps per round' : 'Reps'} placeholder="none" value={e.reps} onChange={(v) => setEntry(e.id, { reps: v })} inputMode="numeric" />
                 )}
                 <NumberField
                   label="Weight"
@@ -386,10 +386,10 @@ export function SetTargetsEditor({
                 {perInterval ? 'Int.' : 'Set'} {i + 1}
               </span>
               <div style={{ width: 80 }}>
-                <NumberField label={r.toFailure ? 'Min reps' : 'Reps'} value={r.reps} onChange={(v) => set(i, { reps: v })} inputMode="numeric" />
+                <NumberField label={r.toFailure ? 'Min reps' : 'Reps'} placeholder="none" value={r.reps} onChange={(v) => set(i, { reps: v })} inputMode="numeric" />
               </div>
               <div style={{ width: 90 }}>
-                <NumberField label={`Weight (${unit})`} value={toDisplayWeight(r.weight, unit)} onChange={(v) => set(i, { weight: fromDisplayWeight(v, unit) })} />
+                <NumberField label={`Weight (${unit})`} placeholder="none" value={toDisplayWeight(r.weight, unit)} onChange={(v) => set(i, { weight: fromDisplayWeight(v, unit) })} />
               </div>
               <label className="check-row small" style={{ minHeight: 40 }}>
                 <input type="checkbox" checked={!!r.warmup} onChange={(e) => set(i, { warmup: e.target.checked || undefined })} /> Warm-up

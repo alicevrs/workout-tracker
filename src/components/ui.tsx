@@ -139,6 +139,8 @@ export function NumberField({
     }
   };
   const bump = (dir: 1 | -1) => {
+    // Fields that can be empty (they show a placeholder such as “none”): minus past the lowest value empties them.
+    if (dir === -1 && placeholder && value !== undefined && value - step <= min) return commit('');
     const base = value ?? 0;
     let next = Math.round((base + dir * step) * 1000) / 1000;
     if (next < min) next = min;
