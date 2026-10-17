@@ -122,7 +122,32 @@ describe('count by follows the exercises', () => {
     expect(exerciseCountBy(map.get('push-up'))).toBe('reps');
     expect(exerciseCountBy(map.get('dead-hang'))).toBe('time');
     const empty = newBlockTemplate().block;
-    expect(blockKind(empty, map)).toBeNull();
+    expect(blockKind(empty, map)).toBe('reps');
     expect(blockKind(addExercise(empty, 'dead-hang', 60), map)).toBe('time');
+  });
+});
+
+describe('log as belongs to the training block', () => {
+  it('older blocks and workout parts take it from their first exercise, once', async () => {
+    const { migrateBlockLogAs, addExercise, linkedBlock, blockLogAs } = await import('../src/lib/blockTemplates');
+    const { newProgram } = await import('../src/lib/program');
+    const db = await freshDb();
+    const hang = newBlockTemplate('tabata');
+    hang.block = addExercise(hang.block, 'dead-hang', 60);
+    const push = newBlockTemplate();
+    push.block = addExercise(push.block, 'push-up', 60);
+    const empty = newBlockTemplate();
+    await db.blockTemplates.bulkAdd([hang, push, empty]);
+    const p = newProgram('W');
+    p.days[0].blocks = [linkedBlock(hang)];
+    await db.programs.add(p);
+    expect(await migrateBlockLogAs(db)).toBe(3);
+    expect((await db.blockTemplates.get(hang.id))!.block.logAs).toBe('weight_time');
+    expect((await db.blockTemplates.get(push.id))!.block.logAs).toBe('weight_reps');
+    expect((await db.blockTemplates.get(empty.id))!.block.logAs).toBeUndefined();
+    expect((await db.programs.get(p.id))!.days[0].blocks[0].logAs).toBe('weight_time');
+    expect(await migrateBlockLogAs(db)).toBe(0);
+    // A block's own choice wins over its exercises.
+    expect(blockLogAs({ ...push.block, logAs: 'time_distance' }, new Map())).toBe('time_distance');
   });
 });

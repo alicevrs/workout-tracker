@@ -267,3 +267,8 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Training blocks: for Time × distance exercises step 3 asks **Incline (%)** and **Speed (km/h)** instead of weight and reps. The timer shows them next to the exercise while you train.
 - The reps field of timed blocks is now just “Reps” (no “approx.”).
 - Time × distance exercises in training blocks also have a **Distance (km)** target, next to incline and speed (shown in the timer too).
+
+## Log as moves to the training block (2026-10-18)
+- “Logged as” is no longer set on the exercise. It is now step 2 of a training block, **Log as**: Weight × reps, Weight × time or Time × distance. It decides how the block is counted and which targets it asks for, and the workout log shows the matching columns.
+- Existing training blocks and workout parts got the Log as of their first exercise automatically, so nothing needs to be redone.
+- Add exercise: the search box starts empty every time (the previous search is not kept), and the list shows all exercises again.

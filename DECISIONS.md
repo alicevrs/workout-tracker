@@ -221,3 +221,9 @@ Choices made while building the app, with the reason for each.
 - Optional number fields (those with a “none” placeholder: reps and weight in block targets) go to empty when − would reach the minimum, instead of stopping at 0; an empty reps target means an open-ended set (tap Done).
 - **Saved timers in the Timer tab:** a select above the fields lists saved timers of the open format; choosing one copies its settings into the tab's remembered settings (still not logged, and edits there never change the saved timer). The select shows a saved timer only while the current settings match it. Not offered in Mix.
 - Time × distance targets: `ExerciseEntry.incline` (%), `speedKmh` and `distanceKm`, all optional, shown in the timer as part of the exercise note (“5% incline · 6 km/h · 2 km”). Weight and reps are not asked for these exercises (user's choice), even for carries or sled pushes in the catalogue; their tracking can be changed in the exercise if a weight is needed.
+
+## Log as belongs to the block
+- User's choice: how exercises are logged is a property of the training block (`Block.logAs`, copied to `PerformedBlock.logAs`), not of the exercise. The exercise form no longer shows it; `Exercise.tracking` stays in the data only as a fallback for older sessions and free workouts (`columnsFor` uses the block's value first).
+- `blockLogAs` = the block's value, else its first exercise's (older data), else Weight × reps. `migrateBlockLogAs` runs at every start and fills `logAs` on blocks and workout parts that have exercises but none yet (idempotent; both devices compute the same value, so sync agrees).
+- Changing Log as adapts the counting like before: by reps keeps a saved timer or switches to sets × reps; by time switches sets × reps to a timer (Tabata). Since any exercise can now be logged either way, the exercise picker no longer filters by kind.
+- The exercise picker clears its search whenever it opens.

@@ -167,6 +167,8 @@ export interface Block {
   templateId?: string;
   /** Training block whose timer comes from a saved timer: it follows that timer's changes. */
   timerId?: string;
+  /** How the block's exercises are logged (chosen in the training block). Missing on older data: see `blockLogAs`. */
+  logAs?: Tracking;
 }
 
 export interface ProgramDay {
@@ -259,6 +261,8 @@ export interface PerformedBlock {
   format: BlockFormat;
   params: BlockParams;
   timer: TimerOptions;
+  /** Copied from the planned block: which columns the set log shows. */
+  logAs?: Tracking;
   entries: PerformedEntry[];
   note?: string;
   /** AMRAP / For Time / EMOM results. */

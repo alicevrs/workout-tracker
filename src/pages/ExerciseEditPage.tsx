@@ -5,8 +5,7 @@ import { PageHeader, useToast } from '../components/ui';
 import { exerciseIntensity } from '../lib/muscleLoad';
 import { MUSCLES } from '../data/muscles';
 import { db } from '../db/db';
-import type { Exercise, ExerciseCategory, MuscleId, Tracking } from '../db/types';
-import { trackingOf } from '../db/repo';
+import type { Exercise, ExerciseCategory, MuscleId } from '../db/types';
 import { uid } from '../lib/ids';
 
 const EMPTY: Exercise = {
@@ -102,14 +101,6 @@ export default function ExerciseEditPage() {
               {[...new Set([...EQUIPMENT, ex.equipment])].map((q) => (
                 <option key={q}>{q}</option>
               ))}
-            </select>
-          </label>
-          <label className="field full">
-            Logged as
-            <select value={trackingOf(ex)} onChange={(e) => set('tracking', e.target.value as Tracking)}>
-              <option value="weight_reps">Weight × reps</option>
-              <option value="weight_time">Weight × time</option>
-              <option value="time_distance">Time × distance</option>
             </select>
           </label>
         </div>

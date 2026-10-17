@@ -12,8 +12,9 @@ export type PrevLookup = (exerciseId: string) => { date: number; sets: SetRecord
 
 type Col = 'weight' | 'reps' | 'time' | 'distance';
 
-export function columnsFor(ex: Exercise | undefined, entry: PerformedEntry, format: PerformedBlock['format']): Col[] {
-  const tracking = trackingOf(ex);
+export function columnsFor(ex: Exercise | undefined, entry: PerformedEntry, format: PerformedBlock['format'], logAs?: PerformedBlock['logAs']): Col[] {
+  // The block decides how its exercises are logged; older sessions fall back to the exercise.
+  const tracking = logAs ?? trackingOf(ex);
   const planned = entry.planned;
   const cols: Col[] = [];
   const anyWeight = entry.sets.some((s) => s.weight) || !!planned?.targetWeight;
@@ -71,6 +72,7 @@ export function SetLogger({
   entry,
   exercise,
   format,
+  logAs,
   unit,
   prev,
   update,
@@ -78,12 +80,13 @@ export function SetLogger({
   entry: PerformedEntry;
   exercise: Exercise | undefined;
   format: PerformedBlock['format'];
+  logAs?: PerformedBlock['logAs'];
   unit: WeightUnit;
   prev: { date: number; sets: SetRecord[] } | null;
   /** Functional update applied to the latest stored entry, so quick taps never overwrite each other. */
   update: (fn: (e: PerformedEntry) => PerformedEntry) => void;
 }) {
-  const cols = columnsFor(exercise, entry, format);
+  const cols = columnsFor(exercise, entry, format, logAs);
   const setSet = (i: number, patch: Partial<SetRecord> | ((s: SetRecord) => Partial<SetRecord>)) =>
     update((e) => ({ ...e, sets: e.sets.map((s, k) => (k === i ? { ...s, ...(typeof patch === 'function' ? patch(s) : patch) } : s)) }));
   const grid = `34px ${cols.map(() => 'minmax(0,1fr)').join(' ')} 48px`;

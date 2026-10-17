@@ -1,27 +1,29 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MUSCLE_LABEL } from '../data/muscles';
 import { useVisibleExercises } from '../db/repo';
-import { exerciseCountBy, type CountBy } from '../lib/blockTemplates';
 import type { ExerciseCategory } from '../db/types';
 import { Sheet } from './ui';
 
-export function ExercisePicker({ open, onClose, onPick, only }: { open: boolean; onClose: () => void; onPick: (id: string) => void; /** Only exercises counted this way. */ only?: CountBy }) {
+export function ExercisePicker({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (id: string) => void }) {
   const exercises = useVisibleExercises();
   const [q, setQ] = useState('');
   const [cat, setCat] = useState<ExerciseCategory | 'all'>('all');
+  // Every search starts empty (the previous one is not kept).
+  useEffect(() => {
+    if (open) setQ('');
+  }, [open]);
   const list = useMemo(() => {
     const query = q.trim().toLowerCase();
     return (exercises ?? []).filter(
       (e) =>
         (cat === 'all' || e.category === cat) &&
-        (!only || exerciseCountBy(e) === only) &&
         (!query ||
           e.name.toLowerCase().includes(query) ||
           e.primaryMuscles.some((m) => MUSCLE_LABEL[m].toLowerCase().includes(query)) ||
           e.equipment.includes(query)),
     );
-  }, [exercises, q, cat, only]);
+  }, [exercises, q, cat]);
 
   return (
     <Sheet open={open} onClose={onClose} title="Add exercise">

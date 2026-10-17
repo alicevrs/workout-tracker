@@ -8,7 +8,7 @@
 
 import type { WorkoutDB } from '../db/db';
 import { trackingOf } from '../db/repo';
-import type { Block, BlockFormat, BlockParams, BlockTemplate, Exercise, ExerciseEntry, Grouping } from '../db/types';
+import type { Block, BlockFormat, BlockParams, BlockTemplate, Exercise, ExerciseEntry, Grouping, Tracking } from '../db/types';
 import { uid } from './ids';
 import { cloneBlock, defaultParams, FORMAT_INFO, newBlock, newEntry } from './program';
 import type { QuickTimer } from './timer/quick';
@@ -116,10 +116,54 @@ export const countByOf = (b: Block): CountBy => (b.format === 'sets_reps' ? 'rep
 /** How an exercise is counted in a block: by reps (Weight × reps) or by time (Weight × time, Time and distance). */
 export const exerciseCountBy = (e: Pick<Exercise, 'tracking'> | undefined): CountBy => (trackingOf(e) === 'weight_reps' ? 'reps' : 'time');
 
-/** How a block must be counted, from its first exercise (a block holds one kind only); null without exercises. */
-export function blockKind(b: Block, exercises: Map<string, Exercise>): CountBy | null {
+/** How a block's exercises are logged: chosen in the block; older blocks take it from their first exercise. */
+export function blockLogAs(b: Block, exercises: Map<string, Exercise>): Tracking {
+  if (b.logAs) return b.logAs;
   const first = b.entries[0];
-  return first ? exerciseCountBy(exercises.get(first.exerciseId)) : null;
+  return first ? trackingOf(exercises.get(first.exerciseId)) : 'weight_reps';
+}
+
+/** Reps (Weight × reps) or time (Weight × time, Time × distance). */
+export const logCountBy = (t: Tracking): CountBy => (t === 'weight_reps' ? 'reps' : 'time');
+
+/** How a block must be counted, from how it is logged. */
+export function blockKind(b: Block, exercises: Map<string, Exercise>): CountBy {
+  return logCountBy(blockLogAs(b, exercises));
+}
+
+/**
+ * One-time move of “Logged as” from exercises to blocks: every training block and workout part
+ * with exercises but no `logAs` gets the one of its first exercise. Returns how many were set.
+ */
+export async function migrateBlockLogAs(db: WorkoutDB): Promise<number> {
+  const exercises = new Map((await db.exercises.toArray()).map((e) => [e.id, e]));
+  const fill = (b: Block): Block => (b.logAs || !b.entries.length ? b : { ...b, logAs: blockLogAs(b, exercises) });
+  let n = 0;
+  await db.transaction('rw', db.blockTemplates, db.programs, async () => {
+    for (const t of await db.blockTemplates.toArray()) {
+      const block = fill(t.block);
+      if (block !== t.block) {
+        n++;
+        await db.blockTemplates.put({ ...t, block, updatedAt: Date.now() });
+      }
+    }
+    for (const p of await db.programs.toArray()) {
+      let changed = false;
+      const days = p.days.map((d) => ({
+        ...d,
+        blocks: d.blocks.map((b) => {
+          const next = fill(b);
+          if (next !== b) changed = true;
+          return next;
+        }),
+      }));
+      if (changed) {
+        n++;
+        await db.programs.put({ ...p, days, updatedAt: Date.now() });
+      }
+    }
+  });
+  return n;
 }
 
 /** Settings the simple editor cannot show (intervals, drop sets, mixed groups): use the full editor. */

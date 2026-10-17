@@ -74,6 +74,7 @@ export function blockToPerformed(b: Block): PerformedBlock {
     params: structuredClone(b.params),
     timer: { ...b.timer },
     note: b.note,
+    logAs: b.logAs,
     entries: b.entries.map((e) => entryToPerformed(e, b.format)),
   };
 }
@@ -87,6 +88,7 @@ export function performedToBlock(pb: PerformedBlock): Block {
     params: structuredClone(pb.params),
     timer: { ...pb.timer },
     note: pb.note,
+    logAs: pb.logAs,
     entries: pb.entries.map(
       (e) =>
         e.planned ?? {
@@ -130,6 +132,7 @@ export function applyBlockEdit(pb: PerformedBlock, edited: Block): PerformedBloc
     params: structuredClone(edited.params),
     timer: { ...edited.timer },
     note: edited.note,
+    logAs: edited.logAs,
     entries,
   };
 }

@@ -9,14 +9,15 @@ import { ClockPick, Line, Pick, TimerFields, mins } from '../components/TimerFie
 import { EmptyState, NumberField, PageHeader, Segmented, useToast } from '../components/ui';
 import { getDraft, setDraft, useDraft, withDraftParam } from '../lib/drafts';
 import { db } from '../db/db';
-import { trackingOf, useExerciseMap, useProfile } from '../db/repo';
-import type { Block, BlockFormat, BlockTemplate, ExerciseEntry, Program } from '../db/types';
+import { useExerciseMap, useProfile } from '../db/repo';
+import type { Block, BlockFormat, BlockTemplate, ExerciseEntry, Program, Tracking } from '../db/types';
 import { useDragReorder } from '../hooks/useDragReorder';
 import {
   addExercise,
   blockKind,
+  blockLogAs,
   countByOf,
-  exerciseCountBy,
+  logCountBy,
   hasStructure,
   linkedBlock,
   NEW_BLOCK_NAME,
@@ -54,6 +55,12 @@ function unlinkTimer(b: Block): Block {
   delete next.timerId;
   return next;
 }
+
+const LOG_AS: { value: Tracking; label: string }[] = [
+  { value: 'weight_reps', label: 'Weight × reps' },
+  { value: 'weight_time', label: 'Weight × time' },
+  { value: 'time_distance', label: 'Time × distance' },
+];
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
@@ -141,8 +148,18 @@ export default function ExerciseTemplateEditPage() {
 
   const b = tpl.block;
   const linkedTimer = b.timerId ? timers.find((t) => t.id === b.timerId) : undefined;
-  // How the block is counted follows its exercises (Logged as): reps, or time with a timer.
+  // How the block is logged (chosen in step 2) decides how it is counted: reps, or time with a timer.
+  const logAs = blockLogAs(b, exercises);
   const kind = blockKind(b, exercises);
+  // Step numbers: 1 exercises, 2 log as, then (with several exercises) how they are combined, counting, targets.
+  const combineN = 3;
+  const countN = b.entries.length > 1 ? 4 : 3;
+  const targetsN = countN + 1;
+  const setLogAs = (t: Tracking) => {
+    const next: Block = { ...b, logAs: t };
+    if (logCountBy(t) === 'reps') setBlock(countByOf(next) === 'time' && !next.timerId ? countAs(next, 'reps') : next);
+    else setBlock(countByOf(next) === 'reps' ? countAs(next, 'time') : next);
+  };
   const countBy = countByOf(b);
   // Reps exercises: sets and rest set here, or a saved timer (which then sets the number of sets).
   // Timed exercises: always a timer. Older blocks that break this show a notice with a fix.
@@ -151,8 +168,8 @@ export default function ExerciseTemplateEditPage() {
   const total = estimateBlockSeconds(b);
   const autoName = (block: Block) => block.entries.map((e) => exercises.get(e.exerciseId)?.name ?? '').filter(Boolean).join(' / ');
   const nameIsAuto = tpl.name === NEW_BLOCK_NAME || tpl.name === OLD_BLOCK_NAME || tpl.name === autoName(b);
-  /** Time × distance exercise: targets are incline and speed instead of weight and reps. */
-  const distanceEx = (e: ExerciseEntry) => trackingOf(exercises.get(e.exerciseId)) === 'time_distance';
+  /** Time × distance block: targets are incline, speed and distance instead of weight and reps. */
+  const distanceEx = (_e: ExerciseEntry) => logAs === 'time_distance';
   /** Targets set per set / interval: the exercise's own reps and weight are not used. */
   const perSet = (e: ExerciseEntry) => !!e.setTargets?.length;
   /** EMOM: intervals that go to the i-th exercise (they take turns). */
@@ -178,9 +195,9 @@ export default function ExerciseTemplateEditPage() {
           <InfoButton title="Training blocks">
             <p style={{ margin: 0 }}>A block is a ready-made piece of a workout. Build it in order:</p>
             <p style={{ margin: 0 }}>
-              <strong>1.</strong> pick the exercises from the catalogue; <strong>2.</strong> with more than one, choose how they are combined; <strong>3.</strong> set how it is
-              counted: exercises logged by reps use sets and rest set here, or a saved timer that sets the number of sets; exercises logged by time always use a timer (this
-              follows “Logged as” of the exercises, and a block holds only one of the two kinds); <strong>4.</strong> add reps or times and weights; then notes if you like.
+              <strong>1.</strong> pick the exercises from the catalogue; <strong>2.</strong> choose how they are logged (weight × reps, weight × time or time × distance);
+              then, with more than one exercise, how they are combined; how it is counted: by reps with sets and rest set here or a saved timer that sets the number of sets, by
+              time always with a timer; finally the targets (reps and weight, or incline, speed and distance); then notes if you like.
             </p>
             <p style={{ margin: 0 }}>Changes are kept only when you tap Save. Workouts that use this block then follow from their next session; workouts already done stay as they were.</p>
           </InfoButton>
@@ -222,8 +239,20 @@ export default function ExerciseTemplateEditPage() {
           </button>
         </Step>
 
+        {b.entries.length > 0 && (
+          <Step n={2} title="Log as">
+            <div className="row wrap" role="group" aria-label="Log as" style={{ gap: 8 }}>
+              {LOG_AS.map((o) => (
+                <button key={o.value} className="chip" aria-pressed={logAs === o.value} onClick={() => setLogAs(o.value)}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </Step>
+        )}
+
         {b.entries.length > 1 && (
-          <Step n={2} title="How they are combined">
+          <Step n={combineN} title="How they are combined">
             {structured ? (
               <>
                 <Segmented<Structure>
@@ -249,13 +278,13 @@ export default function ExerciseTemplateEditPage() {
         )}
 
         {b.entries.length > 0 && (
-        <Step n={b.entries.length > 1 ? 3 : 2} title={kind === 'time' ? 'Count by time' : 'Count by reps'}>
+        <Step n={countN} title={kind === 'time' ? 'Count by time' : 'Count by reps'}>
           {mismatch && (
             <div className="banner">
               <p className="small" style={{ margin: 0 }}>
                 {kind === 'reps'
                   ? 'This block uses a timer that is not one of your saved timers. Choose a saved timer, or set sets and rest here.'
-                  : 'These exercises are logged by time, but this block still uses sets and reps.'}
+                  : 'This block is logged by time, but it still uses sets and reps.'}
               </p>
               <button className="btn small mt-s" onClick={() => kind && setBlock(countAs(b, kind))}>
                 {kind === 'reps' ? 'Set sets and rest here' : 'Count by time'}
@@ -324,7 +353,7 @@ export default function ExerciseTemplateEditPage() {
 
         {b.entries.length > 0 && (
           <Step
-            n={b.entries.length > 1 ? 4 : 3}
+            n={targetsN}
             title={
               b.entries.every(distanceEx) ? 'Incline, speed and distance' : b.format === 'timed_sets' ? 'Time and weight' : b.format === 'tabata' || kind === 'time' ? 'Weight and reps' : 'Reps and weight'
             }
@@ -400,15 +429,14 @@ export default function ExerciseTemplateEditPage() {
       <ExercisePicker
         open={picking}
         onClose={() => setPicking(false)}
-        only={kind ?? undefined}
         onPick={(exerciseId) => {
           const cur = current();
           if (!cur) return;
-          // The first exercise decides how the block is counted.
-          const block = cur.block.entries.length ? cur.block : countAs(cur.block, exerciseCountBy(exercises.get(exerciseId)));
+          // The block keeps its own “Log as” (Weight × reps for a new block).
+          const block: Block = cur.block.logAs ? cur.block : { ...cur.block, logAs: cur.block.entries.length ? blockLogAs(cur.block, exercises) : 'weight_reps' };
           const added = addExercise(block, exerciseId, profile.defaultRestSec);
-          // Timed exercises: reps are an optional estimate, so they start empty.
-          if (exerciseCountBy(exercises.get(exerciseId)) === 'time') added.entries[added.entries.length - 1] = { ...added.entries[added.entries.length - 1], reps: undefined };
+          // Timed blocks: reps are an optional estimate, so they start empty.
+          if (logCountBy(block.logAs!) === 'time') added.entries[added.entries.length - 1] = { ...added.entries[added.entries.length - 1], reps: undefined };
           changeEntries(added);
         }}
       />

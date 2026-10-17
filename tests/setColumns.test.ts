@@ -19,3 +19,11 @@ describe('log columns per exercise', () => {
     expect(columnsFor(ex('time_distance'), entry({ durationSec: 600 }), 'sets_reps')).toEqual(['time', 'distance']);
   });
 });
+
+describe('log columns follow the block', () => {
+  it('the block log type wins over the exercise', () => {
+    const ex = { id: 'x', name: 'X', category: 'strength', equipment: 'none', primaryMuscles: [], secondaryMuscles: [], isCustom: true, tracking: 'weight_reps' } as Exercise;
+    const entry: PerformedEntry = { id: 'e', exerciseId: 'x', planned: { id: 'e', exerciseId: 'x', sets: 3, restSec: 60, grouping: 'none', durationSec: 40 }, sets: [] };
+    expect(columnsFor(ex, entry, 'sets_reps', 'weight_time')).toEqual(['weight', 'time']);
+  });
+});
