@@ -1,11 +1,13 @@
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useRef, useState } from 'react';
+import { db } from '../db/db';
 import { Icon } from '../components/Icon';
 import { Pick, TimerFields } from '../components/TimerFields';
 import { clearTimerRun, hasActiveRun, TimerScreen } from '../components/TimerScreen';
 import { InfoButton } from '../components/Library';
 import { PageHeader, Sheet } from '../components/ui';
 import { useProfile } from '../db/repo';
-import type { Session } from '../db/types';
+import type { Session, TimerTemplate } from '../db/types';
 import { blockToPerformed, createSession } from '../lib/session';
 import { timerAudio } from '../lib/timer/audio';
 import { useDragReorder } from '../hooks/useDragReorder';
@@ -71,12 +73,49 @@ function storeSaved(s: Saved) {
   }
 }
 
+/** Same settings? (sets only count when there is more than one) */
+function sameTimer(a: QuickTimer, b: QuickTimer): boolean {
+  const norm = (q: QuickTimer) => {
+    const sets = (q.sets ?? 1) > 1;
+    return JSON.stringify([q.kind, q.minutes ?? null, q.everySec ?? null, q.rounds ?? null, q.workSec ?? null, q.restSec ?? null, sets ? q.sets : 1, sets ? q.setRestSec ?? null : null]);
+  };
+  return norm(a) === norm(b);
+}
+
+/** Pick one of the timers saved in Workouts → Timers: its settings fill the fields, ready to start. */
+function SavedTimerPick({ timers, current, onPick }: { timers: TimerTemplate[]; current: QuickTimer; onPick: (q: QuickTimer) => void }) {
+  if (!timers.length) return null;
+  const match = timers.find((t) => sameTimer(t.timer, current));
+  return (
+    <label className="field qt-saved">
+      <span className="sr-only">Saved timer</span>
+      <select
+        value={match?.id ?? ''}
+        onChange={(e) => {
+          const t = timers.find((x) => x.id === e.target.value);
+          if (t) onPick({ ...t.timer, sets: t.timer.sets ?? 1, setRestSec: t.timer.setRestSec ?? current.setRestSec });
+        }}
+      >
+        <option value="" disabled>
+          Saved timers
+        </option>
+        {timers.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 export default function TimerPage() {
   const profile = useProfile();
   const [mode, setMode] = useState<Mode | null>(null);
   const [info, setInfo] = useState<Mode | null>(null);
   const [saved, setSaved] = useState<Saved>(loadSaved);
   const [running, setRunning] = useState<Session | null>(loadActive);
+  const savedTimers = useLiveQuery(() => db.timerTemplates.orderBy('name').toArray(), []) ?? [];
 
   const update = (patch: Partial<Saved>) => {
     const next = { ...saved, ...patch };
@@ -124,7 +163,14 @@ export default function TimerPage() {
           {mode === 'mix' ? (
             <MixEditor mix={mix} onChange={(m) => update({ mix: m })} />
           ) : (
-            <TimerFields q={timer(mode)} onChange={(q) => update({ timers: { ...saved.timers, [mode]: q } })} />
+            <>
+              <SavedTimerPick
+                timers={savedTimers.filter((t) => t.timer.kind === mode)}
+                current={timer(mode)}
+                onPick={(q) => update({ timers: { ...saved.timers, [mode]: q } })}
+              />
+              <TimerFields q={timer(mode)} onChange={(q) => update({ timers: { ...saved.timers, [mode]: q } })} />
+            </>
           )}
           <div className="qt-prep">
             Get ready

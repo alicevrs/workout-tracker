@@ -253,3 +253,6 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - “Different targets per set / interval”: when it is on, the exercise's own reps and weight above show “none” and are greyed out, because every set or interval below has its own. In an EMOM it now creates one row for every interval of that exercise (instead of 4). Turning it off puts the first row's values back.
 - Exercise form: a live body map under the muscle list shows the chosen muscles (primary bright, secondary darker) and updates at every tap.
 - Reps can be “none”, like weight: in training blocks (and per set / interval) the reps fields show “none” when empty, and pressing − below 1 empties them. The same goes for weight below the first step.
+
+## Saved timers in the Timer tab (2026-10-17)
+- Timer tab: after choosing AMRAP, For Time, EMOM or Tabata, a menu at the top lists your saved timers of that type. Picking one fills in its settings, ready for Start timer. The menu shows the saved timer whose settings match the current ones; changing a value afterwards changes only this run, not the saved timer.

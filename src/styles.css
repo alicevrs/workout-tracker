@@ -2228,3 +2228,9 @@ kbd {
 .field-disabled input {
   cursor: default;
 }
+
+.qt-saved {
+  width: 100%;
+  max-width: 340px;
+  margin: 0 auto 18px;
+}
