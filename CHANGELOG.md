@@ -242,3 +242,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 
 ## Sheets above the keyboard (2026-10-17)
 - On iPhone, a sheet with a search box (such as Add exercise in a training block) now moves above the keyboard and fits the space that is still visible, so the results are not hidden under the keyboard. Applies to every sheet in the app.
+- Training blocks: under a chosen saved timer only the Open timer button remains (no repeated description, no extra note).

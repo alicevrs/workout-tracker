@@ -37,7 +37,7 @@ import {
 } from '../lib/blockTemplates';
 import { formatDuration } from '../lib/dates';
 import { estimateBlockSeconds } from '../lib/program';
-import { describeQuick, QUICK_LABEL, SET_OPTIONS } from '../lib/timer/quick';
+import { SET_OPTIONS } from '../lib/timer/quick';
 import { withTimer } from '../lib/timerTemplates';
 import { workoutDay } from '../lib/workouts';
 import { fromDisplayWeight, toDisplayWeight } from '../lib/units';
@@ -271,12 +271,6 @@ export default function ExerciseTemplateEditPage() {
           <div className="mt">
             {linkedTimer ? (
               <div className="linked-timer">
-                <p className="small" style={{ margin: 0 }}>
-                  <strong>{QUICK_LABEL[linkedTimer.timer.kind]}</strong> · {describeQuick(linkedTimer.timer)}
-                </p>
-                <p className="tiny faint" style={{ margin: '4px 0 8px' }}>
-                  Changes to this timer update the block.
-                </p>
                 <Link className="btn small" to={`/workouts/timers/${linkedTimer.id}?from=${encodeURIComponent(withDraftParam(location.pathname + location.search))}`}>
                   Open timer
                 </Link>
