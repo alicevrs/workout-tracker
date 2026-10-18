@@ -320,3 +320,4 @@ Choices made while building the app, with the reason for each.
 - Cost control: at most 40 photos a day per address and 300 in total (KV counters that expire after two days); image ≤ 5 MB of base64. Rough cost about one cent per photo with Opus 5.5.
 - The app sends only the framed part, upright, at most 1568 px, JPEG. The Worker passes it on and stores nothing. The frame step stays; it now starts around the whole photo, so Read works straight away and a tighter frame helps small print.
 - Values are checked on both sides (numbers only, ≤ 100 g per 100 g, kcal ≤ 950); salt → sodium (÷ 2.5) in the app. Name and brand fill only empty fields. Errors (key missing, daily limit, busy, no connection) are explained in plain words.
+- **Status (2026-10-18): paused.** The Anthropic API key is not set yet, so the button explains that label reading is not set up. Finishing it is listed as a future improvement in the project notes.
