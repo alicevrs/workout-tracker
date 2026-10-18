@@ -8,6 +8,7 @@ import { InfoButton } from '../components/Library';
 import { ClockPick, Line, Pick, TimerFields, mins } from '../components/TimerFields';
 import { EmptyState, NumberField, PageHeader, Segmented, useToast } from '../components/ui';
 import { getDraft, setDraft, useDraft, withDraftParam } from '../lib/drafts';
+import { useSwipeBack } from '../hooks/useSwipeBack';
 import { db } from '../db/db';
 import { useExerciseMap, useProfile } from '../db/repo';
 import type { Block, BlockFormat, BlockTemplate, ExerciseEntry, Program, Tracking } from '../db/types';
@@ -44,9 +45,8 @@ import { workoutDay } from '../lib/workouts';
 import { fromDisplayWeight, toDisplayWeight } from '../lib/units';
 
 const STRUCTURE_HINT: Record<Structure, string> = {
-  sequence: 'All sets of the first exercise, then all sets of the next.',
-  alternate: 'One set of each exercise in turn, then rest.',
-  circuit: 'Go through all exercises one after the other, rest, and repeat for each round.',
+  sequence: 'Go through the exercises one after the other, rest, and repeat for each round.',
+  circuit: 'A set routine done as a whole, like a choreographed class. During the workout one tap logs all its exercises as planned.',
 };
 const TIME_LABEL: Partial<Record<BlockFormat, string>> = { timed_sets: 'Timed sets', tabata: 'Tabata', amrap: 'AMRAP', emom: 'EMOM', for_time: 'For Time' };
 
@@ -95,9 +95,16 @@ export default function ExerciseTemplateEditPage() {
   const exercises = useExerciseMap();
   const unit = profile.unit;
   const { item: tpl, setItem, current, dirty, markSaved } = useDraft<BlockTemplate>(`block:${id}`, () => db.blockTemplates.get(id), refreshTimer);
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
   const [picking, setPicking] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const timers = useLiveQuery(() => db.timerTemplates.orderBy('name').toArray(), []) ?? [];
+  // Swipe right = Back (asks first when there are unsaved changes, like the Back link).
+  useSwipeBack(() => {
+    if (dirtyRef.current && !confirm('Leave without saving? Your changes will be lost.')) return;
+    navigate(back);
+  });
 
   /** This page, to come back to with the unsaved changes kept. */
   const selfUrl = encodeURIComponent(withDraftParam(location.pathname + location.search));
@@ -248,7 +255,6 @@ export default function ExerciseTemplateEditPage() {
               onChange={(st) => setBlock(structured ? withStructure(b, st) : withGrouping(b, st))}
               options={[
                 { value: 'sequence', label: 'In sequence' },
-                { value: 'alternate', label: 'Alternating' },
                 { value: 'circuit', label: 'Circuit' },
               ]}
             />
@@ -329,7 +335,7 @@ export default function ExerciseTemplateEditPage() {
                 <div className="sentences compact-sentences">
                   <Line>
                     <Pick small value={setsOf(b)} options={SET_OPTIONS} format={mins} onChange={(v) => setBlock(withSetsRest(b, v, restOf(b)))} label="Sets" />
-                    <span>{structureOf(b) === 'sequence' || b.entries.length < 2 ? 'sets' : 'rounds'}</span>
+                    <span>{b.entries.length < 2 ? 'sets' : 'rounds'}</span>
                   </Line>
                   <Line>
                     <ClockPick small value={restOf(b)} maxMin={15} onChange={(v) => setBlock(withSetsRest(b, setsOf(b), v))} label="Rest" />

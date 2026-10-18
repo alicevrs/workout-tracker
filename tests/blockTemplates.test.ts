@@ -47,19 +47,24 @@ describe('exercise templates', () => {
 });
 
 describe('exercise block editor model', () => {
-  it('combines exercises in sequence, alternating (superset) or circuit, with rest after each round', async () => {
+  it('combines exercises in sequence (rounds) or as a choreographed circuit, with rest after each round', async () => {
     const { addExercise, withStructure, withSetsRest, structureOf, restOf, setsOf } = await import('../src/lib/blockTemplates');
     let b = newBlock('sets_reps');
     b = addExercise(b, 'hip-abduction', 90);
     b = addExercise(b, 'hip-adduction', 90);
     expect(structureOf(b)).toBe('sequence');
     b = withSetsRest(b, 4, 60);
-    expect(b.entries.map((e) => [e.sets, e.restSec])).toEqual([[4, 60], [4, 60]]);
-    b = withStructure(b, 'alternate');
-    expect(b.entries.map((e) => [e.grouping, e.groupLabel, e.restSec])).toEqual([['superset', 'A', 0], ['superset', 'A', 60]]);
+    expect(b.entries.map((e) => [e.grouping, e.groupLabel, e.sets, e.restSec])).toEqual([
+      ['circuit', 'A', 4, 0],
+      ['circuit', 'A', 4, 60],
+    ]);
     expect([setsOf(b), restOf(b)]).toEqual([4, 60]);
     b = withStructure(b, 'circuit');
-    expect(b.entries.every((e) => e.grouping === 'circuit')).toBe(true);
+    expect(b.circuit).toBe(true);
+    expect(structureOf(b)).toBe('circuit');
+    expect([setsOf(b), restOf(b)]).toEqual([4, 60]);
+    b = withStructure(b, 'sequence');
+    expect(b.circuit).toBeUndefined();
   });
 
   it('switches between reps and timers keeping exercises and weights', async () => {
@@ -149,5 +154,32 @@ describe('log as belongs to the training block', () => {
     expect(await migrateBlockLogAs(db)).toBe(0);
     // A block's own choice wins over its exercises.
     expect(blockLogAs({ ...push.block, logAs: 'time_distance' }, new Map())).toBe('time_distance');
+  });
+});
+
+describe('in sequence now means rounds', () => {
+  it('older training blocks with straight sets or alternating become rounds, keeping sets and rest', async () => {
+    const { migrateBlockStructure, linkedBlock } = await import('../src/lib/blockTemplates');
+    const { newProgram, newEntry } = await import('../src/lib/program');
+    const db = await freshDb();
+    const old = newBlockTemplate();
+    old.block.entries = [
+      { ...newEntry('back-squat', 'sets_reps', 90), sets: 4, restSec: 90 },
+      { ...newEntry('romanian-deadlift', 'sets_reps', 90), sets: 4, restSec: 90 },
+    ];
+    const single = newBlockTemplate();
+    single.block.entries = [newEntry('push-up', 'sets_reps', 60)];
+    await db.blockTemplates.bulkAdd([old, single]);
+    const p = newProgram('W');
+    p.days[0].blocks = [linkedBlock(old)];
+    await db.programs.add(p);
+    expect(await migrateBlockStructure(db)).toBe(1);
+    const b = (await db.blockTemplates.get(old.id))!.block;
+    expect(b.entries.map((e) => [e.grouping, e.sets, e.restSec])).toEqual([
+      ['circuit', 4, 0],
+      ['circuit', 4, 90],
+    ]);
+    expect((await db.programs.get(p.id))!.days[0].blocks[0].entries[0].grouping).toBe('circuit');
+    expect(await migrateBlockStructure(db)).toBe(0);
   });
 });

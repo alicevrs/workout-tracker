@@ -169,6 +169,8 @@ export interface Block {
   timerId?: string;
   /** How the block's exercises are logged (chosen in the training block). Missing on older data: see `blockLogAs`. */
   logAs?: Tracking;
+  /** Choreographed routine (combined as “Circuit”): in the workout one tap logs all its exercises as planned. */
+  circuit?: boolean;
 }
 
 export interface ProgramDay {
@@ -263,6 +265,8 @@ export interface PerformedBlock {
   timer: TimerOptions;
   /** Copied from the planned block: which columns the set log shows. */
   logAs?: Tracking;
+  /** Copied from the planned block: logged with one tap (“Circuit done”). */
+  circuit?: boolean;
   entries: PerformedEntry[];
   note?: string;
   /** AMRAP / For Time / EMOM results. */

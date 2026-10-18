@@ -75,6 +75,7 @@ export function blockToPerformed(b: Block): PerformedBlock {
     timer: { ...b.timer },
     note: b.note,
     logAs: b.logAs,
+    circuit: b.circuit,
     entries: b.entries.map((e) => entryToPerformed(e, b.format)),
   };
 }
@@ -89,6 +90,7 @@ export function performedToBlock(pb: PerformedBlock): Block {
     timer: { ...pb.timer },
     note: pb.note,
     logAs: pb.logAs,
+    circuit: pb.circuit,
     entries: pb.entries.map(
       (e) =>
         e.planned ?? {
@@ -133,6 +135,7 @@ export function applyBlockEdit(pb: PerformedBlock, edited: Block): PerformedBloc
     timer: { ...edited.timer },
     note: edited.note,
     logAs: edited.logAs,
+    circuit: edited.circuit,
     entries,
   };
 }

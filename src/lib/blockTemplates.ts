@@ -93,22 +93,26 @@ export async function unlinkTemplate(db: WorkoutDB, templateId: string): Promise
 
 // ---------- Simple editor model ----------
 
-/** How several exercises are combined. */
-export type Structure = 'sequence' | 'alternate' | 'circuit';
+/**
+ * How several exercises are combined. Both go through the exercises one after the other, rest,
+ * and repeat for each round (entries grouped as a circuit). “circuit” also marks a choreographed
+ * routine (`Block.circuit`): in the workout one tap logs all its exercises as planned.
+ */
+export type Structure = 'sequence' | 'circuit';
 export type CountBy = 'reps' | 'time';
 /**
  * Timers to count by time, in the Timer tab's order. Timed sets is not offered for new blocks
  * (the Timer tab has no such timer); it stays selectable only on blocks that already use it.
  */
 export const TIME_FORMATS: BlockFormat[] = ['amrap', 'for_time', 'emom', 'tabata', 'timed_sets'];
-const GROUPING: Record<Structure, Grouping> = { sequence: 'none', alternate: 'superset', circuit: 'circuit' };
+/** Grouping of the entries: one round-robin group when there are several exercises. */
+const groupingFor = (n: number): { grouping: Grouping; groupLabel?: string } => (n > 1 ? { grouping: 'circuit', groupLabel: 'A' } : { grouping: 'none', groupLabel: undefined });
 
 /** Formats where exercises can be in sequence, alternate or circuit. Timers like EMOM/Tabata take turns by themselves. */
 export const hasStructure = (f: BlockFormat) => f === 'sets_reps' || f === 'timed_sets';
 
 export function structureOf(b: Block): Structure {
-  const g = b.entries[0]?.grouping;
-  return g === 'superset' ? 'alternate' : g === 'circuit' ? 'circuit' : 'sequence';
+  return b.circuit ? 'circuit' : 'sequence';
 }
 
 export const countByOf = (b: Block): CountBy => (b.format === 'sets_reps' ? 'reps' : 'time');
@@ -176,47 +180,46 @@ export function isAdvanced(b: Block): boolean {
 }
 
 export const setsOf = (b: Block) => b.entries[0]?.sets ?? 3;
+/** Rest after each set, or after each round when the exercises go round (it sits on the last one). */
 export function restOf(b: Block): number {
   if (!b.entries.length) return 60;
-  return structureOf(b) === 'sequence' ? b.entries[0].restSec : b.entries[b.entries.length - 1].restSec;
+  return b.entries[0].grouping === 'none' ? b.entries[0].restSec : b.entries[b.entries.length - 1].restSec;
 }
 
 /** Same number of sets for every exercise (unless it has per-set targets); rest after each set, or after each round when combined. */
 export function withSetsRest(b: Block, sets: number, rest: number): Block {
-  const s = structureOf(b);
   const n = b.entries.length;
+  const round = n > 1 && b.entries[0].grouping !== 'none';
   return {
     ...b,
     entries: b.entries.map((e, i) => ({
       ...e,
       sets: e.setTargets?.length ? e.setTargets.length : sets,
-      restSec: s === 'sequence' || i === n - 1 ? rest : 0,
+      restSec: !round || i === n - 1 ? rest : 0,
     })),
   };
 }
 
-export function withStructure(b: Block, s: Structure): Block {
-  const sets = setsOf(b);
-  const rest = restOf(b);
-  const grouped: Block = {
-    ...b,
-    entries: b.entries.map((e) => ({ ...e, grouping: GROUPING[s], groupLabel: s === 'sequence' ? undefined : 'A', drops: undefined, dropPercent: undefined })),
-  };
-  return withSetsRest(grouped, sets, rest);
-}
-
 /**
- * Record how the exercises are combined without touching sets or rest (blocks run by a timer:
- * there it only tells the order to follow).
+ * How the exercises are combined, without touching sets or rest (blocks run by a timer: there it
+ * only tells the order to follow).
  */
 export function withGrouping(b: Block, s: Structure): Block {
-  return { ...b, entries: b.entries.map((e) => ({ ...e, grouping: GROUPING[s], groupLabel: s === 'sequence' ? undefined : 'A', drops: undefined, dropPercent: undefined })) };
+  const g = groupingFor(b.entries.length);
+  const next: Block = { ...b, entries: b.entries.map((e) => ({ ...e, ...g, drops: undefined, dropPercent: undefined })) };
+  if (s === 'circuit') next.circuit = true;
+  else delete next.circuit;
+  return next;
+}
+
+export function withStructure(b: Block, s: Structure): Block {
+  return withSetsRest(withGrouping(b, s), setsOf(b), restOf(b));
 }
 
 /** Switch how the block is counted (Sets × Reps or a timer format), keeping exercises, reps and weights. */
 export function withFormat(b: Block, format: BlockFormat): Block {
   if (format === b.format) return b;
-  const keepStructure = hasStructure(format) ? structureOf(b) : 'sequence';
+  const keepStructure = structureOf(b);
   // Coming from a timer (1 set, no rest) back to sets: start from sensible defaults.
   const fromSets = hasStructure(b.format);
   const sets = fromSets ? setsOf(b) : 3;
@@ -241,9 +244,30 @@ export function withFormat(b: Block, format: BlockFormat): Block {
 
 export function addExercise(b: Block, exerciseId: string, defaultRest: number): Block {
   const e = newEntry(exerciseId, b.format, defaultRest);
-  const s = structureOf(b);
-  const next: Block = { ...b, entries: [...b.entries, { ...e, sets: setsOf(b), grouping: GROUPING[s], groupLabel: s === 'sequence' ? undefined : 'A' }] };
-  return hasStructure(b.format) ? withSetsRest(next, setsOf(b), b.entries.length ? restOf(b) : defaultRest) : next;
+  const rest = b.entries.length ? restOf(b) : defaultRest;
+  const next = withGrouping({ ...b, entries: [...b.entries, { ...e, sets: setsOf(b) }] }, structureOf(b));
+  return hasStructure(b.format) ? withSetsRest(next, setsOf(b), rest) : next;
+}
+
+/**
+ * One-time change of meaning (user's choice): “In sequence” now means going through the exercises
+ * one after the other and repeating per round. Training blocks with several exercises still set
+ * as straight sets (one exercise after the other) or alternating become rounds, keeping their sets
+ * and rest; their workouts follow. Blocks with drop sets or several groups are left alone.
+ */
+export async function migrateBlockStructure(db: WorkoutDB): Promise<number> {
+  let n = 0;
+  for (const t of await db.blockTemplates.toArray()) {
+    const b = t.block;
+    if (b.entries.length < 2 || b.entries.every((e) => e.grouping === 'circuit')) continue;
+    if (b.entries.some((e) => e.grouping === 'dropset') || new Set(b.entries.map((e) => e.groupLabel ?? '')).size > 1) continue;
+    const block = hasStructure(b.format) ? withSetsRest(withGrouping(b, 'sequence'), setsOf(b), restOf(b)) : withGrouping(b, 'sequence');
+    const next = { ...t, block, updatedAt: Date.now() };
+    await db.blockTemplates.put(next);
+    await syncTemplate(db, next);
+    n++;
+  }
+  return n;
 }
 
 /** Timer settings of a Tabata / AMRAP / EMOM / For Time block, in the Timer tab's shape. */

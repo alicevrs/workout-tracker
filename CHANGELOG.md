@@ -287,3 +287,9 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 
 ## History is for looking back (2026-10-18)
 - History no longer has buttons to add a workout or an activity (neither at the top nor under a day of the calendar). Add them from Home → Start a workout / Start an activity, where you can choose the date.
+
+## Sequence, circuit and swipe back (2026-10-18)
+- Training blocks: **How they are combined** has two options. **In sequence** = go through the exercises one after the other, rest, and repeat for each round. **Circuit** = a set routine done as a whole, like a choreographed class. “Alternating” was removed.
+- Existing training blocks with several exercises that were set as straight sets or alternating now go round the exercises like the new “In sequence”, keeping their sets and rest (their workouts follow).
+- During a workout a **Circuit** block shows its exercises and one **Circuit done** button that logs them all as planned (Undo to take it back).
+- Training block editor: swipe the page to the right to go back (the Back link stays; unsaved changes are asked about first).

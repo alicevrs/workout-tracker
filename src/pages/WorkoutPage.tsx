@@ -220,7 +220,7 @@ export default function WorkoutPage() {
               <>
               {(b.format === 'amrap' || b.format === 'for_time') && <ResultFields block={b} onChange={(nb) => updateBlock(b.id, (fresh) => ({ ...fresh, result: nb.result }))} />}
 
-              {(b.format === 'amrap' || b.format === 'for_time') && (
+              {(b.format === 'amrap' || b.format === 'for_time' || b.circuit) && (
                 <ul className="list small">
                   {b.entries.map((e) => (
                     <li key={e.id} className="row between" style={{ minHeight: 32 }}>
@@ -233,7 +233,34 @@ export default function WorkoutPage() {
                   ))}
                 </ul>
               )}
-              {b.format !== 'amrap' && b.format !== 'for_time' && b.entries.map((e) => (
+              {b.circuit && b.format !== 'amrap' && b.format !== 'for_time' && (
+                // Choreographed routine: one tap logs every exercise as planned.
+                <div className="big-buttons" style={{ paddingTop: 8 }}>
+                  {openBlocks.includes(bi) ? (
+                    <button className="big-btn" onClick={() => markDone(bi, false)?.then(() => toast('Circuit logged'))}>
+                      <Icon name="check" /> Circuit done
+                    </button>
+                  ) : (
+                    <>
+                      <p className="small" style={{ margin: 0 }}>
+                        <Icon name="check" size={16} /> Circuit done
+                      </p>
+                      <button
+                        className="btn small ghost"
+                        onClick={() =>
+                          updateBlock(b.id, (fresh) => ({
+                            ...fresh,
+                            entries: fresh.entries.map((e) => ({ ...e, sets: hasPlannedSets(fresh.format) ? e.sets.map((x) => ({ ...x, completed: false })) : [] })),
+                          }))
+                        }
+                      >
+                        Undo
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+              {!b.circuit && b.format !== 'amrap' && b.format !== 'for_time' && b.entries.map((e) => (
                 <SetLogger
                   key={e.id}
                   entry={e}
@@ -246,7 +273,7 @@ export default function WorkoutPage() {
                 />
               ))}
               {b.entries.length === 0 && !open && <p className="small muted">No exercises. Use Plan to add some, or just run the timer.</p>}
-              {openBlocks.includes(bi) && (
+              {!b.circuit && openBlocks.includes(bi) && (
                 <button className="btn small ghost mt-s" onClick={() => markDone(bi)?.then(() => toast('Marked as done'))}>
                   <Icon name="check" /> Mark block as done (as planned)
                 </button>
