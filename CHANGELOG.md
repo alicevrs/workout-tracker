@@ -283,3 +283,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Exercises, training blocks, timers and workouts lists keep their search, filters and scroll position when you open an item and come back (while the app stays open).
 - Every page now opens from the top (an exercise page used to open scrolled down, hiding its animation).
 - Exercises list and Add exercise: an **All equipment** menu to filter by equipment (dumbbell, barbell, cable, machine…), listing the equipment the exercises actually use.
+- Lists keep search, filters and position **only** when you come back from one of their own items (open an exercise, Back). Coming from another section starts the list fresh.

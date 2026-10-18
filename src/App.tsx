@@ -3,6 +3,7 @@ import { lazyPage as lazy } from './lib/lazyPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Navigate, NavLink, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { Icon, type IconName } from './components/Icon';
+import { noteRoute } from './hooks/useStickyState';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import TodayPage from './pages/TodayPage';
 import { BrandLoader } from './components/BrandRing';
@@ -56,6 +57,7 @@ export default function App() {
   // A new page opens from the top (lists then restore their own position, see useScrollMemory).
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
+    noteRoute(location.pathname);
   }, [location.pathname]);
   return (
     <div className="app">

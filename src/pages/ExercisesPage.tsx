@@ -9,7 +9,7 @@ import { blocksUsingExercise } from '../lib/usage';
 import { MUSCLES } from '../data/muscles';
 import { useVisibleExercises } from '../db/repo';
 import type { ExerciseCategory, MuscleId } from '../db/types';
-import { useScrollMemory, useStickyState } from '../hooks/useStickyState';
+import { useCameBack, useScrollMemory, useStickyState } from '../hooks/useStickyState';
 
 const CATEGORIES: { value: ExerciseCategory | 'all'; label: string }[] = [
   { value: 'strength', label: 'Strength' },
@@ -24,11 +24,13 @@ export default function ExercisesPage() {
   const toast = useToast();
   const navigate = useNavigate();
   const [used, setUsed] = useState<ComponentProps<typeof UsedInSheet>['used']>(null);
-  const [query, setQuery] = useStickyState('exercises:query', '');
+  // Search and filters stay only when coming back from one of this list's items.
+  const cameBack = useCameBack((p) => p.startsWith('/exercises/'));
+  const [query, setQuery] = useStickyState('exercises:query', '', cameBack);
   /** 'all' = no filter: tapping the selected chip again clears it. */
-  const [category, setCategory] = useStickyState<ExerciseCategory | 'all'>('exercises:category', 'all');
-  const [muscle, setMuscle] = useStickyState<MuscleId | ''>('exercises:muscle', '');
-  const [equipment, setEquipment] = useStickyState('exercises:equipment', '');
+  const [category, setCategory] = useStickyState<ExerciseCategory | 'all'>('exercises:category', 'all', cameBack);
+  const [muscle, setMuscle] = useStickyState<MuscleId | ''>('exercises:muscle', '', cameBack);
+  const [equipment, setEquipment] = useStickyState('exercises:equipment', '', cameBack);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -40,7 +42,7 @@ export default function ExercisesPage() {
       return true;
     });
   }, [exercises, query, category, muscle, equipment]);
-  useScrollMemory('exercises', !!exercises);
+  useScrollMemory('exercises', !!exercises, cameBack);
 
   // The copy opens in the exercise form: it is stored only when saved.
   const duplicate = (id: string) => navigate(`/exercises/new?copy=${encodeURIComponent(id)}`);

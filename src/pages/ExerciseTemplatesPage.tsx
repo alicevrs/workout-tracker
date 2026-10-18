@@ -11,7 +11,7 @@ import type { BlockFormat, ExerciseCategory, MuscleId } from '../db/types';
 import { duplicateTemplate, newBlockTemplate, unlinkTemplate } from '../lib/blockTemplates';
 import { setDraft } from '../lib/drafts';
 import { workoutsUsingBlock } from '../lib/usage';
-import { useScrollMemory, useStickyState } from '../hooks/useStickyState';
+import { useCameBack, useScrollMemory, useStickyState } from '../hooks/useStickyState';
 
 const CATEGORIES: { value: ExerciseCategory | 'all'; label: string }[] = [
   { value: 'strength', label: 'Strength' },
@@ -36,10 +36,12 @@ export default function ExerciseTemplatesPage() {
   const exercises = useExerciseMap();
   const templates = useLiveQuery(() => db.blockTemplates.orderBy('name').toArray(), []);
   const usedIds = useLiveQuery(async () => new Set((await db.programs.toArray()).flatMap((p) => p.days.flatMap((d) => d.blocks.map((b) => b.templateId)))), []);
-  const [query, setQuery] = useStickyState('blocks:query', '');
-  const [category, setCategory] = useStickyState<ExerciseCategory | 'all'>('blocks:category', 'all');
-  const [muscle, setMuscle] = useStickyState<MuscleId | ''>('blocks:muscle', '');
-  const [count, setCount] = useStickyState<BlockFormat | 'all'>('blocks:count', 'all');
+  // Search and filters stay only when coming back from one of this list's items.
+  const cameBack = useCameBack((p) => p.startsWith('/workouts/blocks/'));
+  const [query, setQuery] = useStickyState('blocks:query', '', cameBack);
+  const [category, setCategory] = useStickyState<ExerciseCategory | 'all'>('blocks:category', 'all', cameBack);
+  const [muscle, setMuscle] = useStickyState<MuscleId | ''>('blocks:muscle', '', cameBack);
+  const [count, setCount] = useStickyState<BlockFormat | 'all'>('blocks:count', 'all', cameBack);
   const [used, setUsed] = useState<ComponentProps<typeof UsedInSheet>['used']>(null);
 
   const items = useMemo(() => {
@@ -55,7 +57,7 @@ export default function ExerciseTemplatesPage() {
       })
       .map((t) => ({ id: t.id, name: t.name, to: `/workouts/blocks/${t.id}`, unused: !!usedIds && !usedIds.has(t.id) }));
   }, [templates, query, exercises, category, muscle, count, usedIds]);
-  useScrollMemory('blocks', !!templates);
+  useScrollMemory('blocks', !!templates, cameBack);
 
   const create = () => {
     const t = newBlockTemplate('sets_reps', profile.defaultPrepSec);

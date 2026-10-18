@@ -9,14 +9,16 @@ import { formatDuration } from '../lib/dates';
 import { setDraft } from '../lib/drafts';
 import { cloneProgram, estimateBlockSeconds } from '../lib/program';
 import { newWorkout, workoutDay } from '../lib/workouts';
-import { useScrollMemory, useStickyState } from '../hooks/useStickyState';
+import { useCameBack, useScrollMemory, useStickyState } from '../hooks/useStickyState';
 
 /** Library of workout templates: create, open, duplicate. Workouts are started from Home. */
 export default function WorkoutTemplatesPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const workouts = useLiveQuery(() => db.programs.orderBy('name').toArray(), []);
-  const [query, setQuery] = useStickyState('workouts:query', '');
+  // Search and filters stay only when coming back from one of this list's items.
+  const cameBack = useCameBack((p) => /^\/workouts\/(?!blocks|timers|templates)[^/]+$/.test(p));
+  const [query, setQuery] = useStickyState('workouts:query', '', cameBack);
 
   const items = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -28,7 +30,7 @@ export default function WorkoutTemplatesPage() {
         return { id: w.id, name: w.name, to: `/workouts/${w.id}`, sub: total ? `≈ ${formatDuration(total)}` : undefined };
       });
   }, [workouts, query]);
-  useScrollMemory('workouts', !!workouts);
+  useScrollMemory('workouts', !!workouts, cameBack);
 
   const create = () => {
     const w = newWorkout();
