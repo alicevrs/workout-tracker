@@ -28,6 +28,14 @@ const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const SessionDetailPage = lazy(() => import('./pages/SessionDetailPage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const ActivityFormPage = lazy(() => import('./pages/ActivityFormPage'));
+const NutritionPage = lazy(() => import('./pages/NutritionPage'));
+const FoodDiaryPage = lazy(() => import('./pages/FoodDiaryPage'));
+const DietPlansPage = lazy(() => import('./pages/DietPlansPage'));
+const DietPlanEditPage = lazy(() => import('./pages/DietPlanEditPage'));
+const VisitsPage = lazy(() => import('./pages/VisitsPage'));
+const VisitEditPage = lazy(() => import('./pages/VisitEditPage'));
+const FoodsPage = lazy(() => import('./pages/FoodsPage'));
+const FoodDetailPage = lazy(() => import('./pages/FoodDetailPage'));
 
 interface NavItem {
   to: string;
@@ -39,6 +47,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { to: '/', label: 'Home', icon: 'home', mobile: true },
   { to: '/workouts', label: 'Workouts', icon: 'dumbbell', mobile: true },
+  { to: '/nutrition', label: 'Nutrition', icon: 'apple', mobile: true },
   { to: '/timer', label: 'Timer', icon: 'timer', mobile: true },
   { to: '/history', label: 'History', icon: 'history', mobile: true },
   { to: '/analytics', label: 'Analytics', icon: 'chart', mobile: true },
@@ -97,6 +106,14 @@ export default function App() {
             <Route path="/programs" element={<Navigate to="/workouts" replace />} />
             <Route path="/programs/:id" element={<ProgramRedirect />} />
             <Route path="/workout/:id" element={<WorkoutPage />} />
+            <Route path="/nutrition" element={<NutritionPage />} />
+            <Route path="/nutrition/diary" element={<FoodDiaryPage />} />
+            <Route path="/nutrition/plans" element={<DietPlansPage />} />
+            <Route path="/nutrition/plans/:id" element={<DietPlanEditPage />} />
+            <Route path="/nutrition/visits" element={<VisitsPage />} />
+            <Route path="/nutrition/visits/:id" element={<VisitEditPage />} />
+            <Route path="/nutrition/foods" element={<FoodsPage />} />
+            <Route path="/nutrition/foods/:id" element={<FoodDetailPage />} />
             <Route path="/timer" element={<TimerPage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/history/:id" element={<SessionDetailPage />} />

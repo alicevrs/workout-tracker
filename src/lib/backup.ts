@@ -8,7 +8,7 @@
 
 import type { WorkoutDB } from '../db/db';
 import { DEFAULT_PROFILE, DEFAULT_SETTINGS } from '../db/repo';
-import type { BlockTemplate, BodyWeight, Exercise, Profile, Program, Session, Settings, TimerTemplate } from '../db/types';
+import type { BlockTemplate, BodyWeight, DietPlan, Exercise, Food, FoodEntry, Profile, Program, Session, Settings, TimerTemplate, Visit } from '../db/types';
 
 export const BACKUP_APP_ID = 'workout-tracker';
 export const BACKUP_SCHEMA_VERSION = 1;
@@ -22,6 +22,11 @@ export interface BackupData {
   timerTemplates: TimerTemplate[];
   sessions: Session[];
   bodyWeights: BodyWeight[];
+  /** Nutrition (added later in format 1; missing in older files). Own foods only. */
+  foods: Food[];
+  dietPlans: DietPlan[];
+  visits: Visit[];
+  foodEntries: FoodEntry[];
   profile: Profile;
   settings: Partial<Settings>;
 }
@@ -42,13 +47,17 @@ export type Migration = (file: AnyRecord) => AnyRecord;
 export const MIGRATIONS: Record<number, Migration> = {};
 
 export async function createBackup(db: WorkoutDB, now = new Date()): Promise<BackupFile> {
-  const [exercises, programs, blockTemplates, timerTemplates, sessions, bodyWeights, profileRow, settingsRow] = await Promise.all([
+  const [exercises, programs, blockTemplates, timerTemplates, sessions, bodyWeights, foods, dietPlans, visits, foodEntries, profileRow, settingsRow] = await Promise.all([
     db.exercises.filter((e) => e.isCustom || !!e.edited).toArray(),
     db.programs.toArray(),
     db.blockTemplates.toArray(),
     db.timerTemplates.toArray(),
     db.sessions.toArray(),
     db.bodyWeights.toArray(),
+    db.foods.toArray(),
+    db.dietPlans.toArray(),
+    db.visits.toArray(),
+    db.foodEntries.toArray(),
     db.kv.get('profile'),
     db.kv.get('settings'),
   ]);
@@ -68,6 +77,10 @@ export async function createBackup(db: WorkoutDB, now = new Date()): Promise<Bac
       timerTemplates,
       sessions,
       bodyWeights,
+      foods,
+      dietPlans,
+      visits,
+      foodEntries,
       profile: { ...DEFAULT_PROFILE, ...((profileRow?.value as Partial<Profile>) ?? {}) },
       settings,
     },
@@ -141,6 +154,10 @@ function normalize(file: AnyRecord): BackupFile {
       timerTemplates: list<TimerTemplate>('timerTemplates', (t) => typeof t.id === 'string' && isObj(t.timer)),
       sessions,
       bodyWeights: list<BodyWeight>('bodyWeights', (w) => typeof w.id === 'string' && typeof w.weightKg === 'number'),
+      foods: list<Food>('foods', (f) => typeof f.id === 'string' && typeof f.name === 'string'),
+      dietPlans: list<DietPlan>('dietPlans', (p) => typeof p.id === 'string' && Array.isArray(p.meals)),
+      visits: list<Visit>('visits', (v) => typeof v.id === 'string' && typeof v.date === 'string'),
+      foodEntries: list<FoodEntry>('foodEntries', (e) => typeof e.id === 'string' && typeof e.date === 'string'),
       profile: { ...DEFAULT_PROFILE, ...(isObj(data.profile) ? (data.profile as Partial<Profile>) : {}) },
       settings: isObj(data.settings) ? (data.settings as Partial<Settings>) : {},
     },
@@ -169,7 +186,7 @@ export function summarize(file: BackupFile): RestoreSummary {
  */
 export async function restoreBackup(db: WorkoutDB, file: BackupFile, mode: 'replace' | 'merge'): Promise<void> {
   const d = file.data;
-  await db.transaction('rw', [db.exercises, db.programs, db.blockTemplates, db.timerTemplates, db.sessions, db.bodyWeights, db.kv], async () => {
+  await db.transaction('rw', [db.exercises, db.programs, db.blockTemplates, db.timerTemplates, db.sessions, db.bodyWeights, db.foods, db.dietPlans, db.visits, db.foodEntries, db.kv], async () => {
     if (mode === 'replace') {
       await db.exercises.filter((e) => e.isCustom).delete();
       await db.programs.clear();
@@ -183,6 +200,11 @@ export async function restoreBackup(db: WorkoutDB, file: BackupFile, mode: 'repl
       await db.programs.bulkPut(d.programs);
       await db.sessions.bulkPut(d.sessions);
       await db.bodyWeights.bulkPut(d.bodyWeights);
+      for (const t of [db.foods, db.dietPlans, db.visits, db.foodEntries] as const) await t.clear();
+      await db.foods.bulkPut(d.foods);
+      await db.dietPlans.bulkPut(d.dietPlans);
+      await db.visits.bulkPut(d.visits);
+      await db.foodEntries.bulkPut(d.foodEntries);
       await db.kv.put({ key: 'profile', value: d.profile });
     } else {
       const newer = async <T extends { id: string; updatedAt?: number }>(table: { get: (id: string) => Promise<T | undefined>; put: (x: T) => Promise<unknown> }, rows: T[]) => {
@@ -197,6 +219,10 @@ export async function restoreBackup(db: WorkoutDB, file: BackupFile, mode: 'repl
       await newer(db.timerTemplates, d.timerTemplates);
       await newer(db.sessions, d.sessions);
       await db.bodyWeights.bulkPut(d.bodyWeights);
+      await newer(db.foods, d.foods);
+      await newer(db.dietPlans, d.dietPlans);
+      await newer(db.visits, d.visits);
+      await newer(db.foodEntries, d.foodEntries);
       const cur = await db.kv.get('profile');
       if (!cur) await db.kv.put({ key: 'profile', value: d.profile });
     }

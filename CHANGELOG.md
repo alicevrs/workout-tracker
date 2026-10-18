@@ -345,3 +345,11 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Every chart shows only the chart: the Table button is gone everywhere. Period comparison: Week, Month, Year, Custom (30 days removed). Training frequency: the “Workout days · last 6 months” grid is removed.
 - Muscle distribution: tap the workout, week or month shown between the arrows to choose it from a calendar (days show the colours of the activities done; months with activity are marked).
 - Period bar (revised): **Week, Month, Year, Custom** (this week, this month, this year; Custom shows From and To dates). 3, 6, 12 months and All removed.
+
+## Nutrition, step 1 (2026-10-18)
+- New **Nutrition** tab with **Food diary**, **Diet plans**, **Visits** and **Foods**.
+- **Foods**: about 830 reference foods from the official Italian CREA tables (values per 100 g, with the source), search and categories; add your own foods with their label values; copy a reference food to change it.
+- **Diet plans**: daily calories, protein, carbohydrates, fat (in grams or % of calories) and water; meals with their share of calories, parts and options to choose from, foods with amounts or ranges; weekly limits; a menu of one to four weeks; guidelines. Each plan is in force from its start date; duplicate it after a visit.
+- **Food diary**: day by day, log the options chosen from the plan or any food with its grams; totals against the targets, water, this week's limits, today's menu and the guidelines.
+- **Visits**: weight, height, BMI and your list of measures (body fat, circumferences, skinfolds), with a chart over time. The visit weight also goes to the weight log.
+- Nutrition data is included in sync and backups.

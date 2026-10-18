@@ -5,9 +5,9 @@
 // removed everywhere unless it was changed after it was deleted. Tombstones older than 180 days
 // are forgotten.
 
-import type { BlockTemplate, BodyWeight, Exercise, Profile, Program, Session, TimerTemplate } from '../../db/types';
+import type { BlockTemplate, BodyWeight, DietPlan, Exercise, Food, FoodEntry, Profile, Program, Session, TimerTemplate, Visit } from '../../db/types';
 
-export const SYNC_TABLES = ['exercises', 'programs', 'blockTemplates', 'timerTemplates', 'sessions', 'bodyWeights'] as const;
+export const SYNC_TABLES = ['exercises', 'programs', 'blockTemplates', 'timerTemplates', 'sessions', 'bodyWeights', 'foods', 'dietPlans', 'visits', 'foodEntries'] as const;
 export type SyncTable = (typeof SYNC_TABLES)[number];
 
 export interface Tombstone {
@@ -26,6 +26,11 @@ export interface SyncPayload {
   timerTemplates: TimerTemplate[];
   sessions: Session[];
   bodyWeights: BodyWeight[];
+  /** Nutrition (missing in copies uploaded by older app versions). Own foods only: the reference table ships with the app. */
+  foods: Food[];
+  dietPlans: DietPlan[];
+  visits: Visit[];
+  foodEntries: FoodEntry[];
   profile?: Profile;
   /** When the profile was last changed. */
   profileAt?: number;
@@ -36,7 +41,7 @@ type Rec = { id: string; updatedAt?: number };
 const TOMBSTONE_TTL = 180 * 24 * 3600_000;
 
 export function emptyPayload(): SyncPayload {
-  return { v: 1, exercises: [], programs: [], blockTemplates: [], timerTemplates: [], sessions: [], bodyWeights: [], tombstones: [] };
+  return { v: 1, exercises: [], programs: [], blockTemplates: [], timerTemplates: [], sessions: [], bodyWeights: [], foods: [], dietPlans: [], visits: [], foodEntries: [], tombstones: [] };
 }
 
 function mergeRecords<T extends Rec>(local: T[], remote: T[]): T[] {
@@ -79,6 +84,10 @@ export function mergePayloads(local: SyncPayload, remote: SyncPayload, now = Dat
     timerTemplates: applyTombstones('timerTemplates', mergeRecords(local.timerTemplates ?? [], remote.timerTemplates ?? []), tombs),
     sessions: applyTombstones('sessions', mergeRecords(local.sessions, remote.sessions), tombs),
     bodyWeights: applyTombstones('bodyWeights', mergeRecords(local.bodyWeights, remote.bodyWeights), tombs),
+    foods: applyTombstones('foods', mergeRecords(local.foods ?? [], remote.foods ?? []), tombs),
+    dietPlans: applyTombstones('dietPlans', mergeRecords(local.dietPlans ?? [], remote.dietPlans ?? []), tombs),
+    visits: applyTombstones('visits', mergeRecords(local.visits ?? [], remote.visits ?? []), tombs),
+    foodEntries: applyTombstones('foodEntries', mergeRecords(local.foodEntries ?? [], remote.foodEntries ?? []), tombs),
     profile: remoteProfileNewer ? remote.profile : local.profile,
     profileAt: remoteProfileNewer ? remote.profileAt : local.profileAt,
     tombstones,
@@ -96,6 +105,10 @@ export function canonical(p: SyncPayload): string {
     timerTemplates: sort(p.timerTemplates ?? []),
     sessions: sort(p.sessions),
     bodyWeights: sort(p.bodyWeights),
+    foods: sort(p.foods ?? []),
+    dietPlans: sort(p.dietPlans ?? []),
+    visits: sort(p.visits ?? []),
+    foodEntries: sort(p.foodEntries ?? []),
     tombstones: [...p.tombstones].sort((a, b) => `${a.t}:${a.id}`.localeCompare(`${b.t}:${b.id}`)),
   });
 }

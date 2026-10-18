@@ -369,3 +369,171 @@ export interface KV {
   key: string;
   value: unknown;
 }
+
+// ---------- Nutrition ----------
+
+/** Nutrients per 100 g of the edible part (ml are treated as grams). */
+export interface Nutrients {
+  kcal: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  sugars?: number;
+  fiber?: number;
+  saturatedFat?: number;
+  alcohol?: number;
+  /** mg */
+  sodium?: number;
+}
+
+/**
+ * A food of the archive. The reference table (CREA) ships with the app (src/data/foods.json) and is
+ * not stored; this table holds only the user's own foods.
+ */
+export interface Food extends Nutrients {
+  id: string;
+  name: string;
+  category: string;
+  source: 'crea' | 'custom';
+  /** Usual portion in grams. */
+  portionG?: number;
+  /** Edible part in % (the values are per 100 g of edible part). */
+  ediblePct?: number;
+  barcode?: string;
+  updatedAt?: number;
+}
+
+export type PortionUnit = 'g' | 'ml' | 'piece' | 'tbsp' | 'tsp' | 'to_taste';
+
+/** One food in a meal option: an amount, optionally linked to the archive for the nutrients. */
+export interface PlanItem {
+  id: string;
+  name: string;
+  foodId?: string;
+  amount?: number;
+  /** Upper end of a range (60–80 g). */
+  amountMax?: number;
+  unit: PortionUnit;
+  /** Grams of one piece / spoon, to count the nutrients of non-gram units. */
+  gramsPerUnit?: number;
+}
+
+/** One possible choice (a breakfast type, a first course…). */
+export interface PlanOption {
+  id: string;
+  name: string;
+  items: PlanItem[];
+  /** Weekly limits this choice counts towards. */
+  limitIds?: string[];
+  notes?: string;
+}
+
+/** Part of a meal: the person picks one of its options. */
+export interface PlanSection {
+  id: string;
+  name: string;
+  options: PlanOption[];
+}
+
+export interface PlanMeal {
+  id: string;
+  name: string;
+  /** Share of the daily calories, %. */
+  kcalPct?: number;
+  sections: PlanSection[];
+  notes?: string;
+}
+
+/** How many times a week something may (max) or should (min) be eaten. */
+export interface WeeklyLimit {
+  id: string;
+  name: string;
+  min?: number;
+  max?: number;
+}
+
+/** Suggested menu: what to eat at one meal of one day (week 0, 1… repeat in turn). */
+export interface MenuCell {
+  week: number;
+  /** 0 = Monday … 6 = Sunday */
+  day: number;
+  mealId: string;
+  text: string;
+}
+
+export interface PlanNote {
+  id: string;
+  title: string;
+  text: string;
+}
+
+export interface DailyTargets {
+  kcal?: number;
+  proteinG?: number;
+  carbsG?: number;
+  fatG?: number;
+  /** Litres of water a day. */
+  waterL?: number;
+}
+
+/** A diet plan, valid from its start date until the next plan starts. */
+export interface DietPlan {
+  id: string;
+  name: string;
+  /** YYYY-MM-DD */
+  startDate: string;
+  targets: DailyTargets;
+  meals: PlanMeal[];
+  limits: WeeklyLimit[];
+  menuWeeks: number;
+  menu: MenuCell[];
+  notes: PlanNote[];
+  updatedAt: number;
+}
+
+export interface VisitMeasure {
+  id: string;
+  name: string;
+  unit: string;
+  value?: number;
+}
+
+/** Measurements taken at a nutrition visit. */
+export interface Visit {
+  id: string;
+  /** YYYY-MM-DD */
+  date: string;
+  weightKg?: number;
+  heightCm?: number;
+  measures: VisitMeasure[];
+  notes?: string;
+  updatedAt: number;
+}
+
+/**
+ * One line of the food diary.
+ * plan: an option of the diet plan (its items are copied, so later plan changes do not alter the past);
+ * food: a food of the archive with its grams; count: a manual +1 on a weekly limit; water: ml drunk.
+ */
+export interface FoodEntry {
+  id: string;
+  /** YYYY-MM-DD */
+  date: string;
+  kind: 'plan' | 'food' | 'count' | 'water';
+  /** Meal name (entries are grouped by it). */
+  meal?: string;
+  name: string;
+  /** plan entries */
+  section?: string;
+  items?: PlanItem[];
+  limitIds?: string[];
+  /** food entries */
+  foodId?: string;
+  grams?: number;
+  /** count entries */
+  limitId?: string;
+  /** water entries */
+  ml?: number;
+  createdAt: number;
+  updatedAt: number;
+}

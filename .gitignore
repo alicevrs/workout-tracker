@@ -17,3 +17,6 @@ tests/_local/
 *.mp4
 *.MOV
 *.mov
+
+# Diet documents and other personal PDFs
+/*.pdf

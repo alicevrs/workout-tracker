@@ -2375,3 +2375,251 @@ kbd {
   cursor: pointer;
   text-align: center;
 }
+
+/* ---------- Nutrition ---------- */
+.nutri-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.nutri-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+.nutri-table th {
+  text-align: right;
+  font-weight: 600;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  padding: 0 0 6px;
+}
+.nutri-table td {
+  padding: 7px 0;
+  border-top: 1px solid var(--border);
+}
+.nutri-table td + td {
+  text-align: right;
+  white-space: nowrap;
+  padding-left: 12px;
+}
+.plan-heading {
+  margin: 12px 0 0;
+}
+.plan-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+}
+.plan-card > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 14px;
+  cursor: pointer;
+  list-style: none;
+}
+.plan-card > summary::-webkit-details-marker {
+  display: none;
+}
+.plan-card > summary::after {
+  content: '+';
+  margin-left: auto;
+  color: var(--text-faint);
+  font-size: 1.3rem;
+}
+.plan-card[open] > summary::after {
+  content: '−';
+}
+.plan-card-title {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.plan-card-body {
+  padding: 0 14px 14px;
+}
+.plan-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.plan-option {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+}
+.plan-option-name {
+  flex: 1;
+  font-weight: 700;
+}
+.plan-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0 8px;
+  border-bottom: 1px dashed var(--border);
+}
+.plan-item-name {
+  flex: 1;
+}
+.plan-item-amounts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.plan-item-amounts > input,
+.plan-item-amounts > select {
+  flex: 1;
+  min-width: 0;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.plan-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--text-faint);
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+  cursor: pointer;
+}
+.plan-link.linked {
+  color: var(--rest);
+}
+.limit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px 64px 34px;
+  gap: 6px;
+  align-items: center;
+}
+.menu-day {
+  border-top: 1px solid var(--border);
+}
+.menu-day > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.menu-day > summary svg {
+  color: var(--accent);
+}
+.menu-day[open] > summary {
+  color: var(--accent);
+}
+.measure-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 62px 50px 30px;
+  gap: 6px;
+  align-items: center;
+}
+.measure-row input {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.measure-unit {
+  text-align: center;
+}
+.day-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 12px;
+}
+.day-nav input[type='date'] {
+  flex: 1;
+}
+.grow-text {
+  flex: 1;
+  min-width: 0;
+}
+.water-row,
+.limit-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.water-row {
+  margin-top: 6px;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+.limit-count + .limit-count {
+  border-top: 1px solid var(--border);
+}
+.nutri-bar {
+  margin-bottom: 10px;
+}
+.nutri-track {
+  height: 6px;
+  margin-top: 4px;
+  background: var(--bg-elev-2);
+}
+.nutri-fill {
+  height: 100%;
+  background: var(--accent);
+}
+.nutri-fill.over {
+  background: var(--bad);
+}
+.menu-line {
+  margin: 6px 0 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--rest);
+  white-space: pre-wrap;
+}
+.diary-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.diary-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+.option-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 12px;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.option-btn .tiny {
+  color: var(--text-dim);
+}
+.option-btn.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+/* Six tabs (Nutrition added): smaller labels so they do not touch on a narrow phone. */
+.bottom-nav a {
+  font-size: 0.56rem;
+  letter-spacing: 0.02em;
+  min-width: 0;
+}
