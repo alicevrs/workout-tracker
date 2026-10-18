@@ -46,7 +46,7 @@ import { fromDisplayWeight, toDisplayWeight } from '../lib/units';
 
 const STRUCTURE_HINT: Record<Structure, string> = {
   sequence: 'Go through the exercises one after the other, rest, and repeat for each round.',
-  circuit: 'A set routine done as a whole, like a choreographed class. During the workout one tap logs all its exercises as planned.',
+  circuit: 'A structured sequence of these exercises, performed continuously as a single unit. It is logged as a whole: one confirmation during the workout records every exercise as planned.',
 };
 const TIME_LABEL: Partial<Record<BlockFormat, string>> = { timed_sets: 'Timed sets', tabata: 'Tabata', amrap: 'AMRAP', emom: 'EMOM', for_time: 'For Time' };
 

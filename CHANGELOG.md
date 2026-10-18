@@ -298,3 +298,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Calendar: **Week, Month, Quarter, Year** views (quarter and year as small months with one coloured square per day). Swipe left or right on the calendar to go to the next or previous period.
 - List and calendar: a menu to show only one workout (by name, e.g. all sessions of the same saved workout) or one kind of activity (by sport: running, hiking, wakeboarding…, whatever the activity was called on Strava).
 - List: the “Timer” tag was removed; the Strava tag stays.
+- Training blocks: clearer, more professional description of **Circuit** (a structured sequence performed continuously as a single unit, logged as a whole with one confirmation).
