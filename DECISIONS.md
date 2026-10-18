@@ -264,3 +264,6 @@ Choices made while building the app, with the reason for each.
 
 ## Calendar periods (revised)
 - Only month and year (user's choice). A remembered week/quarter view falls back to month.
+
+## Adding a part during a workout
+- Add block only offers saved training blocks (linked copy via `linkedBlock`), so the added part follows the block like the others and uses the simple plan editor. Empty parts by timer type can no longer be created in a workout; `addedInSession` stays only for parts added that way before.

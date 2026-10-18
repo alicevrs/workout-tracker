@@ -159,7 +159,7 @@ export function BlockList({ blocks, onChange, backTo, workoutId }: { blocks: Blo
         </button>
       </div>
 
-      <Sheet open={adding} onClose={() => setAdding(false)} title="Add an training block">
+      <Sheet open={adding} onClose={() => setAdding(false)} title="Add a training block">
         {templates.length === 0 ? (
           <p className="small muted">No training blocks yet. Use New block, or create them in Workouts → Training blocks.</p>
         ) : (

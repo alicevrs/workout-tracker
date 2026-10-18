@@ -5,21 +5,19 @@ import { BlockEditor } from '../components/BlockEditor';
 import { Icon } from '../components/Icon';
 import { SetLogger, type PrevLookup } from '../components/SetLogger';
 import { hasActiveRun, TimerScreen } from '../components/TimerScreen';
-import { EmptyState, NumberField, PageHeader, useToast } from '../components/ui';
+import { EmptyState, NumberField, PageHeader, Sheet, useToast } from '../components/ui';
 import { db } from '../db/db';
 import { useExerciseMap, useProfile } from '../db/repo';
-import type { BlockFormat, PerformedBlock, Session } from '../db/types';
+import type { PerformedBlock, Session } from '../db/types';
 import { formatClock, formatDate, formatDuration } from '../lib/dates';
-import { estimateBlockSeconds, FORMAT_INFO, newBlock } from '../lib/program';
+import { estimateBlockSeconds, FORMAT_INFO } from '../lib/program';
 import { applyBlockEdit, blockToPerformed, hasPlannedSets, performedToBlock } from '../lib/session';
 import { completeBlocks } from '../lib/quickLog';
 import { SessionPlanEditor } from '../components/SessionPlanEditor';
 import { blockSummary } from '../lib/blockSummary';
+import { linkedBlock } from '../lib/blockTemplates';
 import { previousSets } from '../lib/stats';
 import { formatWeight } from '../lib/units';
-
-/** Kinds of block that can be added here: the same as in training blocks (reps, or one of the timers). */
-const ADD_FORMATS: BlockFormat[] = ['sets_reps', 'amrap', 'for_time', 'emom', 'tabata'];
 
 export default function WorkoutPage() {
   const { id = '' } = useParams();
@@ -30,7 +28,8 @@ export default function WorkoutPage() {
   const session = useLiveQuery(() => db.sessions.get(id), [id]);
   const history = useLiveQuery(() => db.sessions.where('status').equals('completed').toArray(), []);
   const [editing, setEditing] = useState<string | null>(null);
-  const [newFormat, setNewFormat] = useState<BlockFormat>('sets_reps');
+  const [adding, setAdding] = useState(false);
+  const templates = useLiveQuery(() => db.blockTemplates.orderBy('name').toArray(), []) ?? [];
   const [timerBlocks, setTimerBlocks] = useState<number[] | null>(null);
   const [params, setParams] = useSearchParams();
   const [pendingRun, setPendingRun] = useState<number[] | null>(null);
@@ -316,28 +315,32 @@ export default function WorkoutPage() {
           </div>
         )}
 
-        <div className="row">
-          <label className="field" style={{ flex: 1 }}>
-            <span className="sr-only">New block format</span>
-            <select value={newFormat} onChange={(e) => setNewFormat(e.target.value as BlockFormat)}>
-              {ADD_FORMATS.map((f) => (
-                <option key={f} value={f}>
-                  {FORMAT_INFO[f].label}
-                </option>
+        <button className="btn" onClick={() => setAdding(true)}>
+          <Icon name="plus" /> Add block
+        </button>
+        <Sheet open={adding} onClose={() => setAdding(false)} title="Add a training block">
+          {templates.length === 0 ? (
+            <p className="small muted">No training blocks yet. Create them in Workouts → Training blocks.</p>
+          ) : (
+            <ul className="lib-list">
+              {templates.map((t) => (
+                <li key={t.id} className="lib-row">
+                  <button
+                    className="lib-main"
+                    onClick={async () => {
+                      const pb = blockToPerformed(linkedBlock(t));
+                      setAdding(false);
+                      await save({ blocks: [...session.blocks, pb] });
+                    }}
+                  >
+                    <span className="lib-name">{t.name}</span>
+                    <span className="lib-sub">{blockSummary(t.block)}</span>
+                  </button>
+                </li>
               ))}
-            </select>
-          </label>
-          <button
-            className="btn"
-            onClick={async () => {
-              const pb = { ...blockToPerformed(newBlock(newFormat, profile.defaultPrepSec)), addedInSession: true };
-              await save({ blocks: [...session.blocks, pb] });
-              setEditing(pb.id);
-            }}
-          >
-            <Icon name="plus" /> Add block
-          </button>
-        </div>
+            </ul>
+          )}
+        </Sheet>
 
         <section className="card">
           <label className="field full">

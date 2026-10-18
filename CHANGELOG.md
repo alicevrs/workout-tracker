@@ -333,3 +333,6 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 
 ## History calendar: Month and Year only (2026-10-18)
 - The History calendar has only the **Month** and **Year** views; Week and Quarter were removed.
+
+## Add block in a workout picks a training block (2026-10-18)
+- In a running workout, the timer-type list next to **Add block** is gone. **Add block** opens the list of your training blocks; tapping one adds it to the workout, set up as in the training block.
