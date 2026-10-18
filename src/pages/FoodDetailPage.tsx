@@ -10,6 +10,7 @@ import { OFF_SOURCE } from '../lib/barcode';
 import { getDraft } from '../lib/drafts';
 import { LABEL_NAMES, type LabelValues } from '../lib/labelReader';
 import { Icon } from '../components/Icon';
+import { LabelCropper } from '../components/LabelCropper';
 import { uid } from '../lib/ids';
 
 const blankFood = (): Food => ({ id: uid(), name: '', category: '', source: 'custom', kcal: 0, protein: 0, carbs: 0, fat: 0 });
@@ -117,8 +118,10 @@ function OwnFood({ initial, isNew }: { initial: Food; isNew: boolean }) {
   const photo = useRef<HTMLInputElement>(null);
   const [reading, setReading] = useState<number | null>(null);
   const [readNote, setReadNote] = useState<string | null>(null);
+  /** Photo waiting to be framed. */
+  const [framing, setFraming] = useState<File | null>(null);
 
-  const readPhoto = async (file: File | undefined) => {
+  const readPhoto = async (file: Blob | undefined) => {
     if (!file) return;
     setReading(0);
     setReadNote(null);
@@ -130,7 +133,7 @@ function OwnFood({ initial, isNew }: { initial: Food; isNew: boolean }) {
       setReadNote(
         found.length
           ? `Read from the photo: ${found.map((k) => LABEL_NAMES[k]).join(', ')}. Check every value against the label${found.length < 5 ? ' and type the missing ones' : ''}.`
-          : 'No values could be read. Take a sharp, straight photo of the nutrition table only, in good light, or type the values.',
+          : 'No values could be read. Take a sharp, straight photo close to the table, in good light, frame only the table, or type the values.',
       );
     } catch {
       setReadNote('The photo could not be read (the reader needs a connection the first time). Type the values instead.');
@@ -159,7 +162,7 @@ function OwnFood({ initial, isNew }: { initial: Food; isNew: boolean }) {
         actions={
           <InfoButton title="Your food">
             <p style={{ margin: 0 }}>Values per 100 g (or 100 ml), as on the nutrition label. When Energy is empty, a button fills it from the macros.</p>
-            <p style={{ margin: 0 }}>Read label photo: take or choose a photo of the nutrition table; the text is read on this device and the values per 100 g fill the fields. Always check them.</p>
+            <p style={{ margin: 0 }}>Read label photo: take or choose a photo of the nutrition table, frame only the table, and the values per 100 g fill the fields. The text is read on this device. Always check the values.</p>
             <p style={{ margin: 0 }}>Changes are kept only when you tap Save.</p>
           </InfoButton>
         }
@@ -187,12 +190,29 @@ function OwnFood({ initial, isNew }: { initial: Food; isNew: boolean }) {
           </p>
         )}
         <div className="label-photo">
-          <input ref={photo} type="file" accept="image/*" hidden onChange={(e) => void readPhoto(e.target.files?.[0])} />
+          <input
+            ref={photo}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              setFraming(e.target.files?.[0] ?? null);
+              e.target.value = '';
+            }}
+          />
           <button className="btn" disabled={reading !== null} onClick={() => photo.current?.click()}>
             <Icon name="camera" /> {reading === null ? 'Read label photo' : `Reading the label… ${Math.round(reading * 100)}%`}
           </button>
           {readNote && <p className="tiny faint" style={{ margin: 0 }}>{readNote}</p>}
         </div>
+        <LabelCropper
+          file={framing}
+          onCancel={() => setFraming(null)}
+          onCropped={(part) => {
+            setFraming(null);
+            void readPhoto(part);
+          }}
+        />
         <div className="nutri-grid">
           <NumberField label="Energy" suffix="kcal" value={f.kcal || undefined} onChange={num('kcal')} />
           <NumberField label="Protein" suffix="g" value={f.protein || undefined} onChange={num('protein')} />

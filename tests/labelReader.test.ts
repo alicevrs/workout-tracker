@@ -50,3 +50,34 @@ Sodio 120 mg`;
     expect(parseLabel('Ingredienti: semola di grano duro, acqua.')).toEqual({});
   });
 });
+
+describe('real labels', () => {
+  it('reads a six-language label with the unit before the number (Barilla sauce)', () => {
+    // Text as read from the user's photo (inverted, white on blue), with OCR mistakes.
+    const text = `. Nutrition dedaration - Dédlaration nutritionnelle- gg»,
+| Nahrwertdeklaration - Dichiarazione nutrizionale - fano
+" tesgy - Energie - Energie - Energia - kJ 227
+Valor energético - Energi kcal 54
+aesganes-tet:Gassi- Casas. felt 9 22 Simon
+ci uhich saturates - dont acides gras saturés - HE Wim
+davon gesattigte Fettsauren - di cui acidi grassi saturi - ana
+delas auales saturadas - varav mattat fett 9 03 lidia
+Carbohydrate - Glucides - Kohlenhydrate -
+Carboidrati - Hidratos de carbono - Kolhydrat g 6,2
+duhichsugars- dont sucres - davon Zucker - di cui aucthei- og nur
+dels cuales azicares - varav sockerarter g 50 pipi!
+Are - Fra alimentaria - Fiber g 18 OSS
+Motta -Protéines - Ewei - Proteine - Proteinas -Protei g 1,5 pu, -
+Salt - Sel - Salz - Sale - Sal - Salt g 0,75`;
+    // The fat row came out too garbled to recognise; everything else is read.
+    expect(parseLabel(text)).toEqual({ kcal: 54, saturatedFat: 0.3, carbs: 6.2, sugars: 5, fiber: 1.8, protein: 1.5, sodium: 300 });
+    expect(parseLabel(text.replace('felt 9 22', 'Fett 9 22'))).toMatchObject({ fat: 2.2 });
+  });
+  it('takes the number from the next line when the row name wraps', () => {
+    expect(parseLabel('of which sugars - dont sucres -\ng 5,0')).toEqual({ sugars: 5 });
+    expect(parseLabel('Fibre - Fibres alimentaires -\nine. ba alimenta 0u')).toEqual({});
+  });
+  it('keeps plausible values as they are', () => {
+    expect(parseLabel('Energia 450 kcal\nGrassi 22 g\nCarboidrati 50 g\nProteine 10 g')).toEqual({ kcal: 450, fat: 22, carbs: 50, protein: 10 });
+  });
+});

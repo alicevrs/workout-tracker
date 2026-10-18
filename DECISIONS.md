@@ -304,3 +304,11 @@ Choices made while building the app, with the reason for each.
 - Parsing (`src/lib/labelReader.ts`): row names in Italian, English, French, German and Spanish; the first number of a row is taken (European labels list per 100 g first); kcal anywhere in the text, else kJ ÷ 4.184; unsaturated-fat rows ignored; salt → sodium (÷ 2.5); “<0,5” → 0.5. OCR mistakes handled: decimal commas, “O” for 0 inside numbers, and the unit “g” read as a 9 stuck to the number (“1,29” → 1.2, “129” → 12, only when the number has no unit after it).
 - The values found replace the form fields; the page says which were read and asks to check them. The photo is not stored.
 - The button is in every own-food form (new, scanned, not found by barcode). File input without `capture`, so the iPhone offers both camera and photo library.
+
+## Label photo, revised after the first real test (2026-10-18)
+- First real photo (Barilla sauce jar: white text on dark blue, six languages per row, unit before the number “g 2,2”, small text, table a small part of the photo) gave one value. Changes:
+  - **Frame the table** step (`LabelCropper`) after taking the photo: the person drags a frame around the table and only that part is read, at full resolution. Clutter around the table (jar, other text) was the main cause of lost values.
+  - Photos read at up to 3200 px (was 2000); small images enlarged to 2400 px.
+  - A second reading with light and dark swapped when the first finds fewer than 7 values; the two readings are merged (the one with more values first). Pixel inversion by hand, as older iPhones lack canvas filters.
+  - Parser: unit before the number (“kJ 227”, “kcal 54”, “g 2,2”, and “9 2,2” with the g misread), row names that wrap over several lines (the number is taken from the next line only if it has its unit), Swedish row names, “03” → 0.3, and a **consistency check**: when the label's calories are known, a whole number ≥ 10 for fat, carbohydrates or protein that alone gives far more calories is divided by 10 (lost decimal comma); parts larger than their total (saturated > fat, sugars > carbohydrates) and fibre larger than the macros together likewise.
+- Known limit: on-device OCR stays fragile with curved, glossy, small or light-on-dark labels. If it is still not good enough in daily use, the agreed next step is reading the photo with an AI service.
