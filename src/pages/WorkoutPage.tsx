@@ -182,15 +182,16 @@ export default function WorkoutPage() {
           const label = b.name ?? FORMAT_INFO[b.format].label;
           return (
             <section key={b.id} className="card block-card" aria-label={label} style={b.skipped ? { opacity: 0.5 } : undefined}>
-              <div className="card-title">
+              <div className="card-title" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
                 <div style={{ minWidth: 0 }}>
-                  <span className="chip primary">{FORMAT_INFO[b.format].short}</span> <strong>{label}</strong>
-                  <div className="small muted">
-                    {describeBlock(performedToBlock(b))}
+                  {/* Name on its own line; below it the timer tag and how long it lasts. */}
+                  <strong style={{ display: 'block', overflowWrap: 'anywhere' }}>{label}</strong>
+                  <div className="small muted" style={{ marginTop: 4 }}>
+                    <span className="chip primary">{FORMAT_INFO[b.format].short}</span> {describeBlock(performedToBlock(b))}
                     {b.durationSec ? ` · ${formatClock(b.durationSec)} timed` : ''}
                   </div>
                 </div>
-                <div className="row wrap" style={{ justifyContent: 'flex-end' }}>
+                <div className="row wrap" style={{ justifyContent: 'flex-start' }}>
                   <button className="btn small" onClick={() => updateBlock(b.id, (f) => ({ ...f, skipped: !f.skipped }))} aria-pressed={!b.skipped}>
                     {b.skipped ? 'Include' : 'Skip today'}
                   </button>
