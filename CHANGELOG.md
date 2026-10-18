@@ -336,3 +336,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 
 ## Add block in a workout picks a training block (2026-10-18)
 - In a running workout, the timer-type list next to **Add block** is gone. **Add block** opens the list of your training blocks; tapping one adds it to the workout, set up as in the training block.
+- Below the parts of a running workout there are the same two buttons as in the workout editor: **Add a block** (pick a saved training block) and **New block** (set up a new training block step by step; on Save it is stored with your training blocks and added to the workout).

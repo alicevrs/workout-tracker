@@ -267,3 +267,4 @@ Choices made while building the app, with the reason for each.
 
 ## Adding a part during a workout
 - Add block only offers saved training blocks (linked copy via `linkedBlock`), so the added part follows the block like the others and uses the simple plan editor. Empty parts by timer type can no longer be created in a workout; `addedInSession` stays only for parts added that way before.
+- New block from a running workout: same step editor as from a workout (`?addToSession=<session id>`); on Save the template is stored and a linked copy is appended to the session, then the page goes back to the workout.

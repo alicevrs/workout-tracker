@@ -15,7 +15,8 @@ import { applyBlockEdit, blockToPerformed, hasPlannedSets, performedToBlock } fr
 import { completeBlocks } from '../lib/quickLog';
 import { SessionPlanEditor } from '../components/SessionPlanEditor';
 import { blockSummary } from '../lib/blockSummary';
-import { linkedBlock } from '../lib/blockTemplates';
+import { linkedBlock, newBlockTemplate } from '../lib/blockTemplates';
+import { setDraft } from '../lib/drafts';
 import { previousSets } from '../lib/stats';
 import { formatWeight } from '../lib/units';
 
@@ -315,9 +316,22 @@ export default function WorkoutPage() {
           </div>
         )}
 
-        <button className="btn" onClick={() => setAdding(true)}>
-          <Icon name="plus" /> Add block
-        </button>
+        <div className="big-buttons" style={{ paddingTop: 4 }}>
+          <button className="big-btn" onClick={() => setAdding(true)}>
+            <Icon name="plus" /> Add a block
+          </button>
+          <button
+            className="big-btn pink"
+            onClick={() => {
+              // A new training block, set up in its own editor; saving it adds it to this workout.
+              const t = newBlockTemplate('sets_reps', profile.defaultPrepSec);
+              setDraft(`block:${t.id}`, t, true);
+              navigate(`/workouts/blocks/${t.id}?draft=1&addToSession=${encodeURIComponent(session.id)}&from=${encodeURIComponent(`/workout/${session.id}`)}`);
+            }}
+          >
+            <Icon name="plus" /> New block
+          </button>
+        </div>
         <Sheet open={adding} onClose={() => setAdding(false)} title="Add a training block">
           {templates.length === 0 ? (
             <p className="small muted">No training blocks yet. Create them in Workouts → Training blocks.</p>

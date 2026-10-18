@@ -42,6 +42,7 @@ import { estimateBlockSeconds } from '../lib/program';
 import { SET_OPTIONS } from '../lib/timer/quick';
 import { withTimer } from '../lib/timerTemplates';
 import { workoutDay } from '../lib/workouts';
+import { blockToPerformed } from '../lib/session';
 import { fromDisplayWeight, toDisplayWeight } from '../lib/units';
 
 const STRUCTURE_HINT: Record<Structure, string> = {
@@ -95,6 +96,8 @@ export default function ExerciseTemplateEditPage() {
   const back = params.get('from') || '/workouts/blocks';
   /** Workout that asked for this new block: it gets the block when it is saved. */
   const addTo = params.get('addTo');
+  /** Workout in progress that asked for this new block: it gets the block when it is saved. */
+  const addToSession = params.get('addToSession');
   const navigate = useNavigate();
   const toast = useToast();
   const profile = useProfile();
@@ -136,6 +139,15 @@ export default function ExerciseTemplateEditPage() {
         if (!day.blocks.some((b) => b.templateId === next.id))
           setDraft(key, { ...w.item, days: [{ ...day, blocks: [...day.blocks, linkedBlock(next)] }] }, w.isNew);
       }
+      navigate(back);
+      return;
+    }
+    if (addToSession) {
+      await db.transaction('rw', db.sessions, async () => {
+        const s = await db.sessions.get(addToSession);
+        if (s)
+          await db.sessions.update(s.id, { blocks: [...s.blocks, blockToPerformed(linkedBlock(next))], updatedAt: Date.now() });
+      });
       navigate(back);
       return;
     }
