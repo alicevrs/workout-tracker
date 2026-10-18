@@ -228,3 +228,4 @@ Choices made while building the app, with the reason for each.
 - Changing Log as adapts the counting like before: by reps keeps a saved timer or switches to sets × reps; by time switches sets × reps to a timer (Tabata). Since any exercise can now be logged either way, the exercise picker no longer filters by kind.
 - The exercise picker clears its search whenever it opens.
 - “How they are combined” is available for every block (user's choice) and comes before Log as. With sets × reps it sets grouping and the rests as before (`withStructure`); with a timer it only records the grouping (`withGrouping`) as information about the order, since the timer's rounds already decide the turns. Switching format keeps the grouping (except drop sets).
+- The sample workouts (`src/lib/templates.ts`) are no longer offered in the app (user's choice, and in line with “no examples in the app”); the file stays only because tests use it.

@@ -273,3 +273,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Existing training blocks and workout parts got the Log as of their first exercise automatically, so nothing needs to be redone.
 - Add exercise: the search box starts empty every time (the previous search is not kept), and the list shows all exercises again.
 - Training blocks: **How they are combined** (in sequence, alternating, circuit) can now be chosen with every Log as and every timer, and it comes right after the exercises, before Log as. With a timer it records the order to follow; the timer itself is unchanged.
+- Workouts list: “Add sample workouts” removed. New workout builds a workout; below is the list of your workouts.

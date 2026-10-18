@@ -3,12 +3,11 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { InfoButton, LibraryList, SearchField } from '../components/Library';
-import { PageHeader, Sheet, useToast } from '../components/ui';
+import { PageHeader, useToast } from '../components/ui';
 import { db } from '../db/db';
 import { formatDuration } from '../lib/dates';
 import { setDraft } from '../lib/drafts';
 import { cloneProgram, estimateBlockSeconds } from '../lib/program';
-import { TEMPLATES } from '../lib/templates';
 import { newWorkout, workoutDay } from '../lib/workouts';
 
 /** Library of workout templates: create, open, duplicate. Workouts are started from Home. */
@@ -17,7 +16,6 @@ export default function WorkoutTemplatesPage() {
   const toast = useToast();
   const workouts = useLiveQuery(() => db.programs.orderBy('name').toArray(), []);
   const [query, setQuery] = useState('');
-  const [samples, setSamples] = useState(false);
 
   const items = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -70,31 +68,6 @@ export default function WorkoutTemplatesPage() {
       </div>
       {(workouts?.length ?? 0) > 6 && <SearchField value={query} onChange={setQuery} label="Search workouts" />}
       <LibraryList items={items} onDuplicate={duplicate} onDelete={remove} empty={query ? 'No workout matches.' : 'No workouts yet.'} />
-      <div className="row" style={{ justifyContent: 'center' }}>
-        <button className="btn small ghost" onClick={() => setSamples(true)}>
-          <Icon name="plus" /> Add sample workouts
-        </button>
-      </div>
-      <Sheet open={samples} onClose={() => setSamples(false)} title="Add sample workouts">
-        <ul className="lib-list">
-          {TEMPLATES.map((t) => (
-            <li key={t.id} className="lib-row">
-              <button
-                className="lib-main"
-                onClick={async () => {
-                  setSamples(false);
-                  const list = t.create();
-                  await db.programs.bulkAdd(list);
-                  toast(`${list.length} workouts added`);
-                }}
-              >
-                <span className="lib-name">{t.name}</span>
-                <span className="lib-sub">{t.description}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </Sheet>
     </div>
   );
 }
