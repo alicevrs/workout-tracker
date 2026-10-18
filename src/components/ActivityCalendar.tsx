@@ -6,7 +6,6 @@ import { activeDays, monthGrid, sessionActivity, sessionsByDay } from '../lib/ac
 import { addMonths, formatDuration, fromDateKey, startOfDay, startOfMonth, toDateKey } from '../lib/dates';
 import { sessionDurationSec } from '../lib/session';
 import { Icon } from './Icon';
-import { LogPastWorkout } from './LogPastWorkout';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -14,7 +13,6 @@ const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export function ActivityCalendar({ sessions }: { sessions: Session[] }) {
   const [month, setMonth] = useState(() => startOfMonth(Date.now()));
   const [selected, setSelected] = useState<string | null>(toDateKey(Date.now()));
-  const [logging, setLogging] = useState(false);
   const done = sessions.filter((s) => s.status === 'completed');
   const byDay = sessionsByDay(done);
   const weeks = monthGrid(month);
@@ -102,16 +100,6 @@ export function ActivityCalendar({ sessions }: { sessions: Session[] }) {
         <div className="mt">
           <div className="row between">
             <h3>{fromDateKey(selected).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
-            {!isFuture(selected) && (
-              <div className="row">
-                <button className="btn small primary" onClick={() => setLogging(true)}>
-                  <Icon name="plus" /> Workout
-                </button>
-                <Link className="btn small" to={`/activity/new?date=${selected}`}>
-                  <Icon name="plus" /> Activity
-                </Link>
-              </div>
-            )}
           </div>
           {dayList.length === 0 ? (
             <p className="small muted mt-s">No activity logged.</p>
@@ -142,7 +130,6 @@ export function ActivityCalendar({ sessions }: { sessions: Session[] }) {
           )}
         </div>
       )}
-      <LogPastWorkout open={logging} onClose={() => setLogging(false)} date={selected ?? undefined} />
     </section>
   );
 }

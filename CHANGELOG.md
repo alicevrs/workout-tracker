@@ -284,3 +284,6 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Every page now opens from the top (an exercise page used to open scrolled down, hiding its animation).
 - Exercises list and Add exercise: an **All equipment** menu to filter by equipment (dumbbell, barbell, cable, machine…), listing the equipment the exercises actually use.
 - Lists keep search, filters and position **only** when you come back from one of their own items (open an exercise, Back). Coming from another section starts the list fresh.
+
+## History is for looking back (2026-10-18)
+- History no longer has buttons to add a workout or an activity (neither at the top nor under a day of the calendar). Add them from Home → Start a workout / Start an activity, where you can choose the date.

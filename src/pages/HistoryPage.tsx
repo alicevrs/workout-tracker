@@ -2,7 +2,6 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ActivityCalendar } from '../components/ActivityCalendar';
-import { LogPastWorkout } from '../components/LogPastWorkout';
 import { Icon } from '../components/Icon';
 import { EmptyState, PageHeader, Segmented } from '../components/ui';
 import { sessionActivity } from '../lib/activities';
@@ -39,22 +38,11 @@ export default function HistoryPage() {
     groups.set(key, [...(groups.get(key) ?? []), s]);
   }
 
-  const [logging, setLogging] = useState(false);
 
   return (
     <div className="page">
       <PageHeader
         title="History"
-        actions={
-          <>
-            <Link className="btn primary" to="/activity/new">
-              <Icon name="plus" /> Activity
-            </Link>
-            <button className="btn" onClick={() => setLogging(true)} aria-label="Log a workout on any date">
-              <Icon name="dumbbell" /> <span className="hide-sm">Past workout</span>
-            </button>
-          </>
-        }
       />
       <div className="mb">
         <Segmented<'list' | 'calendar'>
@@ -68,7 +56,6 @@ export default function HistoryPage() {
         />
       </div>
       {view === 'calendar' && sessions && <ActivityCalendar sessions={sessions} />}
-      <LogPastWorkout open={logging} onClose={() => setLogging(false)} />
       {sessions && sessions.length === 0 && view === 'list' && (
         <div className="card">
           <EmptyState icon="history" title="No workouts yet" action={<Link className="btn primary" to="/">Start a workout</Link>}>
