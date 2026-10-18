@@ -261,7 +261,7 @@ export default function ExerciseTemplateEditPage() {
                     setBlock(structured ? withStructure(b, next) : withGrouping(b, next));
                   }}
                 >
-                  {st === 'sequence' ? 'In sequence' : 'Circuit'}
+                  {st === 'sequence' ? 'Sequence' : 'Circuit'}
                 </button>
               ))}
             </div>
