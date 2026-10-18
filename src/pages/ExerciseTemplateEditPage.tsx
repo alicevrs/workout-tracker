@@ -61,7 +61,7 @@ const LOG_LABEL: Record<LogField, string> = { reps: 'Reps', time: 'Time', distan
 const COUNT_TITLE: Record<LogMode, string> = { R: 'Rounds and rest', RT: 'Timer', RTD: 'Timer', T: 'Total time', DT: 'Time', DR: 'Reps and rest', D: '' };
 const TARGETS_TITLE: Record<LogMode, string> = {
   R: 'Reps and weight',
-  RT: 'Weight',
+  RT: 'Reps and weight',
   T: 'Reps and weight',
   D: 'Distance',
   DR: 'Distance',
@@ -363,9 +363,9 @@ export default function ExerciseTemplateEditPage() {
                     </div>
                   ) : (
                     <div className="form-grid">
-                      {(mode === 'R' || mode === 'T') && (
+                      {(mode === 'R' || mode === 'T' || mode === 'RT') && (
                         <NumberField
-                          label="Reps"
+                          label={mode === 'RT' ? (b.format === 'emom' ? 'Reps per interval' : 'Reps per round') : 'Reps'}
                           value={perSet(e) ? undefined : e.reps}
                           placeholder="none"
                           disabled={perSet(e)}
@@ -386,7 +386,7 @@ export default function ExerciseTemplateEditPage() {
                     </div>
                   )}
                   {mode === 'DR' && e.distanceKm ? <p className="tiny faint" style={{ margin: '6px 0 0' }}>{`${Math.round((e.distanceKm * 1000) / Math.max(1, setsOf(b)))} m per rep`}</p> : null}
-                  {mode === 'R' && (
+                  {(mode === 'R' || (mode === 'RT' && b.format === 'emom')) && (
                     <SetTargetsEditor entry={e} unit={unit} perInterval={b.format === 'emom'} count={intervalsFor(i)} onChange={(patch) => setEntry(e.id, patch)} />
                   )}
                 </div>

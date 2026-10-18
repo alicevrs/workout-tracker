@@ -319,4 +319,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
   - Reps + Time + Distance → a saved timer, logging the distance of each round.
   Incline and speed are optional targets whenever distance is logged. During the workout the log columns match (weight with reps or time; time and distance when distance is logged).
 - Existing training blocks and workout parts got the matching combination automatically.
-- Log as **Time** alone: step 4 is one **total time** for all the listed exercises, and step 5 asks **reps and weight** for each exercise. **Reps + Time**: the saved timer's rounds give the reps, so step 5 asks only the **weight**.
+- Log as **Time** alone: step 4 is one **total time** for all the listed exercises, and step 5 asks **reps and weight** for each exercise. (Reps + Time is unchanged: a saved timer, with reps and weight per exercise.)
