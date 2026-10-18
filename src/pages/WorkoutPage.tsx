@@ -277,6 +277,7 @@ export default function WorkoutPage() {
                   exercise={exercises.get(e.exerciseId)}
                   format={b.format}
                   logAs={b.logAs}
+                  log={b.log}
                   unit={profile.unit}
                   prev={prevLookup(e.exerciseId)}
                   update={(fn) => updateBlock(b.id, (fresh) => ({ ...fresh, entries: fresh.entries.map((x) => (x.id === e.id ? fn(x) : x)) }))}

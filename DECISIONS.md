@@ -249,3 +249,9 @@ Choices made while building the app, with the reason for each.
 - Combination is optional and works with one exercise too (`Block.combine`: none / sequence / circuit; tapping the selected chip clears it). “None” with several exercises = each exercise with its own sets. A single exercise can be a Circuit (logged in one go). New blocks start with none. `migrateBlockStructure` only touches older blocks without `combine`.
 - Workout page: no Title / Effort / Start / Duration fields (user's choice). Effort stays at its default (moderate) for calorie estimates; start and end come from starting and finishing the workout (or from the date chosen on Home). Add block offers the same formats as training blocks.
 - Part actions in a running workout are icon buttons (skip, pencil, stopwatch) with labels for screen readers and a tooltip; a skipped part is dimmed and its skip icon is yellow (tap again to include it).
+
+## Log fields (replaces “Log as” with three options)
+- `Block.log` = any of `reps`, `time`, `distance` (copied to sessions). Seven modes (`logMode`), each mapped onto the existing engine formats so the timer, logging and history keep working: R → sets × reps (rounds + rest); RT and RTD → a saved timer (choose one; no manual timer settings); T and DT → timed sets, one set per exercise of the block time; D → one open set with a distance target; DR → sets × reps where sets = reps and the distance target is split per rep (`plannedSet.distanceM`).
+- RTD (all three) was the user's open question; chosen: the saved timer gives rounds and time, and the distance of each round is logged.
+- Set log columns from `log`: no distance → weight + reps and/or time; with distance → time + distance.
+- `migrateBlockLog` (every start, fills only blocks without `log`): from the old `logAs`/exercise tracking and the format (timer formats → reps + time, or all three for time × distance; timed sets → time, or time + distance; otherwise reps, or distance).

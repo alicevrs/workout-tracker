@@ -197,3 +197,41 @@ describe('in sequence now means rounds', () => {
     expect(await migrateBlockStructure(db)).toBe(0);
   });
 });
+
+describe('log fields: reps, time, distance in any combination', () => {
+  it('sets each combination up the right way', async () => {
+    const { addExercise, withLog, logMode, durationOf, setsOf, restOf } = await import('../src/lib/blockTemplates');
+    const base = addExercise(newBlockTemplate().block, 'treadmill-run', 60);
+    expect(logMode(['reps'])).toBe('R');
+    expect(logMode(['time', 'reps'])).toBe('RT');
+    expect(logMode(['reps', 'time', 'distance'])).toBe('RTD');
+    expect(withLog(base, ['reps']).format).toBe('sets_reps');
+    const t = withLog(base, ['time']);
+    expect([t.format, durationOf(t), setsOf(t), restOf(t)]).toEqual(['timed_sets', 60, 1, 0]);
+    const d = withLog(base, ['distance']);
+    expect([d.format, setsOf(d), restOf(d)]).toEqual(['sets_reps', 1, 0]);
+    expect(withLog(base, ['time', 'distance']).format).toBe('timed_sets');
+    expect(withLog(base, ['reps', 'distance']).format).toBe('sets_reps');
+    const rt = withLog(base, ['reps', 'time']);
+    expect(['tabata', 'amrap', 'emom', 'for_time']).toContain(rt.format);
+    expect(rt.timerId).toBeUndefined();
+  });
+
+  it('older blocks get their log from “Logged as” and their format', async () => {
+    const { blockLog } = await import('../src/lib/blockTemplates');
+    const { newBlock } = await import('../src/lib/program');
+    const none = new Map();
+    expect(blockLog({ ...newBlock('sets_reps'), logAs: 'weight_reps' }, none)).toEqual(['reps']);
+    expect(blockLog({ ...newBlock('emom'), logAs: 'weight_reps' }, none)).toEqual(['reps', 'time']);
+    expect(blockLog({ ...newBlock('timed_sets'), logAs: 'weight_time' }, none)).toEqual(['time']);
+    expect(blockLog({ ...newBlock('tabata'), logAs: 'time_distance' }, none)).toEqual(['reps', 'time', 'distance']);
+    expect(blockLog({ ...newBlock('sets_reps'), log: ['distance'] }, none)).toEqual(['distance']);
+  });
+
+  it('a distance done in several reps is split over the sets', async () => {
+    const { plannedSet } = await import('../src/lib/session');
+    const { newEntry } = await import('../src/lib/program');
+    const e = { ...newEntry('running', 'sets_reps', 60), sets: 4, distanceKm: 2 };
+    expect(plannedSet(e, 1).distanceM).toBe(500);
+  });
+});

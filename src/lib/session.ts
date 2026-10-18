@@ -49,6 +49,8 @@ export function plannedSet(e: ExerciseEntry, setNumber: number): SetRecord {
     reps: t.reps,
     weight: t.weight,
     durationSec: t.durationSec,
+    // Distance target split over the sets (a distance done in several reps).
+    distanceM: e.distanceKm ? Math.round((e.distanceKm * 1000) / Math.max(1, entrySets(e))) : undefined,
     completed: false,
     warmup: t.warmup || undefined,
     toFailure: t.toFailure || undefined,
@@ -75,6 +77,7 @@ export function blockToPerformed(b: Block): PerformedBlock {
     timer: { ...b.timer },
     note: b.note,
     logAs: b.logAs,
+    log: b.log,
     circuit: b.circuit,
     entries: b.entries.map((e) => entryToPerformed(e, b.format)),
   };
@@ -90,6 +93,7 @@ export function performedToBlock(pb: PerformedBlock): Block {
     timer: { ...pb.timer },
     note: pb.note,
     logAs: pb.logAs,
+    log: pb.log,
     circuit: pb.circuit,
     entries: pb.entries.map(
       (e) =>
@@ -135,6 +139,7 @@ export function applyBlockEdit(pb: PerformedBlock, edited: Block): PerformedBloc
     timer: { ...edited.timer },
     note: edited.note,
     logAs: edited.logAs,
+    log: edited.log,
     circuit: edited.circuit,
     entries,
   };

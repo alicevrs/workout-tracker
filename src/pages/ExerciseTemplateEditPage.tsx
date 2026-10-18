@@ -5,36 +5,34 @@ import { SetTargetsEditor } from '../components/BlockEditor';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { Icon } from '../components/Icon';
 import { InfoButton } from '../components/Library';
-import { ClockPick, Line, Pick, TimerFields, mins } from '../components/TimerFields';
+import { ClockPick, Line, Pick, mins } from '../components/TimerFields';
 import { EmptyState, NumberField, PageHeader, useToast } from '../components/ui';
 import { getDraft, setDraft, useDraft, withDraftParam } from '../lib/drafts';
 import { useSwipeBack } from '../hooks/useSwipeBack';
 import { db } from '../db/db';
 import { useExerciseMap, useProfile } from '../db/repo';
-import type { Block, BlockFormat, BlockTemplate, ExerciseEntry, Program, Tracking } from '../db/types';
+import type { Block, BlockTemplate, ExerciseEntry, LogField, Program } from '../db/types';
 import { useDragReorder } from '../hooks/useDragReorder';
 import {
   addExercise,
-  blockKind,
-  blockLogAs,
-  countByOf,
-  logCountBy,
+  blockLog,
+  durationOf,
   hasStructure,
   linkedBlock,
+  LOG_FIELDS,
+  logMode,
   NEW_BLOCK_NAME,
   OLD_BLOCK_NAME,
-  paramsFromQuick,
-  quickFromParams,
   restOf,
   setsOf,
   structureOf,
   syncTemplate,
-  TIME_FORMATS,
-  withFormat,
-  withSetsRest,
+  withDuration,
   withGrouping,
+  withLog,
+  withSetsRest,
   withStructure,
-  type CountBy,
+  type LogMode,
   type Structure,
 } from '../lib/blockTemplates';
 import { formatDuration } from '../lib/dates';
@@ -49,7 +47,6 @@ const STRUCTURE_HINT: Record<Structure, string> = {
   sequence: 'Exercises one after the other, rest after each round.',
   circuit: 'One continuous routine, logged in one go.',
 };
-const TIME_LABEL: Partial<Record<BlockFormat, string>> = { timed_sets: 'Timed sets', tabata: 'Tabata', amrap: 'AMRAP', emom: 'EMOM', for_time: 'For Time' };
 
 /** The block without its link to a saved timer (its times become its own). */
 function unlinkTimer(b: Block): Block {
@@ -58,11 +55,17 @@ function unlinkTimer(b: Block): Block {
   return next;
 }
 
-const LOG_AS: { value: Tracking; label: string }[] = [
-  { value: 'weight_reps', label: 'Weight × reps' },
-  { value: 'weight_time', label: 'Weight × time' },
-  { value: 'time_distance', label: 'Time × distance' },
-];
+const LOG_LABEL: Record<LogField, string> = { reps: 'Reps', time: 'Time', distance: 'Distance' };
+const COUNT_TITLE: Record<LogMode, string> = { R: 'Rounds and rest', RT: 'Timer', RTD: 'Timer', T: 'Time', DT: 'Time', DR: 'Reps and rest', D: '' };
+const TARGETS_TITLE: Record<LogMode, string> = {
+  R: 'Reps and weight',
+  RT: 'Reps and weight',
+  T: 'Weight',
+  D: 'Distance',
+  DR: 'Distance',
+  DT: 'Incline and speed',
+  RTD: 'Incline and speed',
+};
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
@@ -157,28 +160,21 @@ export default function ExerciseTemplateEditPage() {
 
   const b = tpl.block;
   const linkedTimer = b.timerId ? timers.find((t) => t.id === b.timerId) : undefined;
-  // How the block is logged (chosen in step 2) decides how it is counted: reps, or time with a timer.
-  const logAs = blockLogAs(b, exercises);
-  const kind = blockKind(b, exercises);
+  // What the block logs (step 3) decides how it is counted and which targets it asks for.
+  const log = blockLog(b, exercises);
+  const mode = logMode(log);
+  const toggleLog = (f: LogField) => {
+    const next = log.includes(f) ? log.filter((x) => x !== f) : LOG_FIELDS.filter((x) => x === f || log.includes(x));
+    if (next.length) setBlock(withLog(b, next));
+  };
   // Step numbers: 1 exercises, 2 how they are combined, 3 log as, 4 counting, 5 targets.
   const logN = 3;
   const countN = logN + 1;
   const targetsN = countN + 1;
-  const setLogAs = (t: Tracking) => {
-    const next: Block = { ...b, logAs: t };
-    if (logCountBy(t) === 'reps') setBlock(countByOf(next) === 'time' && !next.timerId ? countAs(next, 'reps') : next);
-    else setBlock(countByOf(next) === 'reps' ? countAs(next, 'time') : next);
-  };
-  const countBy = countByOf(b);
-  // Reps exercises: sets and rest set here, or a saved timer (which then sets the number of sets).
-  // Timed exercises: always a timer. Older blocks that break this show a notice with a fix.
-  const mismatch = kind === 'time' ? countBy === 'reps' : kind === 'reps' && countBy === 'time' && !linkedTimer;
   const structured = hasStructure(b.format);
   const total = estimateBlockSeconds(b);
   const autoName = (block: Block) => block.entries.map((e) => exercises.get(e.exerciseId)?.name ?? '').filter(Boolean).join(' / ');
   const nameIsAuto = tpl.name === NEW_BLOCK_NAME || tpl.name === OLD_BLOCK_NAME || tpl.name === autoName(b);
-  /** Time × distance block: targets are incline, speed and distance instead of weight and reps. */
-  const distanceEx = (_e: ExerciseEntry) => logAs === 'time_distance';
   /** Targets set per set / interval: the exercise's own reps and weight are not used. */
   const perSet = (e: ExerciseEntry) => !!e.setTargets?.length;
   /** EMOM: intervals that go to the i-th exercise (they take turns). */
@@ -189,9 +185,6 @@ export default function ExerciseTemplateEditPage() {
   };
   const setEntry = (entryId: string, patch: Partial<ExerciseEntry>) => setBlock({ ...b, entries: b.entries.map((e) => (e.id === entryId ? { ...e, ...patch } : e)) });
   const changeEntries = (block: Block) => update({ block, ...(nameIsAuto ? { name: autoName(block) || NEW_BLOCK_NAME } : {}) });
-  /** Count the block the way its exercises are logged: sets × reps, or a timer (Tabata unless one is set). */
-  const countAs = (block: Block, k: CountBy): Block =>
-    k === 'reps' ? unlinkTimer(withFormat(block, 'sets_reps')) : countByOf(block) === 'time' ? block : unlinkTimer(withFormat(block, 'tabata'));
 
   return (
     <div className="page">
@@ -204,9 +197,8 @@ export default function ExerciseTemplateEditPage() {
           <InfoButton title="Training blocks">
             <p style={{ margin: 0 }}>A block is a ready-made piece of a workout. Build it in order:</p>
             <p style={{ margin: 0 }}>
-              <strong>1.</strong> pick the exercises from the catalogue; <strong>2.</strong> how they are combined, if they are; then how they are logged (weight × reps, weight × time or time × distance); how it is counted: by reps with sets and rest set here or a saved timer that sets the number of sets, by
-              time always with a timer; finally the targets (reps and weight, or incline, speed and distance); then notes if you like.
-            </p>
+              <strong>1.</strong> pick the exercises; <strong>2.</strong> how they are combined, if they are; <strong>3.</strong> what you log: reps, time, distance or a combination;
+              <strong>4.</strong> how it is counted, which follows from step 3 (rounds and rest, a saved timer, a time); <strong>5.</strong> the targets.</p>
             <p style={{ margin: 0 }}>Changes are kept only when you tap Save. Workouts that use this block then follow from their next session; workouts already done stay as they were.</p>
           </InfoButton>
         }
@@ -276,145 +268,115 @@ export default function ExerciseTemplateEditPage() {
         {b.entries.length > 0 && (
           <Step n={logN} title="Log as">
             <div className="row wrap" role="group" aria-label="Log as" style={{ gap: 8 }}>
-              {LOG_AS.map((o) => (
-                <button key={o.value} className="chip" aria-pressed={logAs === o.value} onClick={() => setLogAs(o.value)}>
-                  {o.label}
+              {LOG_FIELDS.map((f) => (
+                <button key={f} className="chip" aria-pressed={log.includes(f)} onClick={() => toggleLog(f)}>
+                  {LOG_LABEL[f]}
                 </button>
               ))}
             </div>
           </Step>
         )}
 
-        {b.entries.length > 0 && (
-        <Step n={countN} title={kind === 'time' ? 'Count by time' : 'Count by reps'}>
-          {mismatch && (
-            <div className="banner">
-              <p className="small" style={{ margin: 0 }}>
-                {kind === 'reps'
-                  ? 'This block uses a timer that is not one of your saved timers. Choose a saved timer, or set sets and rest here.'
-                  : 'This block is logged by time, but it still uses sets and reps.'}
-              </p>
-              <button className="btn small mt-s" onClick={() => kind && setBlock(countAs(b, kind))}>
-                {kind === 'reps' ? 'Set sets and rest here' : 'Count by time'}
-              </button>
-            </div>
-          )}
-          {linkedTimer ? (
-            <div className="pick-row mt-s">
-              <span className="grow">{linkedTimer.name}</span>
-              <Link className="btn icon small ghost" to={`/workouts/timers/${linkedTimer.id}?from=${selfUrl}`} aria-label={`Open ${linkedTimer.name}`}>
-                <Icon name="edit" />
-              </Link>
-              <button className="btn icon small ghost" aria-label="Remove timer" onClick={() => setBlock(kind === 'reps' ? countAs(unlinkTimer(b), 'reps') : unlinkTimer(b))}>
-                <Icon name="x" />
-              </button>
-            </div>
-          ) : (
-            <label className="field mt-s">
-              Saved timer
-              <select
-                value=""
-                onChange={(e) => {
-                  const t = timers.find((x) => x.id === e.target.value);
-                  if (t) setBlock(withTimer(b, t));
-                }}
-              >
-                <option value="">{kind === 'reps' ? 'None: set sets and rest here' : 'None: set the timer here'}</option>
-                {timers.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          {!linkedTimer && !timers.length && <p className="tiny faint" style={{ margin: '6px 0 0' }}>Timers saved in Workouts → Timers appear here.</p>}
-          {kind === 'time' && !linkedTimer && (
-            <div className="scroll-x mt-s" role="group" aria-label="Timer">
-              {TIME_FORMATS.filter((f) => f !== 'timed_sets' || b.format === 'timed_sets').map((f) => (
-                <button key={f} className="chip" aria-pressed={b.format === f} onClick={() => setBlock(withFormat(b, f))}>
-                  {TIME_LABEL[f]}
-                </button>
-              ))}
-            </div>
-          )}
-          {!linkedTimer && !mismatch && (
-            <div className="mt">
-              {structured ? (
-                <div className="sentences compact-sentences">
-                  <Line>
-                    <Pick small value={setsOf(b)} options={SET_OPTIONS} format={mins} onChange={(v) => setBlock(withSetsRest(b, v, restOf(b)))} label="Sets" />
-                    <span>{b.entries.length > 1 && structureOf(b) !== 'none' ? 'rounds' : 'sets'}</span>
-                  </Line>
-                  <Line>
-                    <ClockPick small value={restOf(b)} maxMin={15} onChange={(v) => setBlock(withSetsRest(b, setsOf(b), v))} label="Rest" />
-                    <span>rest</span>
-                  </Line>
+        {b.entries.length > 0 && mode !== 'D' && (
+          <Step n={countN} title={COUNT_TITLE[mode]}>
+            {(mode === 'RT' || mode === 'RTD') &&
+              (linkedTimer ? (
+                <div className="pick-row">
+                  <span className="grow">{linkedTimer.name}</span>
+                  <Link className="btn icon small ghost" to={`/workouts/timers/${linkedTimer.id}?from=${selfUrl}`} aria-label={`Open ${linkedTimer.name}`}>
+                    <Icon name="edit" />
+                  </Link>
+                  <button className="btn icon small ghost" aria-label="Remove timer" onClick={() => setBlock(unlinkTimer(b))}>
+                    <Icon name="x" />
+                  </button>
                 </div>
               ) : (
-                <TimerFields compact q={quickFromParams(b.format, b.params)} onChange={(q) => setBlock({ ...b, params: paramsFromQuick(q, b.params) })} />
-              )}
-            </div>
-          )}
-        </Step>
+                <>
+                  <label className="field">
+                    <span className="sr-only">Saved timer</span>
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        const t = timers.find((x) => x.id === e.target.value);
+                        if (t) setBlock(withTimer(b, t));
+                      }}
+                    >
+                      <option value="" disabled>
+                        Choose a saved timer
+                      </option>
+                      {timers.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {!timers.length && <p className="tiny faint" style={{ margin: '6px 0 0' }}>Timers saved in Workouts → Timers appear here.</p>}
+                </>
+              ))}
+            {(mode === 'R' || mode === 'DR') && (
+              <div className="sentences compact-sentences">
+                <Line>
+                  <Pick small value={setsOf(b)} options={SET_OPTIONS} format={mins} onChange={(v) => setBlock(withSetsRest(b, v, restOf(b)))} label={mode === 'DR' ? 'Reps' : 'Sets'} />
+                  <span>{mode === 'DR' ? 'reps' : b.entries.length > 1 && structureOf(b) !== 'none' ? 'rounds' : 'sets'}</span>
+                </Line>
+                <Line>
+                  <ClockPick small value={restOf(b)} maxMin={15} onChange={(v) => setBlock(withSetsRest(b, setsOf(b), v))} label="Rest" />
+                  <span>rest</span>
+                </Line>
+              </div>
+            )}
+            {(mode === 'T' || mode === 'DT') && (
+              <div className="sentences compact-sentences">
+                <Line>
+                  <ClockPick small value={durationOf(b)} min={5} maxMin={120} onChange={(v) => setBlock(withDuration(b, v))} label="Time" />
+                  <span>time</span>
+                </Line>
+              </div>
+            )}
+          </Step>
         )}
 
         {b.entries.length > 0 && (
-          <Step
-            n={targetsN}
-            title={
-              b.entries.every(distanceEx) ? 'Incline, speed and distance' : b.format === 'timed_sets' ? 'Time and weight' : b.format === 'tabata' || kind === 'time' ? 'Weight and reps' : 'Reps and weight'
-            }
-          >
+          <Step n={mode === 'D' ? countN : targetsN} title={TARGETS_TITLE[mode]}>
             <div className="stack" style={{ gap: 10 }}>
               {b.entries.map((e, i) => (
                 <div key={e.id} className="target-row">
                   <div className="target-name">{exercises.get(e.exerciseId)?.name ?? 'Exercise'}</div>
-                  {distanceEx(e) ? (
-                    // Time × distance (treadmill and similar): the timer sets the time; targets are incline, speed and distance.
+                  {log.includes('distance') ? (
                     <div className="form-grid">
+                      {(mode === 'D' || mode === 'DR') && (
+                        <NumberField label="Distance (km)" placeholder="none" value={e.distanceKm} onChange={(v) => setEntry(e.id, { distanceKm: v })} stepper step={0.5} />
+                      )}
                       <NumberField label="Incline (%)" placeholder="none" value={e.incline} onChange={(v) => setEntry(e.id, { incline: v })} stepper step={0.5} />
                       <NumberField label="Speed (km/h)" placeholder="none" value={e.speedKmh} onChange={(v) => setEntry(e.id, { speedKmh: v })} stepper step={0.5} />
-                      <NumberField label="Distance (km)" placeholder="none" value={e.distanceKm} onChange={(v) => setEntry(e.id, { distanceKm: v })} stepper step={0.5} />
                     </div>
                   ) : (
-                  <div className="form-grid">
-                    {b.format === 'timed_sets' ? (
-                      <NumberField label="Time (s)" value={e.durationSec} onChange={(v) => setEntry(e.id, { durationSec: v })} inputMode="numeric" stepper step={5} />
-                    ) : b.format === 'tabata' || kind === 'time' ? null : (
+                    <div className="form-grid">
+                      {(mode === 'R' || mode === 'RT') && (
+                        <NumberField
+                          label={mode === 'R' ? 'Reps' : b.format === 'emom' ? 'Reps per interval' : 'Reps per round'}
+                          value={perSet(e) ? undefined : e.reps}
+                          placeholder="none"
+                          disabled={perSet(e)}
+                          onChange={(v) => setEntry(e.id, { reps: v })}
+                          inputMode="numeric"
+                          stepper
+                        />
+                      )}
                       <NumberField
-                        label={b.format === 'sets_reps' ? 'Reps' : b.format === 'emom' ? 'Reps per interval' : 'Reps per round'}
-                        value={perSet(e) ? undefined : e.reps}
+                        label={`Weight (${unit})`}
                         placeholder="none"
                         disabled={perSet(e)}
-                        onChange={(v) => setEntry(e.id, { reps: v })}
-                        inputMode="numeric"
+                        value={perSet(e) ? undefined : toDisplayWeight(e.targetWeight, unit)}
+                        onChange={(v) => setEntry(e.id, { targetWeight: fromDisplayWeight(v, unit) })}
                         stepper
+                        step={unit === 'kg' ? 2.5 : 5}
                       />
-                    )}
-                    <NumberField
-                      label={`Weight (${unit})`}
-                      placeholder="none"
-                      disabled={perSet(e)}
-                      value={perSet(e) ? undefined : toDisplayWeight(e.targetWeight, unit)}
-                      onChange={(v) => setEntry(e.id, { targetWeight: fromDisplayWeight(v, unit) })}
-                      stepper
-                      step={unit === 'kg' ? 2.5 : 5}
-                    />
-                    {(b.format === 'tabata' || kind === 'time') && (
-                      // The time comes from the timer; reps are only an estimate, for the volume.
-                      <NumberField
-                        label="Reps"
-                        placeholder="none"
-                        value={e.reps}
-                        onChange={(v) => setEntry(e.id, { reps: v })}
-                        inputMode="numeric"
-                        stepper
-                      />
-                    )}
-                  </div>
+                    </div>
                   )}
-                  {!distanceEx(e) && (b.format === 'sets_reps' || b.format === 'timed_sets' || b.format === 'emom') && (
+                  {mode === 'DR' && e.distanceKm ? <p className="tiny faint" style={{ margin: '6px 0 0' }}>{`${Math.round((e.distanceKm * 1000) / Math.max(1, setsOf(b)))} m per rep`}</p> : null}
+                  {(mode === 'R' || (mode === 'RT' && b.format === 'emom')) && (
                     <SetTargetsEditor entry={e} unit={unit} perInterval={b.format === 'emom'} count={intervalsFor(i)} onChange={(patch) => setEntry(e.id, patch)} />
                   )}
                 </div>
@@ -440,12 +402,9 @@ export default function ExerciseTemplateEditPage() {
         onPick={(exerciseId) => {
           const cur = current();
           if (!cur) return;
-          // The block keeps its own “Log as” (Weight × reps for a new block).
-          const block: Block = cur.block.logAs ? cur.block : { ...cur.block, logAs: cur.block.entries.length ? blockLogAs(cur.block, exercises) : 'weight_reps' };
-          const added = addExercise(block, exerciseId, profile.defaultRestSec);
-          // Timed blocks: reps are an optional estimate, so they start empty.
-          if (logCountBy(block.logAs!) === 'time') added.entries[added.entries.length - 1] = { ...added.entries[added.entries.length - 1], reps: undefined };
-          changeEntries(added);
+          // The block keeps what it logs (reps for a new block); the new exercise is set up to match.
+          const log = cur.block.entries.length ? blockLog(cur.block, exercises) : (['reps'] as LogField[]);
+          changeEntries(withLog(addExercise({ ...cur.block, log }, exerciseId, profile.defaultRestSec), log));
         }}
       />
     </div>

@@ -8,7 +8,7 @@
 
 import type { WorkoutDB } from '../db/db';
 import { trackingOf } from '../db/repo';
-import type { Block, BlockFormat, BlockParams, BlockTemplate, Exercise, ExerciseEntry, Grouping, Tracking } from '../db/types';
+import type { Block, BlockFormat, BlockParams, BlockTemplate, Exercise, ExerciseEntry, Grouping, LogField, Tracking } from '../db/types';
 import { uid } from './ids';
 import { cloneBlock, defaultParams, FORMAT_INFO, newBlock, newEntry } from './program';
 import type { QuickTimer } from './timer/quick';
@@ -128,6 +128,97 @@ export function blockLogAs(b: Block, exercises: Map<string, Exercise>): Tracking
   if (b.logAs) return b.logAs;
   const first = b.entries[0];
   return first ? trackingOf(exercises.get(first.exerciseId)) : 'weight_reps';
+}
+
+// ---------- What a block logs: reps, time, distance (any combination) ----------
+
+export const LOG_FIELDS: LogField[] = ['reps', 'time', 'distance'];
+const TIMERS = new Set<BlockFormat>(['amrap', 'emom', 'tabata', 'for_time']);
+
+/**
+ * How each combination is set up:
+ * reps → rounds and rest; reps + time → a saved timer; time → one time;
+ * distance → a distance (log the time); time + distance → one time (log the distance);
+ * reps + distance → a distance in a number of reps with rest (log the time of each);
+ * all three → a saved timer, logging the distance of each round.
+ */
+export type LogMode = 'R' | 'RT' | 'T' | 'D' | 'DT' | 'DR' | 'RTD';
+export function logMode(log: LogField[]): LogMode {
+  const r = log.includes('reps');
+  const t = log.includes('time');
+  const d = log.includes('distance');
+  if (r && t && d) return 'RTD';
+  if (r && t) return 'RT';
+  if (d && t) return 'DT';
+  if (d && r) return 'DR';
+  if (d) return 'D';
+  if (t) return 'T';
+  return 'R';
+}
+
+/** What a block logs: its own choice, or (older blocks) derived from “Logged as” and its format. */
+export function blockLog(b: Block, exercises: Map<string, Exercise>): LogField[] {
+  if (b.log?.length) return b.log;
+  const tracking = blockLogAs(b, exercises);
+  const timer = TIMERS.has(b.format);
+  if (tracking === 'time_distance') return timer ? ['reps', 'time', 'distance'] : b.format === 'timed_sets' ? ['time', 'distance'] : ['distance'];
+  if (timer) return ['reps', 'time'];
+  if (b.format === 'timed_sets' || tracking === 'weight_time') return ['time'];
+  return ['reps'];
+}
+
+/** Time of each exercise for “time” and “time + distance” blocks. */
+export const durationOf = (b: Block) => b.entries[0]?.durationSec ?? 60;
+/** One timed set per exercise, all with this time. */
+export function withDuration(b: Block, sec: number): Block {
+  return { ...b, entries: b.entries.map((e) => ({ ...e, sets: 1, restSec: 0, durationSec: sec, setTargets: undefined })) };
+}
+
+/** Change what the block logs and set it up to match (keeps exercises, weights and targets). */
+export function withLog(b: Block, log: LogField[]): Block {
+  const mode = logMode(log);
+  const unlinked: Block = { ...b, log };
+  if (mode === 'RT' || mode === 'RTD') {
+    // Counted by a saved timer: keep the current timer, or wait for one to be chosen.
+    return TIMERS.has(b.format) ? unlinked : withFormat({ ...unlinked, timerId: undefined }, 'tabata');
+  }
+  delete unlinked.timerId;
+  if (mode === 'T' || mode === 'DT') return withDuration(withFormat(unlinked, 'timed_sets'), b.format === 'timed_sets' ? durationOf(b) : 60);
+  const sets = withFormat(unlinked, 'sets_reps');
+  return mode === 'D' ? withSetsRest(sets, 1, 0) : sets;
+}
+
+/**
+ * Give older training blocks and workout parts their “log” (from their exercise's “Logged as” and
+ * their format). Runs at start; only fills blocks without one. Returns how many were set.
+ */
+export async function migrateBlockLog(db: WorkoutDB): Promise<number> {
+  const exercises = new Map((await db.exercises.toArray()).map((e) => [e.id, e]));
+  const fill = (b: Block): Block => (b.log?.length || !b.entries.length ? b : { ...b, log: blockLog(b, exercises) });
+  let n = 0;
+  for (const t of await db.blockTemplates.toArray()) {
+    const block = fill(t.block);
+    if (block !== t.block) {
+      n++;
+      await db.blockTemplates.put({ ...t, block, updatedAt: Date.now() });
+    }
+  }
+  for (const p of await db.programs.toArray()) {
+    let changed = false;
+    const days = p.days.map((d) => ({
+      ...d,
+      blocks: d.blocks.map((b) => {
+        const next = fill(b);
+        if (next !== b) changed = true;
+        return next;
+      }),
+    }));
+    if (changed) {
+      n++;
+      await db.programs.put({ ...p, days, updatedAt: Date.now() });
+    }
+  }
+  return n;
 }
 
 /** Reps (Weight × reps) or time (Weight × time, Time × distance). */

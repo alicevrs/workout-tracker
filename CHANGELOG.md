@@ -307,3 +307,15 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Workout page: each part shows its name on its own line, then the timer tag with its length (e.g. EMOM · 10 min), then the buttons, so long names no longer squeeze next to the tag.
 - Workout page: Skip today, Plan and Timer are now small icons on the right of each part's name (skip ⏭, pencil, stopwatch); skip and plan turn yellow while on. The timer tag and length sit below the name.
 - Training blocks: the “In sequence” button is now called **Sequence**.
+
+## Log as: reps, time, distance in any combination (2026-10-18)
+- Training blocks, step 3 **Log as**: **Reps**, **Time**, **Distance**, one or more at a time. Step 4 and the targets follow the choice:
+  - Reps → rounds and rest; targets reps and weight.
+  - Reps + Time → a saved timer (it sets the rounds); targets reps and weight.
+  - Time → one time; target weight.
+  - Distance → the distance to cover (you log how long it took).
+  - Time + Distance → one time (you log the distance covered).
+  - Reps + Distance → a distance split into a number of reps with rest (you log the time of each rep).
+  - Reps + Time + Distance → a saved timer, logging the distance of each round.
+  Incline and speed are optional targets whenever distance is logged. During the workout the log columns match (weight with reps or time; time and distance when distance is logged).
+- Existing training blocks and workout parts got the matching combination automatically.

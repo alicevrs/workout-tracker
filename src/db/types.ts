@@ -32,6 +32,9 @@ export type ExerciseCategory = 'strength' | 'bodyweight' | 'cardio' | 'mobility'
 export type Tracking = 'weight_reps' | 'weight_time' | 'time_distance';
 export type LegacyTracking = Tracking | 'reps' | 'time';
 
+/** What a training block logs: one, two or all three. */
+export type LogField = 'reps' | 'time' | 'distance';
+
 export interface Exercise {
   id: string;
   name: string;
@@ -169,6 +172,8 @@ export interface Block {
   timerId?: string;
   /** How the block's exercises are logged (chosen in the training block). Missing on older data: see `blockLogAs`. */
   logAs?: Tracking;
+  /** What is logged for the exercises: any of reps, time, distance (see `blockLog`; replaces `logAs`). */
+  log?: LogField[];
   /** How the exercises are combined, as chosen in the training block (missing on older blocks: see `structureOf`). */
   combine?: 'none' | 'sequence' | 'circuit';
   /** Combined as “Circuit”: in the workout one tap logs all its exercises as planned. */
@@ -267,6 +272,7 @@ export interface PerformedBlock {
   timer: TimerOptions;
   /** Copied from the planned block: which columns the set log shows. */
   logAs?: Tracking;
+  log?: LogField[];
   /** Copied from the planned block: logged with one tap (“Circuit done”). */
   circuit?: boolean;
   entries: PerformedEntry[];

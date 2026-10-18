@@ -12,7 +12,17 @@ export type PrevLookup = (exerciseId: string) => { date: number; sets: SetRecord
 
 type Col = 'weight' | 'reps' | 'time' | 'distance';
 
-export function columnsFor(ex: Exercise | undefined, entry: PerformedEntry, format: PerformedBlock['format'], logAs?: PerformedBlock['logAs']): Col[] {
+export function columnsFor(ex: Exercise | undefined, entry: PerformedEntry, format: PerformedBlock['format'], logAs?: PerformedBlock['logAs'], log?: PerformedBlock['log']): Col[] {
+  if (log?.length) {
+    // What the training block logs: weight with reps or time; with distance, the time and the distance.
+    const d = log.includes('distance');
+    const out: Col[] = [];
+    if (!d) out.push('weight');
+    if (log.includes('reps') && !d) out.push('reps');
+    if (log.includes('time') || d) out.push('time');
+    if (d) out.push('distance');
+    return out;
+  }
   // The block decides how its exercises are logged; older sessions fall back to the exercise.
   const tracking = logAs ?? trackingOf(ex);
   const planned = entry.planned;
@@ -73,6 +83,7 @@ export function SetLogger({
   exercise,
   format,
   logAs,
+  log,
   unit,
   prev,
   update,
@@ -81,12 +92,13 @@ export function SetLogger({
   exercise: Exercise | undefined;
   format: PerformedBlock['format'];
   logAs?: PerformedBlock['logAs'];
+  log?: PerformedBlock['log'];
   unit: WeightUnit;
   prev: { date: number; sets: SetRecord[] } | null;
   /** Functional update applied to the latest stored entry, so quick taps never overwrite each other. */
   update: (fn: (e: PerformedEntry) => PerformedEntry) => void;
 }) {
-  const cols = columnsFor(exercise, entry, format, logAs);
+  const cols = columnsFor(exercise, entry, format, logAs, log);
   const setSet = (i: number, patch: Partial<SetRecord> | ((s: SetRecord) => Partial<SetRecord>)) =>
     update((e) => ({ ...e, sets: e.sets.map((s, k) => (k === i ? { ...s, ...(typeof patch === 'function' ? patch(s) : patch) } : s)) }));
   const grid = `34px ${cols.map(() => 'minmax(0,1fr)').join(' ')} 48px`;
