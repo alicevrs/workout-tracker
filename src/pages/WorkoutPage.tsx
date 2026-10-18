@@ -182,25 +182,37 @@ export default function WorkoutPage() {
           const label = b.name ?? FORMAT_INFO[b.format].label;
           return (
             <section key={b.id} className="card block-card" aria-label={label} style={b.skipped ? { opacity: 0.5 } : undefined}>
-              <div className="card-title" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
-                <div style={{ minWidth: 0 }}>
-                  {/* Name on its own line; below it the timer tag and how long it lasts. */}
-                  <strong style={{ display: 'block', overflowWrap: 'anywhere' }}>{label}</strong>
-                  <div className="small muted" style={{ marginTop: 4 }}>
-                    <span className="chip primary">{FORMAT_INFO[b.format].short}</span> {describeBlock(performedToBlock(b))}
-                    {b.durationSec ? ` · ${formatClock(b.durationSec)} timed` : ''}
-                  </div>
+              <div className="card-title" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
+                {/* Name with small icon buttons on its right; below it the timer tag and how long it lasts. */}
+                <div className="row" style={{ alignItems: 'flex-start', gap: 4 }}>
+                  <strong style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere', paddingTop: 8 }}>
+                    {label}
+                  </strong>
+                  <button
+                    className={`btn icon small ghost${b.skipped ? ' active-icon' : ''}`}
+                    onClick={() => updateBlock(b.id, (f) => ({ ...f, skipped: !f.skipped }))}
+                    aria-pressed={!!b.skipped}
+                    aria-label={b.skipped ? `Include ${label} today` : `Skip ${label} today`}
+                    title={b.skipped ? 'Include today' : 'Skip today'}
+                  >
+                    <Icon name="skip" />
+                  </button>
+                  <button
+                    className={`btn icon small ghost${open ? ' active-icon' : ''}`}
+                    aria-expanded={open}
+                    onClick={() => setEditing(open ? null : b.id)}
+                    aria-label={open ? 'Close plan editor' : `Edit plan of ${label}`}
+                    title="Plan"
+                  >
+                    <Icon name="edit" />
+                  </button>
+                  <button className="btn icon small ghost" onClick={() => setTimerBlocks([bi])} aria-label={`Start timer for ${label}`} title="Timer">
+                    <Icon name="timer" />
+                  </button>
                 </div>
-                <div className="row wrap" style={{ justifyContent: 'flex-start' }}>
-                  <button className="btn small" onClick={() => updateBlock(b.id, (f) => ({ ...f, skipped: !f.skipped }))} aria-pressed={!b.skipped}>
-                    {b.skipped ? 'Include' : 'Skip today'}
-                  </button>
-                  <button className="btn small" aria-expanded={open} onClick={() => setEditing(open ? null : b.id)} aria-label={open ? 'Close plan editor' : `Edit plan of ${label}`}>
-                    <Icon name="edit" /> {open ? 'Close' : 'Plan'}
-                  </button>
-                  <button className="btn small primary" onClick={() => setTimerBlocks([bi])} aria-label={`Start timer for ${label}`}>
-                    <Icon name="timer" /> Timer
-                  </button>
+                <div className="small muted">
+                  <span className="chip primary">{FORMAT_INFO[b.format].short}</span> {describeBlock(performedToBlock(b))}
+                  {b.durationSec ? ` · ${formatClock(b.durationSec)} timed` : ''}
                 </div>
               </div>
 

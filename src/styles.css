@@ -2321,3 +2321,8 @@ kbd {
   outline: 2px solid var(--text);
   outline-offset: 1px;
 }
+
+/* Small icon buttons that are switched on (skip today, plan open). */
+.btn.icon.active-icon {
+  color: var(--accent);
+}

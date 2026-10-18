@@ -305,3 +305,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - During a workout the bottom card only has **Notes**: Title, Effort, Start and Duration were removed (the title is the workout's, the date and duration come from the workout itself, effort is no longer asked).
 - Add block offers the kinds used everywhere else: Sets × Reps, AMRAP, For Time, EMOM, Tabata (Timed sets and Intervals are gone from this list).
 - Workout page: each part shows its name on its own line, then the timer tag with its length (e.g. EMOM · 10 min), then the buttons, so long names no longer squeeze next to the tag.
+- Workout page: Skip today, Plan and Timer are now small icons on the right of each part's name (skip ⏭, pencil, stopwatch); skip and plan turn yellow while on. The timer tag and length sit below the name.
