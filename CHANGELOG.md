@@ -293,3 +293,8 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Existing training blocks with several exercises that were set as straight sets or alternating now go round the exercises like the new “In sequence”, keeping their sets and rest (their workouts follow).
 - During a workout a **Circuit** block shows its exercises and one **Circuit done** button that logs them all as planned (Undo to take it back).
 - Training block editor: swipe the page to the right to go back (the Back link stays; unsaved changes are asked about first).
+
+## History: periods, swipe and filter (2026-10-18)
+- Calendar: **Week, Month, Quarter, Year** views (quarter and year as small months with one coloured square per day). Swipe left or right on the calendar to go to the next or previous period.
+- List and calendar: a menu to show only one workout (by name, e.g. all sessions of the same saved workout) or one kind of activity (by sport: running, hiking, wakeboarding…, whatever the activity was called on Strava).
+- List: the “Timer” tag was removed; the Strava tag stays.

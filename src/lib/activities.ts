@@ -20,6 +20,22 @@ export function sessionActivity(s: Session): ActivityKind {
   return { group: 'other', label: s.title, color: GROUP_INFO.other.color };
 }
 
+/**
+ * What a session is, for the History filter: gym sessions by their workout name (the saved
+ * workout's current name, else the session title), sport activities by their sport (not by
+ * their title, which differs from one import to the next).
+ */
+export function historyFilterKey(s: Session, workoutName: (id: string) => string | undefined): { key: string; label: string; workout: boolean } {
+  const kind = sessionActivity(s);
+  if (kind.group === 'gym') {
+    // By name, so older copies of the same workout (or a deleted one) are one choice.
+    const label = (s.programId && workoutName(s.programId)) || s.title;
+    return { key: `w:${label.trim().toLowerCase()}`, label, workout: true };
+  }
+  if (kind.sport) return { key: `s:${kind.sport.id}`, label: kind.sport.label, workout: false };
+  return { key: `o:${s.title}`, label: s.title, workout: false };
+}
+
 /** True when the session is a sport activity edited with the activity form (no sets/blocks). */
 export function isActivitySession(s: Session): boolean {
   return s.blocks.length === 0 && !!resolveSport(s.activityType);

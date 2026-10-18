@@ -104,3 +104,17 @@ describe('calendar and activity mix', () => {
     expect(load.chest).toBe(0);
   });
 });
+
+describe('history filter', () => {
+  it('groups workouts by saved workout and activities by sport, not by title', async () => {
+    const { historyFilterKey } = await import('../src/lib/activities');
+    const { session, block, set } = await import('./helpers');
+    const names = (id: string) => (id === 'p1' ? 'Legs & glutes 1' : undefined);
+    const gym = session('2026-10-01', [block([set('back-squat', 100, 5)])], { programId: 'p1', title: 'Old name' });
+    expect(historyFilterKey(gym, names)).toEqual({ key: 'w:legs & glutes 1', label: 'Legs & glutes 1', workout: true });
+    const run1 = session('2026-10-02', [], { activityType: 'running', title: 'Morning jog' });
+    const run2 = session('2026-10-03', [], { activityType: 'Run', title: 'Evening run by the lake' });
+    expect(historyFilterKey(run1, names).key).toBe(historyFilterKey(run2, names).key);
+    expect(historyFilterKey(run1, names)).toMatchObject({ label: 'Running', workout: false });
+  });
+});

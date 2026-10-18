@@ -4,18 +4,25 @@ import { Link } from 'react-router-dom';
 import { ActivityCalendar } from '../components/ActivityCalendar';
 import { Icon } from '../components/Icon';
 import { EmptyState, PageHeader, Segmented } from '../components/ui';
-import { sessionActivity } from '../lib/activities';
+import { historyFilterKey, sessionActivity } from '../lib/activities';
 import { db } from '../db/db';
 import { useProfile } from '../db/repo';
 import { formatDuration, formatTime } from '../lib/dates';
 import { sessionSummary } from '../lib/stats';
 import { compact } from '../lib/units';
 
-const SOURCE_LABEL: Record<string, string> = { fit: 'Garmin FIT', tcx: 'TCX', strava: 'Strava', timer: 'Timer', manual: '' };
+const SOURCE_LABEL: Record<string, string> = { fit: 'Garmin FIT', tcx: 'TCX', strava: 'Strava', timer: '', manual: '' };
 
 export default function HistoryPage() {
   const { unit } = useProfile();
-  const sessions = useLiveQuery(() => db.sessions.orderBy('startedAt').reverse().toArray(), []);
+  const all = useLiveQuery(() => db.sessions.orderBy('startedAt').reverse().toArray(), []);
+  const programs = useLiveQuery(() => db.programs.toArray(), []);
+  const [filter, setFilter] = useState('');
+  const names = new Map((programs ?? []).map((p) => [p.id, p.name]));
+  const keyOf = (s: NonNullable<typeof all>[number]) => historyFilterKey(s, (id) => names.get(id));
+  // Filter choices: the workouts and the sports that appear in the history.
+  const choices = [...new Map((all ?? []).map((s) => [keyOf(s).key, keyOf(s)])).values()].sort((a, b) => a.label.localeCompare(b.label));
+  const sessions = filter ? all?.filter((s) => keyOf(s).key === filter) : all;
   const [view, setView] = useState<'list' | 'calendar'>(() => {
     try {
       return localStorage.getItem('history-view') === 'calendar' ? 'calendar' : 'list';
@@ -55,8 +62,34 @@ export default function HistoryPage() {
           ]}
         />
       </div>
+      {choices.length > 1 && (
+        <label className="field mb">
+          <span className="sr-only">Show</span>
+          <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+            <option value="">All workouts and activities</option>
+            {choices.some((c) => c.workout) && (
+              <optgroup label="Workouts">
+                {choices.filter((c) => c.workout).map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.label}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {choices.some((c) => !c.workout) && (
+              <optgroup label="Activities">
+                {choices.filter((c) => !c.workout).map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.label}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+          </select>
+        </label>
+      )}
       {view === 'calendar' && sessions && <ActivityCalendar sessions={sessions} />}
-      {sessions && sessions.length === 0 && view === 'list' && (
+      {all && all.length === 0 && view === 'list' && (
         <div className="card">
           <EmptyState icon="history" title="No workouts yet" action={<Link className="btn primary" to="/">Start a workout</Link>}>
             Finished workouts, logged activities and imports appear here.

@@ -2279,3 +2279,45 @@ kbd {
   stroke: var(--border);
   stroke-width: 2;
 }
+
+/* Quarter and year views of the activity calendar: small months, one square per day. */
+.mini-months {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 14px;
+}
+.mini-months.year {
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px;
+}
+.mini-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.mini-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.mini-day {
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 1px;
+  background: var(--bg-input);
+  padding: 0;
+  cursor: pointer;
+}
+.mini-day:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.mini-day.today {
+  outline: 1px solid var(--accent);
+}
+.mini-day.sel {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
