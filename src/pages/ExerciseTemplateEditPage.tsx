@@ -31,6 +31,7 @@ import {
   TIME_FORMATS,
   withFormat,
   withSetsRest,
+  withGrouping,
   withStructure,
   type CountBy,
   type Structure,
@@ -151,9 +152,9 @@ export default function ExerciseTemplateEditPage() {
   // How the block is logged (chosen in step 2) decides how it is counted: reps, or time with a timer.
   const logAs = blockLogAs(b, exercises);
   const kind = blockKind(b, exercises);
-  // Step numbers: 1 exercises, 2 log as, then (with several exercises) how they are combined, counting, targets.
-  const combineN = 3;
-  const countN = b.entries.length > 1 ? 4 : 3;
+  // Step numbers: 1 exercises, (with several exercises) how they are combined, log as, counting, targets.
+  const logN = b.entries.length > 1 ? 3 : 2;
+  const countN = logN + 1;
   const targetsN = countN + 1;
   const setLogAs = (t: Tracking) => {
     const next: Block = { ...b, logAs: t };
@@ -239,8 +240,26 @@ export default function ExerciseTemplateEditPage() {
           </button>
         </Step>
 
+        {b.entries.length > 1 && (
+          <Step n={2} title="How they are combined">
+            <Segmented<Structure>
+              label="How the exercises are combined"
+              value={structureOf(b)}
+              onChange={(st) => setBlock(structured ? withStructure(b, st) : withGrouping(b, st))}
+              options={[
+                { value: 'sequence', label: 'In sequence' },
+                { value: 'alternate', label: 'Alternating' },
+                { value: 'circuit', label: 'Circuit' },
+              ]}
+            />
+            <p className="small muted" style={{ margin: '8px 0 0' }}>
+              {STRUCTURE_HINT[structureOf(b)]}
+            </p>
+          </Step>
+        )}
+
         {b.entries.length > 0 && (
-          <Step n={2} title="Log as">
+          <Step n={logN} title="Log as">
             <div className="row wrap" role="group" aria-label="Log as" style={{ gap: 8 }}>
               {LOG_AS.map((o) => (
                 <button key={o.value} className="chip" aria-pressed={logAs === o.value} onClick={() => setLogAs(o.value)}>
@@ -248,32 +267,6 @@ export default function ExerciseTemplateEditPage() {
                 </button>
               ))}
             </div>
-          </Step>
-        )}
-
-        {b.entries.length > 1 && (
-          <Step n={combineN} title="How they are combined">
-            {structured ? (
-              <>
-                <Segmented<Structure>
-                  label="How the exercises are combined"
-                  value={structureOf(b)}
-                  onChange={(s) => setBlock(withStructure(b, s))}
-                  options={[
-                    { value: 'sequence', label: 'In sequence' },
-                    { value: 'alternate', label: 'Alternating' },
-                    { value: 'circuit', label: 'Circuit' },
-                  ]}
-                />
-                <p className="small muted" style={{ margin: '8px 0 0' }}>
-                  {STRUCTURE_HINT[structureOf(b)]}
-                </p>
-              </>
-            ) : (
-              <p className="small muted" style={{ margin: 0 }}>
-                With {TIME_LABEL[b.format]} the exercises take turns automatically, one per {b.format === 'emom' ? 'interval' : 'round'}.
-              </p>
-            )}
           </Step>
         )}
 

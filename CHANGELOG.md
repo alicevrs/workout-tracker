@@ -272,3 +272,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - “Logged as” is no longer set on the exercise. It is now step 2 of a training block, **Log as**: Weight × reps, Weight × time or Time × distance. It decides how the block is counted and which targets it asks for, and the workout log shows the matching columns.
 - Existing training blocks and workout parts got the Log as of their first exercise automatically, so nothing needs to be redone.
 - Add exercise: the search box starts empty every time (the previous search is not kept), and the list shows all exercises again.
+- Training blocks: **How they are combined** (in sequence, alternating, circuit) can now be chosen with every Log as and every timer, and it comes right after the exercises, before Log as. With a timer it records the order to follow; the timer itself is unchanged.

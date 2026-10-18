@@ -205,6 +205,14 @@ export function withStructure(b: Block, s: Structure): Block {
   return withSetsRest(grouped, sets, rest);
 }
 
+/**
+ * Record how the exercises are combined without touching sets or rest (blocks run by a timer:
+ * there it only tells the order to follow).
+ */
+export function withGrouping(b: Block, s: Structure): Block {
+  return { ...b, entries: b.entries.map((e) => ({ ...e, grouping: GROUPING[s], groupLabel: s === 'sequence' ? undefined : 'A', drops: undefined, dropPercent: undefined })) };
+}
+
 /** Switch how the block is counted (Sets × Reps or a timer format), keeping exercises, reps and weights. */
 export function withFormat(b: Block, format: BlockFormat): Block {
   if (format === b.format) return b;
@@ -218,6 +226,9 @@ export function withFormat(b: Block, format: BlockFormat): Block {
     return {
       ...fresh,
       id: e.id,
+      // Keep how the exercises are combined (a timer keeps it as information only).
+      grouping: e.grouping === 'dropset' ? fresh.grouping : e.grouping,
+      groupLabel: e.grouping === 'dropset' ? undefined : e.groupLabel,
       reps: e.reps ?? fresh.reps,
       targetWeight: e.targetWeight,
       durationSec: format === 'timed_sets' ? e.durationSec ?? 30 : e.durationSec,
