@@ -299,3 +299,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - List and calendar: a menu to show only one workout (by name, e.g. all sessions of the same saved workout) or one kind of activity (by sport: running, hiking, wakeboarding…, whatever the activity was called on Strava).
 - List: the “Timer” tag was removed; the Strava tag stays.
 - Training blocks: clearer, more professional description of **Circuit** (a structured sequence performed continuously as a single unit, logged as a whole with one confirmation).
+- Training blocks: **How they are combined** is available as soon as there is one exercise. Choose **In sequence** or **Circuit**, or nothing (tap the selected one again). Short descriptions only: In sequence = exercises one after the other, rest after each round; Circuit = one continuous routine, logged in one go.

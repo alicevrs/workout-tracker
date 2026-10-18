@@ -6,7 +6,7 @@ import { ExercisePicker } from '../components/ExercisePicker';
 import { Icon } from '../components/Icon';
 import { InfoButton } from '../components/Library';
 import { ClockPick, Line, Pick, TimerFields, mins } from '../components/TimerFields';
-import { EmptyState, NumberField, PageHeader, Segmented, useToast } from '../components/ui';
+import { EmptyState, NumberField, PageHeader, useToast } from '../components/ui';
 import { getDraft, setDraft, useDraft, withDraftParam } from '../lib/drafts';
 import { useSwipeBack } from '../hooks/useSwipeBack';
 import { db } from '../db/db';
@@ -45,8 +45,9 @@ import { workoutDay } from '../lib/workouts';
 import { fromDisplayWeight, toDisplayWeight } from '../lib/units';
 
 const STRUCTURE_HINT: Record<Structure, string> = {
-  sequence: 'Go through the exercises one after the other, rest, and repeat for each round.',
-  circuit: 'A structured sequence of these exercises, performed continuously as a single unit. It is logged as a whole: one confirmation during the workout records every exercise as planned.',
+  none: '',
+  sequence: 'Exercises one after the other, rest after each round.',
+  circuit: 'One continuous routine, logged in one go.',
 };
 const TIME_LABEL: Partial<Record<BlockFormat, string>> = { timed_sets: 'Timed sets', tabata: 'Tabata', amrap: 'AMRAP', emom: 'EMOM', for_time: 'For Time' };
 
@@ -159,8 +160,8 @@ export default function ExerciseTemplateEditPage() {
   // How the block is logged (chosen in step 2) decides how it is counted: reps, or time with a timer.
   const logAs = blockLogAs(b, exercises);
   const kind = blockKind(b, exercises);
-  // Step numbers: 1 exercises, (with several exercises) how they are combined, log as, counting, targets.
-  const logN = b.entries.length > 1 ? 3 : 2;
+  // Step numbers: 1 exercises, 2 how they are combined, 3 log as, 4 counting, 5 targets.
+  const logN = 3;
   const countN = logN + 1;
   const targetsN = countN + 1;
   const setLogAs = (t: Tracking) => {
@@ -203,8 +204,7 @@ export default function ExerciseTemplateEditPage() {
           <InfoButton title="Training blocks">
             <p style={{ margin: 0 }}>A block is a ready-made piece of a workout. Build it in order:</p>
             <p style={{ margin: 0 }}>
-              <strong>1.</strong> pick the exercises from the catalogue; <strong>2.</strong> choose how they are logged (weight × reps, weight × time or time × distance);
-              then, with more than one exercise, how they are combined; how it is counted: by reps with sets and rest set here or a saved timer that sets the number of sets, by
+              <strong>1.</strong> pick the exercises from the catalogue; <strong>2.</strong> how they are combined, if they are; then how they are logged (weight × reps, weight × time or time × distance); how it is counted: by reps with sets and rest set here or a saved timer that sets the number of sets, by
               time always with a timer; finally the targets (reps and weight, or incline, speed and distance); then notes if you like.
             </p>
             <p style={{ margin: 0 }}>Changes are kept only when you tap Save. Workouts that use this block then follow from their next session; workouts already done stay as they were.</p>
@@ -247,20 +247,29 @@ export default function ExerciseTemplateEditPage() {
           </button>
         </Step>
 
-        {b.entries.length > 1 && (
+        {b.entries.length > 0 && (
           <Step n={2} title="How they are combined">
-            <Segmented<Structure>
-              label="How the exercises are combined"
-              value={structureOf(b)}
-              onChange={(st) => setBlock(structured ? withStructure(b, st) : withGrouping(b, st))}
-              options={[
-                { value: 'sequence', label: 'In sequence' },
-                { value: 'circuit', label: 'Circuit' },
-              ]}
-            />
-            <p className="small muted" style={{ margin: '8px 0 0' }}>
-              {STRUCTURE_HINT[structureOf(b)]}
-            </p>
+            <div className="row wrap" role="group" aria-label="How they are combined" style={{ gap: 8 }}>
+              {(['sequence', 'circuit'] as const).map((st) => (
+                <button
+                  key={st}
+                  className="chip"
+                  aria-pressed={structureOf(b) === st}
+                  // Tapping the chosen one again clears it.
+                  onClick={() => {
+                    const next = structureOf(b) === st ? 'none' : st;
+                    setBlock(structured ? withStructure(b, next) : withGrouping(b, next));
+                  }}
+                >
+                  {st === 'sequence' ? 'In sequence' : 'Circuit'}
+                </button>
+              ))}
+            </div>
+            {STRUCTURE_HINT[structureOf(b)] && (
+              <p className="small muted" style={{ margin: '8px 0 0' }}>
+                {STRUCTURE_HINT[structureOf(b)]}
+              </p>
+            )}
           </Step>
         )}
 
@@ -335,7 +344,7 @@ export default function ExerciseTemplateEditPage() {
                 <div className="sentences compact-sentences">
                   <Line>
                     <Pick small value={setsOf(b)} options={SET_OPTIONS} format={mins} onChange={(v) => setBlock(withSetsRest(b, v, restOf(b)))} label="Sets" />
-                    <span>{b.entries.length < 2 ? 'sets' : 'rounds'}</span>
+                    <span>{b.entries.length > 1 && structureOf(b) !== 'none' ? 'rounds' : 'sets'}</span>
                   </Line>
                   <Line>
                     <ClockPick small value={restOf(b)} maxMin={15} onChange={(v) => setBlock(withSetsRest(b, setsOf(b), v))} label="Rest" />

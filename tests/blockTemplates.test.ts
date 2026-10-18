@@ -52,8 +52,14 @@ describe('exercise block editor model', () => {
     let b = newBlock('sets_reps');
     b = addExercise(b, 'hip-abduction', 90);
     b = addExercise(b, 'hip-adduction', 90);
-    expect(structureOf(b)).toBe('sequence');
+    expect(structureOf(b)).toBe('none');
     b = withSetsRest(b, 4, 60);
+    expect(b.entries.map((e) => [e.grouping, e.sets, e.restSec])).toEqual([
+      ['none', 4, 60],
+      ['none', 4, 60],
+    ]);
+    b = withStructure(b, 'sequence');
+    expect(structureOf(b)).toBe('sequence');
     expect(b.entries.map((e) => [e.grouping, e.groupLabel, e.sets, e.restSec])).toEqual([
       ['circuit', 'A', 4, 0],
       ['circuit', 'A', 4, 60],
@@ -63,8 +69,16 @@ describe('exercise block editor model', () => {
     expect(b.circuit).toBe(true);
     expect(structureOf(b)).toBe('circuit');
     expect([setsOf(b), restOf(b)]).toEqual([4, 60]);
-    b = withStructure(b, 'sequence');
+    b = withStructure(b, 'none');
     expect(b.circuit).toBeUndefined();
+    expect(b.entries.map((e) => [e.grouping, e.restSec])).toEqual([
+      ['none', 60],
+      ['none', 60],
+    ]);
+    // A single exercise can be a circuit too.
+    let one = addExercise(newBlock('sets_reps'), 'back-squat', 90);
+    one = withStructure(one, 'circuit');
+    expect([structureOf(one), one.circuit]).toEqual(['circuit', true]);
   });
 
   it('switches between reps and timers keeping exercises and weights', async () => {

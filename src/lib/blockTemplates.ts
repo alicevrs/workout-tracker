@@ -94,11 +94,12 @@ export async function unlinkTemplate(db: WorkoutDB, templateId: string): Promise
 // ---------- Simple editor model ----------
 
 /**
- * How several exercises are combined. Both go through the exercises one after the other, rest,
- * and repeat for each round (entries grouped as a circuit). “circuit” also marks a choreographed
- * routine (`Block.circuit`): in the workout one tap logs all its exercises as planned.
+ * How the exercises are combined (also with a single exercise). “sequence” and “circuit” both go
+ * through the exercises one after the other, rest, and repeat for each round (entries grouped as a
+ * circuit); “circuit” is also logged with one tap in the workout (`Block.circuit`). “none” = each
+ * exercise with its own sets.
  */
-export type Structure = 'sequence' | 'circuit';
+export type Structure = 'none' | 'sequence' | 'circuit';
 export type CountBy = 'reps' | 'time';
 /**
  * Timers to count by time, in the Timer tab's order. Timed sets is not offered for new blocks
@@ -112,7 +113,9 @@ const groupingFor = (n: number): { grouping: Grouping; groupLabel?: string } => 
 export const hasStructure = (f: BlockFormat) => f === 'sets_reps' || f === 'timed_sets';
 
 export function structureOf(b: Block): Structure {
-  return b.circuit ? 'circuit' : 'sequence';
+  if (b.combine) return b.combine;
+  if (b.circuit) return 'circuit';
+  return b.entries.length > 1 && b.entries[0].grouping !== 'none' ? 'sequence' : 'none';
 }
 
 export const countByOf = (b: Block): CountBy => (b.format === 'sets_reps' ? 'reps' : 'time');
@@ -205,8 +208,8 @@ export function withSetsRest(b: Block, sets: number, rest: number): Block {
  * only tells the order to follow).
  */
 export function withGrouping(b: Block, s: Structure): Block {
-  const g = groupingFor(b.entries.length);
-  const next: Block = { ...b, entries: b.entries.map((e) => ({ ...e, ...g, drops: undefined, dropPercent: undefined })) };
+  const g = s === 'none' ? { grouping: 'none' as const, groupLabel: undefined } : groupingFor(b.entries.length);
+  const next: Block = { ...b, combine: s, entries: b.entries.map((e) => ({ ...e, ...g, drops: undefined, dropPercent: undefined })) };
   if (s === 'circuit') next.circuit = true;
   else delete next.circuit;
   return next;
@@ -259,7 +262,8 @@ export async function migrateBlockStructure(db: WorkoutDB): Promise<number> {
   let n = 0;
   for (const t of await db.blockTemplates.toArray()) {
     const b = t.block;
-    if (b.entries.length < 2 || b.entries.every((e) => e.grouping === 'circuit')) continue;
+    // Blocks whose combination was chosen with the current editor are left as they are.
+    if (b.combine || b.entries.length < 2 || b.entries.every((e) => e.grouping === 'circuit')) continue;
     if (b.entries.some((e) => e.grouping === 'dropset') || new Set(b.entries.map((e) => e.groupLabel ?? '')).size > 1) continue;
     const block = hasStructure(b.format) ? withSetsRest(withGrouping(b, 'sequence'), setsOf(b), restOf(b)) : withGrouping(b, 'sequence');
     const next = { ...t, block, updatedAt: Date.now() };

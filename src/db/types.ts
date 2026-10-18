@@ -169,7 +169,9 @@ export interface Block {
   timerId?: string;
   /** How the block's exercises are logged (chosen in the training block). Missing on older data: see `blockLogAs`. */
   logAs?: Tracking;
-  /** Choreographed routine (combined as “Circuit”): in the workout one tap logs all its exercises as planned. */
+  /** How the exercises are combined, as chosen in the training block (missing on older blocks: see `structureOf`). */
+  combine?: 'none' | 'sequence' | 'circuit';
+  /** Combined as “Circuit”: in the workout one tap logs all its exercises as planned. */
   circuit?: boolean;
 }
 
