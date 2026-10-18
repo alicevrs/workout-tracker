@@ -268,3 +268,10 @@ Choices made while building the app, with the reason for each.
 ## Adding a part during a workout
 - Add block only offers saved training blocks (linked copy via `linkedBlock`), so the added part follows the block like the others and uses the simple plan editor. Empty parts by timer type can no longer be created in a workout; `addedInSession` stays only for parts added that way before.
 - New block from a running workout: same step editor as from a workout (`?addToSession=<session id>`); on Save the template is stored and a linked copy is appended to the session, then the page goes back to the workout.
+
+## Analytics (revised)
+- Workouts vs activities in the tiles and in Progress → Workouts use the History filter key (`historyFilterKey`: gym sessions by workout name, sports by sport).
+- Training block progress recognises a block by its name (case-insensitive) in finished sessions; skipped parts are left out. Measures: volume, max weight, reps, rounds (results), time (result time, else timer time, else set times), distance.
+- Progress measures are offered only when the chosen item has a non-zero value for them (`measuresWithData`).
+- `ChartCard` no longer has a table view. The Period comparison keeps its small comparison table of numbers above the chart (it is the content of that card, not the removed Table view).
+- Calendar picker (`PeriodPicker`) opens from the label between the arrows; in workout mode only days with a session can be tapped, and a day with several sessions lists them.

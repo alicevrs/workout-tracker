@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { BodyMap, HeatLegend } from '../components/BodyMap';
-import { ACCENT, AXIS, ChartCard, ChartTooltip, GRID, Legend, OTHER, PREVIOUS, SEQ, SERIES } from '../components/charts';
+import { ACCENT, AXIS, ChartCard, ChartTooltip, GRID, Legend, OTHER, PREVIOUS, SERIES } from '../components/charts';
 import { Icon } from '../components/Icon';
 import { Delta, EmptyState, PageHeader, Segmented, Stat } from '../components/ui';
 import { MUSCLE_LABEL } from '../data/muscles';
@@ -12,37 +12,40 @@ import { useExerciseMap, useProfile } from '../db/repo';
 import type { MuscleId, Session, WeightUnit } from '../db/types';
 import { useCalories } from '../hooks/useCalories';
 import {
+  BLOCK_MEASURES,
+  blockProgressItems,
   bucketize,
   comparisonRanges,
+  countBy,
   cumulative,
-  dayCounts,
+  EXERCISE_MEASURES,
+  exerciseProgressItems,
   inRange,
-  loggedExercises,
+  measuresWithData,
   METRIC_LABEL,
   metricValue,
-  mostTrainedMuscle,
-  mostUsedExercise,
   paceSeries,
   pctChange,
   periodTotals,
-  PROGRESS_LABEL,
-  progressSeries,
-  streaks,
+  WORKOUT_MEASURES,
+  workoutProgressItems,
   type ComparePreset,
   type Metric,
-  type ProgressMetric,
   type Range,
+  type ValueKind,
 } from '../lib/analytics';
 import { ageOn, bmrMifflin, netExerciseKcal, weightOn } from '../lib/calories';
 import { addDays, addMonths, DAY_MS, formatClock, formatDuration, formatShortDate, fromDateKey, startOfDay, startOfMonth, startOfWeek, toDateKey, type Grain } from '../lib/dates';
 import { muscleLoad, muscleShares } from '../lib/muscleLoad';
 import { compact, KG_PER_LB } from '../lib/units';
-import { activeDays, activityMix } from '../lib/activities';
+import { activeDays, activityMix, historyFilterKey } from '../lib/activities';
+import { PeriodPicker } from '../components/PeriodPicker';
 import { GROUP_INFO, type SportGroup } from '../data/sports';
 
-type RangeKey = '4w' | '3m' | '6m' | '12m' | 'all';
+type RangeKey = '1w' | '1m' | '3m' | '6m' | '12m' | 'all';
 const RANGE_OPTIONS: { value: RangeKey; label: string }[] = [
-  { value: '4w', label: '4 weeks' },
+  { value: '1w', label: 'Week' },
+  { value: '1m', label: 'Month' },
   { value: '3m', label: '3 months' },
   { value: '6m', label: '6 months' },
   { value: '12m', label: '12 months' },
@@ -51,8 +54,10 @@ const RANGE_OPTIONS: { value: RangeKey; label: string }[] = [
 
 function rangeStart(key: RangeKey, sessions: Session[], now: number): number {
   switch (key) {
-    case '4w':
-      return startOfWeek(now) - 3 * 7 * DAY_MS;
+    case '1w':
+      return startOfWeek(now);
+    case '1m':
+      return startOfMonth(now);
     case '3m':
       return addMonths(startOfMonth(now), -2);
     case '6m':
@@ -66,17 +71,12 @@ function rangeStart(key: RangeKey, sessions: Session[], now: number): number {
 
 const vol = (kg: number, unit: WeightUnit) => (unit === 'kg' ? kg : kg / KG_PER_LB);
 
-function fmtMetric(m: Metric | ProgressMetric, v: number, unit: WeightUnit): string {
+function fmtMetric(m: Metric, v: number, unit: WeightUnit): string {
   switch (m) {
     case 'volume':
       return `${compact(vol(v, unit))} ${unit}`;
-    case 'e1rm':
-    case 'maxWeight':
-      return `${Math.round(vol(v, unit) * 10) / 10} ${unit}`;
     case 'duration':
       return v >= 120 ? `${(v / 60).toFixed(1)} h` : `${Math.round(v)} min`;
-    case 'maxDuration':
-      return formatClock(v);
     case 'calories':
       return `${compact(v)} kcal`;
     case 'distance':
@@ -91,7 +91,8 @@ export default function AnalyticsPage() {
   const exercises = useExerciseMap();
   const { unit } = useProfile();
   const { calories } = useCalories();
-  const [rangeKey, setRangeKey] = useState<RangeKey>('3m');
+  const [rangeKey, setRangeKey] = useState<RangeKey>('1m');
+  const programs = useLiveQuery(() => db.programs.toArray(), []);
   const now = Date.now();
 
   if (!sessions) return <div className="page" />;
@@ -110,22 +111,25 @@ export default function AnalyticsPage() {
   const from = rangeStart(rangeKey, sessions, now);
   const inPeriod = inRange(sessions, from, now);
   const kcal = (s: Session) => calories(s).kcal ?? 0;
+  const names = new Map((programs ?? []).map((p) => [p.id, p.name]));
+  /** What a session is: a workout by its name, an activity by its sport. */
+  const kindOf = (s: Session) => historyFilterKey(s, (id) => names.get(id));
 
   return (
     <div className="page wide">
-      <PageHeader title="Analytics" subtitle={`${inPeriod.length} workouts in the selected period`} />
+      <PageHeader title="Analytics" />
       <div className="row wrap mb" style={{ position: 'sticky', top: 0, zIndex: 5, background: 'var(--bg)', padding: '6px 0' }}>
         <Segmented<RangeKey> label="Period" value={rangeKey} onChange={setRangeKey} options={RANGE_OPTIONS} />
       </div>
 
-      <Overview sessions={inPeriod} all={sessions} exercises={exercises} unit={unit} kcal={kcal} from={from} now={now} />
+      <Overview sessions={inPeriod} kindOf={kindOf} unit={unit} kcal={kcal} from={from} now={now} />
 
       <div className="grid two-wide mt">
-        <ExerciseProgress sessions={inPeriod} unit={unit} />
+        <Progress sessions={inPeriod} unit={unit} kcal={kcal} kindOf={kindOf} names={(id) => exercises.get(id)?.name ?? id} />
         <PeriodComparison sessions={sessions} unit={unit} kcal={kcal} now={now} />
         <ActivityMixChart sessions={inPeriod} from={from} now={now} />
         <CumulativeChart sessions={inPeriod} from={from} now={now} unit={unit} kcal={kcal} />
-        <Frequency sessions={inPeriod} all={sessions} from={from} now={now} />
+        <Frequency sessions={inPeriod} from={from} now={now} />
         <MuscleDistribution sessions={sessions} now={now} />
         <CaloriesChart sessions={inPeriod} from={from} now={now} />
       </div>
@@ -133,91 +137,128 @@ export default function AnalyticsPage() {
   );
 }
 
-function Overview({ sessions, all, exercises, unit, kcal, from, now }: { sessions: Session[]; all: Session[]; exercises: ReturnType<typeof useExerciseMap>; unit: WeightUnit; kcal: (s: Session) => number; from: number; now: number }) {
+type KindOf = (s: Session) => { key: string; label: string; workout: boolean };
+
+function Overview({ sessions, kindOf, unit, kcal, from, now }: { sessions: Session[]; kindOf: KindOf; unit: WeightUnit; kcal: (s: Session) => number; from: number; now: number }) {
   const t = periodTotals(sessions, kcal);
-  const st = streaks(all);
-  const muscle = mostTrainedMuscle(sessions, exercises);
   const days = activeDays(sessions, from, Math.min(now, startOfDay(now) + DAY_MS - 1));
-  const ex = mostUsedExercise(sessions);
+  const workouts = sessions.filter((s) => kindOf(s).workout);
+  const activities = sessions.filter((s) => !kindOf(s).workout);
+  const list = (items: { label: string; n: number }[]) =>
+    items.map((c) => (
+      <div key={c.label}>
+        {c.n} × {c.label}
+      </div>
+    ));
   return (
     <div className="stat-tiles">
-      <Stat label="Workouts" value={t.sessions} />
+      <Stat label="Workouts" value={workouts.length} sub={workouts.length ? list(countBy(workouts, kindOf)) : undefined} />
+      <Stat label="Activities" value={activities.length} sub={activities.length ? list(countBy(activities, kindOf)) : undefined} />
       <Stat label="Active days" value={days.activeDays} sub={`of ${days.days} · ${days.days ? Math.round((days.activeDays / days.days) * 100) : 0}%`} />
       <Stat label="Distance" value={`${t.distance >= 100 ? Math.round(t.distance) : t.distance.toFixed(1)} km`} />
       <Stat label="Total time" value={formatDuration(t.duration * 60)} />
       <Stat label="Volume" value={`${compact(vol(t.volume, unit))} ${unit}`} sub={`${compact(t.reps)} reps · ${t.sets} sets`} />
       <Stat label="Calories" value={`${compact(t.calories)} kcal`} sub="approximate" />
-      <Stat label="Avg duration" value={t.sessions ? formatDuration(t.avgDuration * 60) : '–'} />
-      <Stat label="Streak" value={`${st.currentWeeks} wk`} sub={`weeks in a row · best ${st.longestWeeks} wk · longest daily run ${st.longestDays} ${st.longestDays === 1 ? 'day' : 'days'}`} />
-      <Stat label="Most trained" value={<span style={{ fontSize: '1.1rem', lineHeight: 1.25, display: 'block' }}>{muscle ? MUSCLE_LABEL[muscle.muscle] : '–'}</span>} sub={muscle ? `${Math.round(muscle.pct)}% of work` : undefined} />
-      <Stat
-        label="Most used exercise"
-        value={<span style={{ fontSize: '1.1rem', lineHeight: 1.25, display: 'block' }}>{ex ? exercises.get(ex.exerciseId)?.name ?? '–' : '–'}</span>}
-        sub={ex ? `${ex.sets} sets` : undefined}
-      />
     </div>
   );
 }
 
-function ExerciseProgress({ sessions, unit }: { sessions: Session[]; unit: WeightUnit }) {
-  const exercises = useExerciseMap();
+type ProgressOf = 'exercise' | 'block' | 'workout';
+
+function fmtKind(kind: ValueKind, v: number, unit: WeightUnit): string {
+  switch (kind) {
+    case 'weight':
+      return `${Math.round(v * 10) / 10} ${unit}`;
+    case 'volume':
+      return `${compact(v)} ${unit}`;
+    case 'clock':
+      return formatClock(v);
+    case 'minutes':
+      return v >= 120 ? `${(v / 60).toFixed(1)} h` : `${Math.round(v)} min`;
+    case 'km':
+      return `${v >= 100 ? Math.round(v) : Math.round(v * 10) / 10} km`;
+    case 'kcal':
+      return `${compact(v)} kcal`;
+    default:
+      return compact(v);
+  }
+}
+
+/** Progress over time of one exercise, training block or workout; only measures with data are offered. */
+function Progress({ sessions, unit, kcal, kindOf, names }: { sessions: Session[]; unit: WeightUnit; kcal: (s: Session) => number; kindOf: KindOf; names: (id: string) => string }) {
   const [params] = useSearchParams();
-  const logged = useMemo(() => loggedExercises(sessions), [sessions]);
-  const [chosen, setChosen] = useState<string>(params.get('exercise') ?? '');
-  const [metric, setMetric] = useState<ProgressMetric>('e1rm');
-  const exerciseId = chosen && logged.includes(chosen) ? chosen : logged[0];
-  const data = exerciseId ? progressSeries(exerciseId, sessions, metric) : [];
+  const [of, setOf] = useState<ProgressOf>('exercise');
+  const [chosen, setChosen] = useState<Record<ProgressOf, string>>({ exercise: params.get('exercise') ?? '', block: '', workout: '' });
+  const [measure, setMeasure] = useState<Record<ProgressOf, string>>({ exercise: 'e1rm', block: 'volume', workout: 'duration' });
+  const items = useMemo(
+    () => (of === 'exercise' ? exerciseProgressItems(sessions, names) : of === 'block' ? blockProgressItems(sessions) : workoutProgressItems(sessions, kindOf, kcal)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [of, sessions],
+  );
+  const all = of === 'exercise' ? EXERCISE_MEASURES : of === 'block' ? BLOCK_MEASURES : WORKOUT_MEASURES;
+  const item = items.find((i) => i.id === chosen[of]) ?? items[0];
+  const measures = measuresWithData(item, all);
+  const m = measures.find((x) => x.key === measure[of]) ?? measures[0];
+  const show = (v: number) => (m && (m.kind === 'weight' || m.kind === 'volume') ? vol(v, unit) : v);
+  const data = item && m ? item.points.map((p) => ({ date: p.date, value: show(p.values[m.key] ?? 0) })) : [];
   const first = data[0]?.value ?? 0;
   const last = data[data.length - 1]?.value ?? 0;
+  const fmt = (v: number) => (m ? fmtKind(m.kind, v, unit) : String(v));
 
   return (
     <ChartCard
-      title="Exercise progress"
-      table={{ columns: ['Date', PROGRESS_LABEL[metric]], rows: data.map((d) => [formatShortDate(d.date), fmtMetric(metric, d.value, unit)]) }}
+      title="Progress"
       controls={
         <>
-          <select aria-label="Exercise" value={exerciseId ?? ''} onChange={(e) => setChosen(e.target.value)} style={{ flex: '1 1 200px', width: 'auto' }}>
-            {logged.map((id) => (
-              <option key={id} value={id}>
-                {exercises.get(id)?.name ?? id}
-              </option>
-            ))}
-          </select>
-          <select aria-label="Metric" value={metric} onChange={(e) => setMetric(e.target.value as ProgressMetric)} style={{ flex: '1 1 160px', width: 'auto' }}>
-            {(Object.keys(PROGRESS_LABEL) as ProgressMetric[]).map((m) => (
-              <option key={m} value={m}>
-                {PROGRESS_LABEL[m]}
-              </option>
-            ))}
-          </select>
+          <Segmented<ProgressOf>
+            label="Progress of"
+            value={of}
+            onChange={setOf}
+            options={[
+              { value: 'exercise', label: 'Exercises' },
+              { value: 'block', label: 'Training blocks' },
+              { value: 'workout', label: 'Workouts' },
+            ]}
+          />
+          {items.length > 0 && (
+            <select aria-label="Item" value={item?.id ?? ''} onChange={(e) => setChosen({ ...chosen, [of]: e.target.value })} style={{ flex: '1 1 200px', width: 'auto' }}>
+              {items.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.label}
+                </option>
+              ))}
+            </select>
+          )}
+          {measures.length > 0 && (
+            <select aria-label="Measure" value={m?.key ?? ''} onChange={(e) => setMeasure({ ...measure, [of]: e.target.value })} style={{ flex: '1 1 160px', width: 'auto' }}>
+              {measures.map((x) => (
+                <option key={x.key} value={x.key}>
+                  {x.label}
+                </option>
+              ))}
+            </select>
+          )}
         </>
       }
       footer={
         data.length > 1 ? (
           <p className="small muted mt-s">
-            {formatShortDate(data[0].date)} → {formatShortDate(data[data.length - 1].date)}: {fmtMetric(metric, first, unit)} → <strong style={{ color: 'var(--text)' }}>{fmtMetric(metric, last, unit)}</strong> <Delta pct={pctChange(last, first)} />
+            {formatShortDate(data[0].date)} → {formatShortDate(data[data.length - 1].date)}: {fmt(first)} → <strong style={{ color: 'var(--text)' }}>{fmt(last)}</strong> <Delta pct={pctChange(last, first)} />
           </p>
         ) : null
       }
     >
       {data.length === 0 ? (
-        <EmptyState icon="chart" title="No sets logged in this period" />
-      ) : data.every((d) => !d.value) ? (
-        <EmptyState icon="chart" title={`No ${PROGRESS_LABEL[metric].toLowerCase()} data for this exercise`}>
-          Try another metric.
-        </EmptyState>
+        <EmptyState icon="chart" title="Nothing logged in this period" />
       ) : (
         <div className="chart-box">
           <ResponsiveContainer>
-            <LineChart data={data.map((d) => ({ ...d, value: metric === 'maxDuration' || metric === 'reps' || metric === 'maxReps' ? d.value : vol(d.value, unit) }))} margin={{ top: 10, right: 12, bottom: 0, left: -6 }}>
+            <LineChart data={data} margin={{ top: 10, right: 12, bottom: 0, left: -6 }}>
               <CartesianGrid {...GRID} />
               <XAxis dataKey="date" type="number" scale="time" domain={['dataMin', 'dataMax']} tickFormatter={(v) => formatShortDate(v)} {...AXIS} minTickGap={24} />
-              <YAxis {...AXIS} width={48} tickFormatter={(v) => (metric === 'maxDuration' ? formatClock(v) : compact(v))} domain={['auto', 'auto']} />
-              <Tooltip
-                cursor={{ stroke: '#898781', strokeWidth: 1 }}
-                content={<ChartTooltip labelFormat={(l) => formatShortDate(Number(l))} format={(v) => (metric === 'maxDuration' ? formatClock(v) : metric === 'reps' || metric === 'maxReps' ? `${v}` : `${Math.round(v * 10) / 10} ${unit}`)} />}
-              />
-              <Line type="monotone" dataKey="value" name={PROGRESS_LABEL[metric]} stroke={ACCENT} strokeWidth={2} dot={{ r: 4, fill: ACCENT, stroke: '#161616', strokeWidth: 2 }} activeDot={{ r: 6 }} isAnimationActive={false} />
+              <YAxis {...AXIS} width={48} tickFormatter={(v) => (m?.kind === 'clock' ? formatClock(v) : compact(v))} domain={['auto', 'auto']} />
+              <Tooltip cursor={{ stroke: '#898781', strokeWidth: 1 }} content={<ChartTooltip labelFormat={(l) => formatShortDate(Number(l))} format={fmt} />} />
+              <Line type="monotone" dataKey="value" name={m?.label} stroke={ACCENT} strokeWidth={2} dot={{ r: 4, fill: ACCENT, stroke: '#161616', strokeWidth: 2 }} activeDot={{ r: 6 }} isAnimationActive={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -254,10 +295,6 @@ function PeriodComparison({ sessions, unit, kcal, now }: { sessions: Session[]; 
   return (
     <ChartCard
       title="Period comparison"
-      table={{
-        columns: ['Metric', a.label, b.label, 'Change'],
-        rows: COMPARE_METRICS.map((m) => [METRIC_LABEL[m], fmtMetric(m, ta[m], unit), fmtMetric(m, tb[m], unit), fmtPct(pctChange(ta[m], tb[m]))]),
-      }}
       controls={
         <Segmented<ComparePreset>
           label="Compare"
@@ -266,7 +303,6 @@ function PeriodComparison({ sessions, unit, kcal, now }: { sessions: Session[]; 
           options={[
             { value: 'week', label: 'Week' },
             { value: 'month', label: 'Month' },
-            { value: '30d', label: '30 days' },
             { value: 'year', label: 'Year' },
             { value: 'custom', label: 'Custom' },
           ]}
@@ -357,10 +393,6 @@ function PeriodComparison({ sessions, unit, kcal, now }: { sessions: Session[]; 
   );
 }
 
-function fmtPct(p: number | null): string {
-  return p === null ? '–' : `${p > 0 ? '+' : ''}${Math.round(p * 10) / 10}%`;
-}
-
 const CUM_METRICS: Metric[] = ['volume', 'duration', 'distance', 'reps', 'sets', 'calories', 'sessions'];
 
 function CumulativeChart({ sessions, from, now, unit, kcal }: { sessions: Session[]; from: number; now: number; unit: WeightUnit; kcal: (s: Session) => number }) {
@@ -374,7 +406,6 @@ function CumulativeChart({ sessions, from, now, unit, kcal }: { sessions: Sessio
   return (
     <ChartCard
       title={`${running ? 'Running total' : 'Total'} ${METRIC_LABEL[metric].toLowerCase()} by ${grain}`}
-      table={{ columns: [grain[0].toUpperCase() + grain.slice(1), METRIC_LABEL[metric]], rows: data.map((d) => [d.label, fmt(d.value)]) }}
       controls={
         <>
           <select aria-label="Metric" value={metric} onChange={(e) => setMetric(e.target.value as Metric)} style={{ width: 'auto', flex: '1 1 120px' }}>
@@ -431,26 +462,14 @@ function CumulativeChart({ sessions, from, now, unit, kcal }: { sessions: Sessio
   );
 }
 
-function Frequency({ sessions, all, from, now }: { sessions: Session[]; all: Session[]; from: number; now: number }) {
+function Frequency({ sessions, from, now }: { sessions: Session[]; from: number; now: number }) {
   const [grain, setGrain] = useState<Grain>('week');
   const data = bucketize(sessions, grain, from, now, () => 1);
   const avg = data.length ? data.reduce((a, b) => a + b.value, 0) / data.length : 0;
 
-  // Heatmap: the last 26 weeks, Monday-first columns.
-  const counts = dayCounts(all);
-  const weeks = 26;
-  const start = startOfWeek(now) - (weeks - 1) * 7 * DAY_MS;
-  const cells: { key: string; n: number; future: boolean }[] = [];
-  for (let i = 0; i < weeks * 7; i++) {
-    const t = addDays(start, i);
-    const key = toDateKey(t);
-    cells.push({ key, n: counts.get(key) ?? 0, future: t > now });
-  }
-
   return (
     <ChartCard
       title="Training frequency"
-      table={{ columns: [grain === 'week' ? 'Week of' : 'Month', 'Workouts'], rows: data.map((d) => [d.label, d.value]) }}
       controls={
         <Segmented<Grain>
           label="Frequency per"
@@ -477,23 +496,6 @@ function Frequency({ sessions, all, from, now }: { sessions: Session[]; all: Ses
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <h3 className="small muted mt">Workout days · last 6 months</h3>
-      <div className="heatmap mt-s" role="img" aria-label={`Calendar of workout days: ${cells.filter((c) => c.n > 0).length} days with workouts in the last 26 weeks`}>
-        {cells.map((c) => (
-          <div
-            key={c.key}
-            title={`${formatShortDate(fromDateKey(c.key).getTime())}: ${c.n} workout${c.n === 1 ? '' : 's'}`}
-            style={{ background: c.future ? 'transparent' : SEQ[Math.min(c.n === 0 ? 0 : c.n + 1, SEQ.length - 1)] }}
-          />
-        ))}
-      </div>
-      <div className="row tiny faint mt-s" style={{ gap: 6 }} aria-hidden>
-        Less
-        {[0, 2, 3, 4].map((i) => (
-          <span key={i} style={{ width: 12, height: 12, borderRadius: 3, background: SEQ[i], display: 'inline-block' }} />
-        ))}
-        More
-      </div>
     </ChartCard>
   );
 }
@@ -505,22 +507,27 @@ function MuscleDistribution({ sessions, now }: { sessions: Session[]; now: numbe
   const [period, setPeriod] = useState<MusclePeriod>('week');
   const [offset, setOffset] = useState(0);
   const [kind, setKind] = useState<'bar' | 'donut'>('bar');
+  const [picking, setPicking] = useState(false);
 
   let selected: Session[] = [];
   let label = '';
   let canPrev = true;
+  let shown = now;
+  const desc = [...sessions].reverse();
   if (period === 'session') {
-    const desc = [...sessions].reverse();
     const s = desc[offset];
+    shown = s?.startedAt ?? now;
     selected = s ? [s] : [];
     label = s ? `${s.title} · ${formatShortDate(s.startedAt)}` : 'No workout';
     canPrev = offset < desc.length - 1;
   } else if (period === 'week') {
     const from = addDays(startOfWeek(now), -7 * offset);
+    shown = from;
     selected = inRange(sessions, from, addDays(from, 7) - 1);
     label = offset === 0 ? 'This week' : offset === 1 ? 'Last week' : `Week of ${formatShortDate(from)}`;
   } else {
     const from = addMonths(startOfMonth(now), -offset);
+    shown = from;
     selected = inRange(sessions, from, addMonths(from, 1) - 1);
     label = new Date(from).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
   }
@@ -535,7 +542,6 @@ function MuscleDistribution({ sessions, now }: { sessions: Session[]; now: numbe
   return (
     <ChartCard
       title="Muscle distribution"
-      table={{ columns: ['Muscle', 'Share'], rows: shares.map((s) => [MUSCLE_LABEL[s.muscle], `${s.pct.toFixed(1)}%`]) }}
       controls={
         <>
           <Segmented<MusclePeriod>
@@ -567,13 +573,32 @@ function MuscleDistribution({ sessions, now }: { sessions: Session[]; now: numbe
         <button className="btn icon small" aria-label="Previous period" onClick={() => setOffset(offset + 1)} disabled={!canPrev}>
           <Icon name="back" />
         </button>
-        <strong className="small" style={{ textAlign: 'center' }}>
-          {label}
-        </strong>
+        <button className="period-label" onClick={() => setPicking(true)} aria-label={`${label}. Choose from the calendar`}>
+          <Icon name="calendar" size={16} /> {label}
+        </button>
         <button className="btn icon small" aria-label="Next period" onClick={() => setOffset(Math.max(0, offset - 1))} disabled={offset === 0}>
           <Icon name="forward" />
         </button>
       </div>
+      {picking && (
+        <PeriodPicker
+          open
+          onClose={() => setPicking(false)}
+          mode={period}
+          sessions={sessions}
+          value={shown}
+          onPick={(ms, s) => {
+            setPicking(false);
+            if (period === 'session') setOffset(Math.max(0, desc.findIndex((x) => x.id === s?.id)));
+            else if (period === 'week') setOffset(Math.round((startOfWeek(now) - startOfWeek(ms)) / (7 * DAY_MS)));
+            else {
+              const a = new Date(now);
+              const b = new Date(ms);
+              setOffset((a.getFullYear() - b.getFullYear()) * 12 + a.getMonth() - b.getMonth());
+            }
+          }}
+        />
+      )}
       {shares.length === 0 ? (
         <EmptyState icon="body" title="No muscle data in this period" />
       ) : (
@@ -673,11 +698,6 @@ function CaloriesChart({ sessions, from, now }: { sessions: Session[]; from: num
   return (
     <ChartCard
       title="Calories"
-      table={
-        view === 'daily'
-          ? { columns: ['Day', 'BMR', 'Exercise (net)', 'Total'], rows: daily.map((d) => [d.label, d.bmr, d.activity, d.bmr + d.activity]) }
-          : { columns: [view === 'session' ? 'Workout' : view, 'Estimated', 'Imported'], rows: data.map((d) => [d.label, Math.round(d.estimated), Math.round(d.imported)]) }
-      }
       controls={
         <>
           <Segmented<CalView>
@@ -779,7 +799,6 @@ function ActivityMixChart({ sessions, from, now }: { sessions: Session[]; from: 
   return (
     <ChartCard
       title="Activity mix"
-      table={{ columns: [grain === 'week' ? 'Week of' : 'Month', 'Active days', ...used.map((g) => GROUP_INFO[g].label)], rows: data.map((b) => [b.label, b.active, ...used.map((g) => (b[g] as number) ?? 0)]) }}
       controls={
         <Segmented<Grain>
           label="Group by"

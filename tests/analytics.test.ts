@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bucketize, comparisonRanges, cumulative, inRange, paceSeries, pctChange, periodTotals, streaks } from '../src/lib/analytics';
+import { BLOCK_MEASURES, blockProgressItems, bucketize, comparisonRanges, countBy, cumulative, inRange, measuresWithData, paceSeries, pctChange, periodTotals, streaks, workoutProgressItems } from '../src/lib/analytics';
 import { block, session, set } from './helpers';
 
 const t = (d: string) => new Date(`${d}T12:00:00`).getTime();
@@ -74,5 +74,28 @@ describe('streaks', () => {
   });
   it('is zero with no workouts', () => {
     expect(streaks([], t('2026-10-12'))).toEqual({ currentDays: 0, longestDays: 0, currentWeeks: 0, longestWeeks: 0 });
+  });
+});
+
+describe('progress of training blocks and workouts', () => {
+  it('follows a training block by name and offers only measures with data', () => {
+    const sessions = [
+      session('2026-10-01', [block([set('squat', 50, 10)], { name: 'Legs' }), block([set('plank', 0, 0)], { name: 'Core', skipped: true })]),
+      session('2026-10-08', [block([set('squat', 60, 10), set('lunge', 20, 8)], { name: 'legs ' })]),
+    ];
+    const items = blockProgressItems(sessions);
+    expect(items.map((i) => i.label)).toEqual(['Legs']);
+    expect(items[0].points.map((p) => p.values.volume)).toEqual([500, 760]);
+    expect(measuresWithData(items[0], BLOCK_MEASURES).map((m) => m.key)).toEqual(['volume', 'maxWeight', 'reps']);
+  });
+
+  it('groups workouts and counts them by kind', () => {
+    const sessions = [session('2026-10-01', [], { title: 'Pump' }), session('2026-10-02', [], { title: 'Pump' }), session('2026-10-03', [], { title: 'Run' })];
+    const key = (s: { title: string }) => ({ key: s.title, label: s.title });
+    expect(countBy(sessions, key)).toEqual([
+      { label: 'Pump', n: 2 },
+      { label: 'Run', n: 1 },
+    ]);
+    expect(workoutProgressItems(sessions, key)[0].points).toHaveLength(2);
   });
 });

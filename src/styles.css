@@ -2326,3 +2326,52 @@ kbd {
 .btn.icon.active-icon {
   color: var(--accent);
 }
+
+/* Calendar picker in Analytics (choose a workout, week or month). */
+.cal-row.pick {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.cal-row.pick .cal-day {
+  min-height: 44px;
+}
+.month-pick {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.month-cell {
+  min-height: 52px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--bg-input);
+  color: var(--text-dim);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+.month-cell.on {
+  color: var(--text);
+  border-bottom: 3px solid var(--accent);
+}
+.month-cell.sel {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.month-cell:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+.period-label {
+  background: none;
+  border: 0;
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  text-align: center;
+}

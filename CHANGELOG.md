@@ -337,3 +337,10 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 ## Add block in a workout picks a training block (2026-10-18)
 - In a running workout, the timer-type list next to **Add block** is gone. **Add block** opens the list of your training blocks; tapping one adds it to the workout, set up as in the training block.
 - Below the parts of a running workout there are the same two buttons as in the workout editor: **Add a block** (pick a saved training block) and **New block** (set up a new training block step by step; on Save it is stored with your training blocks and added to the workout).
+
+## Analytics simplified (2026-10-18)
+- Period bar: **Week, Month**, 3 months, 6 months, 12 months, All (Month is the default; 4 weeks removed).
+- Top tiles: **Workouts** (how many, and how many of each workout), **Activities** (how many of each sport), Active days, Distance, Total time, Volume, Calories. Avg duration, Streak, Most trained and Most used exercise removed.
+- **Progress** (was Exercise progress): choose Exercises, Training blocks or Workouts, then the item; the measure list shows only measures that have logged data for it.
+- Every chart shows only the chart: the Table button is gone everywhere. Period comparison: Week, Month, Year, Custom (30 days removed). Training frequency: the “Workout days · last 6 months” grid is removed.
+- Muscle distribution: tap the workout, week or month shown between the arrows to choose it from a calendar (days show the colours of the activities done; months with activity are marked).

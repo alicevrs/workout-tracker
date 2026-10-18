@@ -1,10 +1,9 @@
 // Aggregations for the analytics screen. Pure functions over sessions.
 
-import type { Exercise, MuscleId, Session } from '../db/types';
+import type { Session } from '../db/types';
 import { addDays, addMonths, DAY_MS, formatBucket, nextStart, startOf, startOfDay, startOfMonth, startOfWeek, toDateKey, type Grain } from './dates';
-import { muscleLoad, muscleShares } from './muscleLoad';
 import { sessionDurationSec } from './session';
-import { exerciseHistory, sessionSets, sessionSummary } from './stats';
+import { exerciseHistory, isDone, resultSets, sessionSets, sessionSummary, setReps, setVolume } from './stats';
 
 export type Metric = 'volume' | 'duration' | 'distance' | 'reps' | 'sets' | 'calories' | 'sessions';
 
@@ -98,7 +97,7 @@ export function pctChange(current: number, previous: number): number | null {
   return ((current - previous) / previous) * 100;
 }
 
-export type ComparePreset = 'week' | 'month' | '30d' | 'year' | 'custom';
+export type ComparePreset = 'week' | 'month' | 'year' | 'custom';
 
 export interface Range {
   from: number;
@@ -122,13 +121,6 @@ export function comparisonRanges(preset: Exclude<ComparePreset, 'custom'>, now =
       return [
         { from: a, to: end, label: 'This month' },
         { from: addMonths(a, -1), to: a - 1, label: 'Previous month' },
-      ];
-    }
-    case '30d': {
-      const a = startOfDay(now) - 29 * DAY_MS;
-      return [
-        { from: a, to: end, label: 'Last 30 days' },
-        { from: a - 30 * DAY_MS, to: a - 1, label: 'The 30 days before' },
       ];
     }
     case 'year': {
@@ -158,13 +150,6 @@ export function paceSeries(a: Session[], aFrom: number, b: Session[], bFrom: num
   const ca = run(a, aFrom);
   const cb = run(b, bFrom);
   return ca.map((v, i) => ({ day: i + 1, current: v, previous: cb[i] }));
-}
-
-/** Sessions per calendar day, for the heatmap. */
-export function dayCounts(sessions: Session[]): Map<string, number> {
-  const m = new Map<string, number>();
-  for (const s of sessions) m.set(s.date, (m.get(s.date) ?? 0) + 1);
-  return m;
 }
 
 export interface Streaks {
@@ -213,39 +198,6 @@ export function streaks(sessions: Session[], now = Date.now()): Streaks {
   return { currentWeeks, longestWeeks, longestDays, currentDays };
 }
 
-export function mostUsedExercise(sessions: Session[]): { exerciseId: string; sets: number } | null {
-  const count = new Map<string, number>();
-  for (const s of sessions) for (const set of sessionSets(s)) count.set(set.exerciseId, (count.get(set.exerciseId) ?? 0) + 1);
-  let best: { exerciseId: string; sets: number } | null = null;
-  for (const [exerciseId, sets] of count) if (!best || sets > best.sets) best = { exerciseId, sets };
-  return best;
-}
-
-export function mostTrainedMuscle(sessions: Session[], exercises: Map<string, Exercise>): { muscle: MuscleId; pct: number } | null {
-  const shares = muscleShares(muscleLoad(sessions, exercises));
-  return shares[0] && shares[0].load > 0 ? { muscle: shares[0].muscle, pct: shares[0].pct } : null;
-}
-
-export type ProgressMetric = 'e1rm' | 'maxWeight' | 'volume' | 'reps' | 'maxReps' | 'maxDuration';
-
-export const PROGRESS_LABEL: Record<ProgressMetric, string> = {
-  e1rm: 'Estimated 1RM',
-  maxWeight: 'Max weight',
-  volume: 'Volume',
-  reps: 'Total reps',
-  maxReps: 'Most reps in a set',
-  maxDuration: 'Longest set (time)',
-};
-
-export function progressSeries(exerciseId: string, sessions: Session[], metric: ProgressMetric) {
-  return exerciseHistory(exerciseId, sessions).map((p) => ({
-    date: p.startedAt,
-    sessionId: p.sessionId,
-    value: p.metrics[metric],
-    improved: p.improved,
-  }));
-}
-
 /** Exercises with at least one logged set, most used first. */
 export function loggedExercises(sessions: Session[]): string[] {
   const count = new Map<string, number>();
@@ -253,3 +205,120 @@ export function loggedExercises(sessions: Session[]): string[] {
   return [...count.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
 }
 
+
+// ---------- Progress of exercises, training blocks and workouts ----------
+
+/** How a progress value is shown: weights and volume follow the kg/lb setting. */
+export type ValueKind = 'weight' | 'volume' | 'count' | 'clock' | 'minutes' | 'km' | 'kcal';
+
+export interface ProgressMeasure {
+  key: string;
+  label: string;
+  kind: ValueKind;
+}
+
+export interface ProgressItem {
+  id: string;
+  label: string;
+  points: { date: number; values: Record<string, number> }[];
+}
+
+export const EXERCISE_MEASURES: ProgressMeasure[] = [
+  { key: 'e1rm', label: 'Estimated 1RM', kind: 'weight' },
+  { key: 'maxWeight', label: 'Max weight', kind: 'weight' },
+  { key: 'volume', label: 'Volume', kind: 'volume' },
+  { key: 'reps', label: 'Total reps', kind: 'count' },
+  { key: 'maxReps', label: 'Most reps in a set', kind: 'count' },
+  { key: 'maxDuration', label: 'Longest set (time)', kind: 'clock' },
+  { key: 'distance', label: 'Distance', kind: 'km' },
+];
+
+export const BLOCK_MEASURES: ProgressMeasure[] = [
+  { key: 'volume', label: 'Volume', kind: 'volume' },
+  { key: 'maxWeight', label: 'Max weight', kind: 'weight' },
+  { key: 'reps', label: 'Total reps', kind: 'count' },
+  { key: 'rounds', label: 'Rounds', kind: 'count' },
+  { key: 'time', label: 'Time', kind: 'clock' },
+  { key: 'distance', label: 'Distance', kind: 'km' },
+];
+
+export const WORKOUT_MEASURES: ProgressMeasure[] = [
+  { key: 'duration', label: 'Duration', kind: 'minutes' },
+  { key: 'volume', label: 'Volume', kind: 'volume' },
+  { key: 'reps', label: 'Total reps', kind: 'count' },
+  { key: 'sets', label: 'Sets', kind: 'count' },
+  { key: 'distance', label: 'Distance', kind: 'km' },
+  { key: 'calories', label: 'Calories', kind: 'kcal' },
+];
+
+/** The measures that have at least one value for this item (others are not offered). */
+export function measuresWithData(item: ProgressItem | undefined, measures: ProgressMeasure[]): ProgressMeasure[] {
+  if (!item) return [];
+  return measures.filter((m) => item.points.some((p) => (p.values[m.key] ?? 0) > 0));
+}
+
+const byPoints = (items: ProgressItem[]) => items.sort((a, b) => b.points.length - a.points.length || a.label.localeCompare(b.label));
+
+export function exerciseProgressItems(sessions: Session[], name: (id: string) => string): ProgressItem[] {
+  return loggedExercises(sessions).map((id) => ({
+    id,
+    label: name(id),
+    points: exerciseHistory(id, sessions).map((p) => ({
+      date: p.startedAt,
+      values: { ...p.metrics, distance: p.sets.reduce((a, s) => a + (s.distanceM ?? 0), 0) / 1000 } as unknown as Record<string, number>,
+    })),
+  }));
+}
+
+/** Training blocks, recognised by their name, with one point per session in which they were done. */
+export function blockProgressItems(sessions: Session[]): ProgressItem[] {
+  const map = new Map<string, ProgressItem>();
+  for (const s of [...sessions].sort((a, b) => a.startedAt - b.startedAt)) {
+    const seen = new Map<string, Record<string, number>>();
+    for (const b of s.blocks) {
+      const label = b.name?.trim();
+      if (!label || b.skipped) continue;
+      const sets = [...b.entries.flatMap((e) => e.sets.filter(isDone)), ...resultSets(b)];
+      if (!sets.length && !b.result) continue;
+      const v = seen.get(label.toLowerCase()) ?? { volume: 0, maxWeight: 0, reps: 0, rounds: 0, time: 0, distance: 0 };
+      v.volume += sets.reduce((a, x) => a + setVolume(x), 0);
+      v.maxWeight = Math.max(v.maxWeight, ...sets.map((x) => x.weight ?? 0));
+      v.reps += sets.reduce((a, x) => a + setReps(x), 0);
+      v.rounds += b.result?.rounds ?? 0;
+      v.time += b.result?.timeSec ?? b.durationSec ?? sets.reduce((a, x) => a + (x.durationSec ?? 0), 0);
+      v.distance += sets.reduce((a, x) => a + (x.distanceM ?? 0), 0) / 1000;
+      seen.set(label.toLowerCase(), v);
+      if (!map.has(label.toLowerCase())) map.set(label.toLowerCase(), { id: label.toLowerCase(), label, points: [] });
+    }
+    for (const [k, values] of seen) map.get(k)!.points.push({ date: s.startedAt, values });
+  }
+  return byPoints([...map.values()]);
+}
+
+/** Workouts (and activities) grouped by `key`, one point per session. */
+export function workoutProgressItems(sessions: Session[], key: (s: Session) => { key: string; label: string }, calories?: CalorieFn): ProgressItem[] {
+  const map = new Map<string, ProgressItem>();
+  for (const s of [...sessions].sort((a, b) => a.startedAt - b.startedAt)) {
+    const k = key(s);
+    const sum = sessionSummary(s);
+    const item = map.get(k.key) ?? { id: k.key, label: k.label, points: [] };
+    item.points.push({
+      date: s.startedAt,
+      values: { duration: sum.durationSec / 60, volume: sum.volume, reps: sum.reps, sets: sum.sets, distance: (s.distanceM ?? 0) / 1000, calories: calories?.(s) ?? 0 },
+    });
+    map.set(k.key, item);
+  }
+  return byPoints([...map.values()]);
+}
+
+/** Number of sessions per label (most first). */
+export function countBy(sessions: Session[], key: (s: Session) => { key: string; label: string }): { label: string; n: number }[] {
+  const map = new Map<string, { label: string; n: number }>();
+  for (const s of sessions) {
+    const k = key(s);
+    const c = map.get(k.key) ?? { label: k.label, n: 0 };
+    c.n += 1;
+    map.set(k.key, c);
+  }
+  return [...map.values()].sort((a, b) => b.n - a.n || a.label.localeCompare(b.label));
+}
