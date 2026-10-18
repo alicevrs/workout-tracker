@@ -257,3 +257,7 @@ Choices made while building the app, with the reason for each.
 - `migrateBlockLog` (every start, fills only blocks without `log`): from the old `logAs`/exercise tracking and the format (timer formats → reps + time, or all three for time × distance; timed sets → time, or time + distance; otherwise reps, or distance).
 - Distance-only blocks also store a block total (`params.distanceKm`, step 4 “Total distance”), independent of the per-exercise distances.
 - Time-only blocks (`isTotalTime`): stored as Sets × Reps with one planned set per exercise plus `params.timeCapMin`; the timer builds a single “Time” countdown for them and completing it marks every planned set done (`timer/link.ts`), which is also what “Circuit done” / mark-as-planned use. Earlier time-only blocks saved as an AMRAP are converted at start (`migrateBlockLog`). Tags come from `blockTag` (log-based) instead of the internal format.
+
+## Changing a part during a workout
+- The part header shows `blockSummary` (one line, no tag). The pencil opens `SessionPlanEditor`: only non-structural values the block already has (reps, weight; distance, incline, speed), per-set rows only if `setTargets` exist. Structure (format, name, exercises, timer) is changed in the training block itself.
+- Parts added during the workout (`PerformedBlock.addedInSession`) have nothing to follow, so they keep the full block editor and Remove block.

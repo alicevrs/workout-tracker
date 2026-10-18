@@ -10,9 +10,11 @@ import { db } from '../db/db';
 import { useExerciseMap, useProfile } from '../db/repo';
 import type { BlockFormat, PerformedBlock, Session } from '../db/types';
 import { formatClock, formatDate, formatDuration } from '../lib/dates';
-import { blockTag, describeBlock, estimateBlockSeconds, FORMAT_INFO, newBlock } from '../lib/program';
+import { estimateBlockSeconds, FORMAT_INFO, newBlock } from '../lib/program';
 import { applyBlockEdit, blockToPerformed, hasPlannedSets, performedToBlock } from '../lib/session';
 import { completeBlocks } from '../lib/quickLog';
+import { SessionPlanEditor } from '../components/SessionPlanEditor';
+import { blockSummary } from '../lib/blockSummary';
 import { previousSets } from '../lib/stats';
 import { formatWeight } from '../lib/units';
 
@@ -211,17 +213,28 @@ export default function WorkoutPage() {
                   </button>
                 </div>
                 <div className="small muted">
-                  <span className="chip primary">{blockTag(b)}</span> {describeBlock(performedToBlock(b))}
-                  {b.durationSec ? ` · ${formatClock(b.durationSec)} timed` : ''}
+                  {blockSummary(performedToBlock(b))}
                 </div>
               </div>
 
               {open && (
                 <div className="mb">
-                  <BlockEditor block={performedToBlock(b)} onChange={(edited) => updateBlock(b.id, (fresh) => applyBlockEdit(fresh, edited))} />
-                  <button className="btn small danger mt" onClick={() => confirm('Remove this block from the workout?') && save({ blocks: session.blocks.filter((x) => x.id !== b.id) })}>
-                    <Icon name="trash" /> Remove block
-                  </button>
+                  {b.addedInSession ? (
+                    // A part added during the workout is set up here in full.
+                    <>
+                      <BlockEditor block={performedToBlock(b)} onChange={(edited) => updateBlock(b.id, (fresh) => applyBlockEdit(fresh, edited))} />
+                      <button className="btn small danger mt" onClick={() => confirm('Remove this block from the workout?') && save({ blocks: session.blocks.filter((x) => x.id !== b.id) })}>
+                        <Icon name="trash" /> Remove block
+                      </button>
+                    </>
+                  ) : (
+                    <SessionPlanEditor
+                      block={performedToBlock(b)}
+                      exercises={exercises}
+                      unit={profile.unit}
+                      onChange={(edited) => updateBlock(b.id, (fresh) => applyBlockEdit(fresh, edited))}
+                    />
+                  )}
                   <hr style={{ border: 0, borderTop: '1px solid var(--border)', margin: '16px 0' }} />
                 </div>
               )}
@@ -317,7 +330,7 @@ export default function WorkoutPage() {
           <button
             className="btn"
             onClick={async () => {
-              const pb = blockToPerformed(newBlock(newFormat, profile.defaultPrepSec));
+              const pb = { ...blockToPerformed(newBlock(newFormat, profile.defaultPrepSec)), addedInSession: true };
               await save({ blocks: [...session.blocks, pb] });
               setEditing(pb.id);
             }}

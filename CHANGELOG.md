@@ -326,3 +326,7 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - A block logged by **Time** alone is no longer shown or run as an AMRAP: in the workout it shows a **Time** tag with its total time (e.g. “10 min · 2 exercises”), its exercises with their reps and kg, and the timer runs one countdown of that total time. Finishing the countdown, or **Circuit done** for a Circuit block, logs every exercise with its planned reps and weight.
 - Block tags everywhere (workout, workout editor, finished sessions) follow what the block logs: Reps, Time, Distance, or the timer's name (AMRAP, EMOM, Tabata, For Time) for Reps + Time.
 - Set log columns: weight and reps, unless distance is logged (then time and distance).
+
+## Simpler parts during a workout (2026-10-18)
+- Under each part's name in a running workout there is no coloured tag any more, only one line with its timer: Time and its total time, the timer with its settings (Tabata, AMRAP, EMOM, For Time), Distance, or the number of sets for Reps. The extra “timed” line is gone.
+- The pencil of a part now changes only the values the training block already has: reps and weight (or distance, incline and speed when distance is logged). Format, name, adding or removing exercises and per-set targets are not there; per-set targets show only when the block already had them. Parts added during the workout keep the full editor.

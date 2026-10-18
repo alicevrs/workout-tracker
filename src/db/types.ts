@@ -275,6 +275,8 @@ export interface PerformedBlock {
   /** Copied from the planned block: which columns the set log shows. */
   logAs?: Tracking;
   log?: LogField[];
+  /** Added during the workout (Add block), not from a training block: it keeps the full editor. */
+  addedInSession?: boolean;
   /** Copied from the planned block: logged with one tap (“Circuit done”). */
   circuit?: boolean;
   entries: PerformedEntry[];

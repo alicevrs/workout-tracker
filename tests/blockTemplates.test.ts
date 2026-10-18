@@ -260,3 +260,17 @@ describe('time-only blocks in the workout', () => {
     expect(done.durationSec).toBe(300);
   });
 });
+
+describe('one-line summary in the workout', () => {
+  it('says each thing once', async () => {
+    const { blockSummary } = await import('../src/lib/blockSummary');
+    const { addExercise, withLog, withTotalTime } = await import('../src/lib/blockTemplates');
+    const { newBlock } = await import('../src/lib/program');
+    const t = withTotalTime(withLog(addExercise(newBlock('sets_reps'), 'push-up', 60), ['time']), 300);
+    expect(blockSummary(t)).toBe('Time · 5 min');
+    const tab = { ...newBlock('tabata'), log: ['reps', 'time'] as ('reps' | 'time')[] };
+    expect(blockSummary(tab)).toBe('Tabata 8 × 0:20 / 0:10');
+    const reps = withLog(addExercise(newBlock('sets_reps'), 'push-up', 60), ['reps']);
+    expect(blockSummary(reps)).toBe('Reps · 3 sets');
+  });
+});
