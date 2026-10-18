@@ -255,3 +255,4 @@ Choices made while building the app, with the reason for each.
 - RTD (all three) was the user's open question; chosen: the saved timer gives rounds and time, and the distance of each round is logged.
 - Set log columns from `log`: no distance → weight + reps and/or time; with distance → time + distance.
 - `migrateBlockLog` (every start, fills only blocks without `log`): from the old `logAs`/exercise tracking and the format (timer formats → reps + time, or all three for time × distance; timed sets → time, or time + distance; otherwise reps, or distance).
+- Distance-only blocks also store a block total (`params.distanceKm`, step 4 “Total distance”), independent of the per-exercise distances.

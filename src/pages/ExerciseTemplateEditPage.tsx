@@ -58,7 +58,7 @@ function unlinkTimer(b: Block): Block {
 }
 
 const LOG_LABEL: Record<LogField, string> = { reps: 'Reps', time: 'Time', distance: 'Distance' };
-const COUNT_TITLE: Record<LogMode, string> = { R: 'Rounds and rest', RT: 'Timer', RTD: 'Timer', T: 'Total time', DT: 'Time', DR: 'Reps and rest', D: '' };
+const COUNT_TITLE: Record<LogMode, string> = { R: 'Rounds and rest', RT: 'Timer', RTD: 'Timer', T: 'Total time', DT: 'Time', DR: 'Reps and rest', D: 'Total distance' };
 const TARGETS_TITLE: Record<LogMode, string> = {
   R: 'Reps and weight',
   RT: 'Reps and weight',
@@ -279,7 +279,7 @@ export default function ExerciseTemplateEditPage() {
           </Step>
         )}
 
-        {b.entries.length > 0 && mode !== 'D' && (
+        {b.entries.length > 0 && (
           <Step n={countN} title={COUNT_TITLE[mode]}>
             {(mode === 'RT' || mode === 'RTD') &&
               (linkedTimer ? (
@@ -336,6 +336,18 @@ export default function ExerciseTemplateEditPage() {
                 </Line>
               </div>
             )}
+            {mode === 'D' && (
+              <div className="form-grid">
+                <NumberField
+                  label="Total distance (km)"
+                  placeholder="none"
+                  value={b.params.distanceKm}
+                  onChange={(v) => setBlock({ ...b, params: { ...b.params, distanceKm: v } })}
+                  stepper
+                  step={0.5}
+                />
+              </div>
+            )}
             {mode === 'DT' && (
               <div className="sentences compact-sentences">
                 <Line>
@@ -348,7 +360,7 @@ export default function ExerciseTemplateEditPage() {
         )}
 
         {b.entries.length > 0 && (
-          <Step n={mode === 'D' ? countN : targetsN} title={TARGETS_TITLE[mode]}>
+          <Step n={targetsN} title={TARGETS_TITLE[mode]}>
             <div className="stack" style={{ gap: 10 }}>
               {b.entries.map((e, i) => (
                 <div key={e.id} className="target-row">

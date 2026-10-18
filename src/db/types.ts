@@ -151,6 +151,8 @@ export interface BlockParams {
   /** Short signal every N seconds while the clock runs (For Time). */
   signalEverySec?: number;
   targetReps?: number;
+  /** Distance blocks: total distance to cover (km), besides each exercise's own. */
+  distanceKm?: number;
   // intervals
   segments?: IntervalSegment[];
   repeats?: number;
