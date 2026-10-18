@@ -358,3 +358,7 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - **Scan barcode** in Foods and in the food diary (Food → Scan barcode): the camera reads the barcode of a packaged product, or you type its number.
 - The product is looked up among your foods, then on Open Food Facts; its values (per 100 g) open in a form to check against the label and save. In the diary you go straight to the grams.
 - Products not found can be added as a new food with their barcode. Your foods now have Brand and Barcode fields.
+
+## Nutrition, step 3: label photo (2026-10-18)
+- **Read label photo** in the form of your own foods: take or choose a photo of the nutrition table and the values per 100 g (energy, fat, saturated fat, carbohydrates, sugars, fibre, protein, salt) fill the fields. The text is read on the phone; check the values and save.
+- Works for products not found by barcode: Add as a new food → Read label photo.

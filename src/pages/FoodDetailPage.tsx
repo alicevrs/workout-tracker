@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { InfoButton } from '../components/Library';
 import { EmptyState, NumberField, PageHeader, useToast } from '../components/ui';
@@ -8,6 +8,8 @@ import { useFoods } from '../hooks/useFoods';
 import { CREA_SOURCE, nutrientsFor, round1 } from '../lib/nutrition';
 import { OFF_SOURCE } from '../lib/barcode';
 import { getDraft } from '../lib/drafts';
+import { LABEL_NAMES, type LabelValues } from '../lib/labelReader';
+import { Icon } from '../components/Icon';
 import { uid } from '../lib/ids';
 
 const blankFood = (): Food => ({ id: uid(), name: '', category: '', source: 'custom', kcal: 0, protein: 0, carbs: 0, fat: 0 });
@@ -112,6 +114,31 @@ function OwnFood({ initial, isNew }: { initial: Food; isNew: boolean }) {
   const dirty = JSON.stringify(f) !== JSON.stringify(saved);
   const set = (patch: Partial<Food>) => setF((cur) => ({ ...cur, ...patch }));
   const num = (key: 'kcal' | 'protein' | 'carbs' | 'fat') => (v: number | undefined) => set({ [key]: v ?? 0 });
+  const photo = useRef<HTMLInputElement>(null);
+  const [reading, setReading] = useState<number | null>(null);
+  const [readNote, setReadNote] = useState<string | null>(null);
+
+  const readPhoto = async (file: File | undefined) => {
+    if (!file) return;
+    setReading(0);
+    setReadNote(null);
+    try {
+      const { readLabelPhoto } = await import('../lib/readLabelPhoto');
+      const { values } = await readLabelPhoto(file, setReading);
+      const found = (Object.keys(values) as (keyof LabelValues)[]).filter((k) => values[k] !== undefined);
+      if (found.length) set(values);
+      setReadNote(
+        found.length
+          ? `Read from the photo: ${found.map((k) => LABEL_NAMES[k]).join(', ')}. Check every value against the label${found.length < 5 ? ' and type the missing ones' : ''}.`
+          : 'No values could be read. Take a sharp, straight photo of the nutrition table only, in good light, or type the values.',
+      );
+    } catch {
+      setReadNote('The photo could not be read (the reader needs a connection the first time). Type the values instead.');
+    } finally {
+      setReading(null);
+      if (photo.current) photo.current.value = '';
+    }
+  };
 
   const save = async () => {
     if (!f.name.trim()) return toast('Give the food a name');
@@ -132,6 +159,7 @@ function OwnFood({ initial, isNew }: { initial: Food; isNew: boolean }) {
         actions={
           <InfoButton title="Your food">
             <p style={{ margin: 0 }}>Values per 100 g (or 100 ml), as on the nutrition label. When Energy is empty, a button fills it from the macros.</p>
+            <p style={{ margin: 0 }}>Read label photo: take or choose a photo of the nutrition table; the text is read on this device and the values per 100 g fill the fields. Always check them.</p>
             <p style={{ margin: 0 }}>Changes are kept only when you tap Save.</p>
           </InfoButton>
         }
@@ -158,6 +186,13 @@ function OwnFood({ initial, isNew }: { initial: Food; isNew: boolean }) {
             Values from {OFF_SOURCE}. Check them against the label.
           </p>
         )}
+        <div className="label-photo">
+          <input ref={photo} type="file" accept="image/*" hidden onChange={(e) => void readPhoto(e.target.files?.[0])} />
+          <button className="btn" disabled={reading !== null} onClick={() => photo.current?.click()}>
+            <Icon name="camera" /> {reading === null ? 'Read label photo' : `Reading the label… ${Math.round(reading * 100)}%`}
+          </button>
+          {readNote && <p className="tiny faint" style={{ margin: 0 }}>{readNote}</p>}
+        </div>
         <div className="nutri-grid">
           <NumberField label="Energy" suffix="kcal" value={f.kcal || undefined} onChange={num('kcal')} />
           <NumberField label="Protein" suffix="g" value={f.protein || undefined} onChange={num('protein')} />

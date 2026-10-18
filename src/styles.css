@@ -2683,3 +2683,8 @@ kbd {
 .scanner-hint {
   margin: 6px 0 0;
 }
+.label-photo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
