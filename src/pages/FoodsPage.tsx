@@ -1,18 +1,21 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { InfoButton, LibraryList, SearchField } from '../components/Library';
+import { ScanFood } from '../components/ScanFood';
 import { EmptyState, PageHeader, useToast } from '../components/ui';
 import { db } from '../db/db';
 import type { Food } from '../db/types';
 import { useCameBack, useScrollMemory, useStickyState } from '../hooks/useStickyState';
 import { useFoods } from '../hooks/useFoods';
 import { CREA_SOURCE, round1, searchFoods } from '../lib/nutrition';
+import { OFF_SOURCE } from '../lib/barcode';
+import { setDraft } from '../lib/drafts';
 
 /** The longest list shown at once; typing narrows it. */
 const MAX_ROWS = 150;
 
-export const foodLine = (f: Food) => `${Math.round(f.kcal)} kcal · P ${round1(f.protein)} · C ${round1(f.carbs)} · F ${round1(f.fat)} per 100 g`;
+export const foodLine = (f: Food) => `${f.brand ? `${f.brand} · ` : ''}${Math.round(f.kcal)} kcal · P ${round1(f.protein)} · C ${round1(f.carbs)} · F ${round1(f.fat)} per 100 g`;
 
 /** Food archive: the reference table (CREA) and the user's own foods. */
 export default function FoodsPage() {
@@ -23,11 +26,18 @@ export default function FoodsPage() {
   const [query, setQuery] = useStickyState('foods:query', '', cameBack);
   const [category, setCategory] = useStickyState('foods:category', '', cameBack);
   const [mine, setMine] = useStickyState('foods:mine', false, cameBack);
+  const [scanning, setScanning] = useState(false);
 
   const categories = useMemo(() => [...new Set((foods ?? []).map((f) => f.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'it')), [foods]);
   const found = useMemo(() => searchFoods((foods ?? []).filter((f) => !mine || f.source === 'custom'), query, category), [foods, query, category, mine]);
   useScrollMemory('foods', !!foods, cameBack);
 
+  const onScanned = (food: Food, isNew: boolean) => {
+    setScanning(false);
+    if (!isNew) return navigate(`/nutrition/foods/${encodeURIComponent(food.id)}`);
+    setDraft('food:scanned', food, true); // stored only when saved
+    navigate('/nutrition/foods/new?scanned=1');
+  };
   const duplicate = (id: string) => navigate(`/nutrition/foods/new?copy=${encodeURIComponent(id)}`);
   const remove = async (id: string) => {
     const f = await db.foods.get(id);
@@ -45,7 +55,7 @@ export default function FoodsPage() {
           <InfoButton title="Foods">
             <p style={{ margin: 0 }}>The food archive: values per 100 g of the edible part.</p>
             <p style={{ margin: 0 }}>Reference foods come from the official Italian food composition tables. Source: {CREA_SOURCE}. They cannot be changed: the copy icon makes your own editable copy.</p>
-            <p style={{ margin: 0 }}>New food adds a food of your own with the values of its label. Your foods are synced to your other devices.</p>
+            <p style={{ margin: 0 }}>New food adds a food of your own with the values of its label. Scan barcode reads a packaged product: if it is not among your foods, its values come from Open Food Facts ({OFF_SOURCE}); check them against the label and save. Your foods are synced to your other devices.</p>
           </InfoButton>
         }
       />
@@ -53,6 +63,9 @@ export default function FoodsPage() {
         <Link className="big-btn" to="/nutrition/foods/new">
           <Icon name="plus" /> New food
         </Link>
+        <button className="big-btn pink" onClick={() => setScanning(true)}>
+          <Icon name="barcode" /> Scan barcode
+        </button>
       </div>
       <div className="stack">
         <SearchField value={query} onChange={setQuery} label="Search foods" />
@@ -92,6 +105,7 @@ export default function FoodsPage() {
         )}
         {found.length > MAX_ROWS && <p className="small muted" style={{ textAlign: 'center' }}>Type more of the name to narrow the list.</p>}
       </div>
+      <ScanFood open={scanning} onClose={() => setScanning(false)} onFood={onScanned} />
     </div>
   );
 }

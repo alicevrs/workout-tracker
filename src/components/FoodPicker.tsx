@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { Food } from '../db/types';
-import { useFoods } from '../hooks/useFoods';
-import { nutrientsFor, searchFoods } from '../lib/nutrition';
-import { SearchField } from './Library';
-import { NumberField, Sheet } from './ui';
+import { useEffect, useMemo, useState } from "react";
+import type { Food } from "../db/types";
+import { useFoods } from "../hooks/useFoods";
+import { nutrientsFor, searchFoods } from "../lib/nutrition";
+import { SearchField } from "./Library";
+import { ScanFood } from "./ScanFood";
+import { Icon } from "./Icon";
+import { OFF_SOURCE } from "../lib/barcode";
+import { NumberField, Sheet } from "./ui";
 
 const MAX_RESULTS = 40;
 
@@ -15,76 +18,147 @@ export function FoodPicker({
   open,
   onClose,
   onPick,
-  title = 'Choose a food',
+  title = "Choose a food",
   withGrams = false,
-  confirmLabel = 'Add',
+  confirmLabel = "Add",
+  scan = false,
 }: {
   open: boolean;
   onClose: () => void;
-  onPick: (food: Food, grams?: number) => void;
+  /** isNew: a scanned product that is not among the user's foods yet. */
+  onPick: (food: Food, grams?: number, isNew?: boolean) => void;
+  /** Offer barcode scanning. */
+  scan?: boolean;
   title?: string;
   withGrams?: boolean;
   confirmLabel?: string;
 }) {
   const { foods } = useFoods();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [chosen, setChosen] = useState<Food | null>(null);
   const [grams, setGrams] = useState<number | undefined>();
+  const [isNew, setIsNew] = useState(false);
+  const [scanning, setScanning] = useState(false);
   useEffect(() => {
     if (!open) {
-      setQuery('');
+      setQuery("");
       setChosen(null);
       setGrams(undefined);
+      setIsNew(false);
+      setScanning(false);
     }
   }, [open]);
-  const found = useMemo(() => (query.trim() ? searchFoods(foods ?? [], query).slice(0, MAX_RESULTS) : []), [foods, query]);
+  const found = useMemo(
+    () =>
+      query.trim() ? searchFoods(foods ?? [], query).slice(0, MAX_RESULTS) : [],
+    [foods, query],
+  );
 
-  const pick = (f: Food) => {
-    if (!withGrams) return onPick(f);
+  const pick = (f: Food, fresh = false) => {
+    setIsNew(fresh);
+    if (!withGrams) return onPick(f, undefined, fresh);
     setChosen(f);
     setGrams(f.portionG ?? 100);
   };
   const n = chosen && grams ? nutrientsFor(chosen, grams) : undefined;
 
   return (
-    <Sheet open={open} onClose={onClose} title={chosen ? chosen.name : title}>
-      {chosen ? (
-        <div className="stack">
-          <NumberField label="Quantity" suffix="g" value={grams} onChange={setGrams} stepper step={10} />
-          {n && (
-            <p className="small muted" style={{ margin: 0 }}>
-              {Math.round(n.kcal)} kcal · P {Math.round(n.protein)} g · C {Math.round(n.carbs)} g · F {Math.round(n.fat)} g
-            </p>
-          )}
-          <div className="row">
-            <button className="btn ghost" onClick={() => setChosen(null)}>
-              Back
-            </button>
-            <button className="btn primary" style={{ flex: 1 }} disabled={!grams} onClick={() => chosen && grams && onPick(chosen, grams)}>
-              {confirmLabel}
-            </button>
+    <>
+      <Sheet
+        open={open && !scanning}
+        onClose={onClose}
+        title={chosen ? chosen.name : title}
+      >
+        {chosen ? (
+          <div className="stack">
+            {chosen.brand && (
+              <p className="small muted" style={{ margin: 0 }}>
+                {chosen.brand}
+              </p>
+            )}
+            <NumberField
+              label="Quantity"
+              suffix="g"
+              value={grams}
+              onChange={setGrams}
+              stepper
+              step={10}
+            />
+            {n && (
+              <p className="small muted" style={{ margin: 0 }}>
+                {Math.round(n.kcal)} kcal · P {Math.round(n.protein)} g · C{" "}
+                {Math.round(n.carbs)} g · F {Math.round(n.fat)} g
+              </p>
+            )}
+            <div className="row">
+              <button className="btn ghost" onClick={() => setChosen(null)}>
+                Back
+              </button>
+              <button
+                className="btn primary"
+                style={{ flex: 1 }}
+                disabled={!grams}
+                onClick={() => chosen && grams && onPick(chosen, grams, isNew)}
+              >
+                {confirmLabel}
+              </button>
+            </div>
+            {isNew && (
+              <p className="tiny faint" style={{ margin: 0 }}>
+                Values from {OFF_SOURCE}, per 100 g: {Math.round(chosen.kcal)}{" "}
+                kcal · P {chosen.protein} · C {chosen.carbs} · F {chosen.fat}.
+                The product is added to your foods, where you can correct it.
+              </p>
+            )}
           </div>
-        </div>
-      ) : (
-        <div className="stack">
-          <SearchField value={query} onChange={setQuery} label="Search foods" />
-          {found.length > 0 && (
-            <ul className="search-results" role="listbox" aria-label="Matching foods">
-              {found.map((f) => (
-                <li key={f.id}>
-                  <button type="button" onClick={() => pick(f)}>
-                    <span>{f.name}</span>
-                    <span className="tiny faint" style={{ flexShrink: 0 }}>
-                      {Math.round(f.kcal)} kcal
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {query.trim() && foods && found.length === 0 && <p className="small muted">No foods match. Add it in Nutrition → Foods.</p>}
-        </div>
+        ) : (
+          <div className="stack">
+            {scan && (
+              <button className="btn" onClick={() => setScanning(true)}>
+                <Icon name="barcode" /> Scan barcode
+              </button>
+            )}
+            <SearchField
+              value={query}
+              onChange={setQuery}
+              label="Search foods"
+            />
+            {found.length > 0 && (
+              <ul
+                className="search-results"
+                role="listbox"
+                aria-label="Matching foods"
+              >
+                {found.map((f) => (
+                  <li key={f.id}>
+                    <button type="button" onClick={() => pick(f)}>
+                      <span>{f.name}</span>
+                      <span className="tiny faint" style={{ flexShrink: 0 }}>
+                        {Math.round(f.kcal)} kcal
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {query.trim() && foods && found.length === 0 && (
+              <p className="small muted">
+                No foods match. Add it in Nutrition → Foods.
+              </p>
+            )}
+          </div>
+        )}
+      </Sheet>
+      {scan && (
+        <ScanFood
+          open={open && scanning}
+          onClose={() => setScanning(false)}
+          onFood={(f, fresh) => {
+            setScanning(false);
+            pick(f, fresh);
+          }}
+        />
       )}
-    </Sheet>
+    </>
   );
 }

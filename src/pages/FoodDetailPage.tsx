@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { InfoButton } from '../components/Library';
 import { EmptyState, NumberField, PageHeader, useToast } from '../components/ui';
@@ -6,6 +6,8 @@ import { db } from '../db/db';
 import type { Food } from '../db/types';
 import { useFoods } from '../hooks/useFoods';
 import { CREA_SOURCE, nutrientsFor, round1 } from '../lib/nutrition';
+import { OFF_SOURCE } from '../lib/barcode';
+import { getDraft } from '../lib/drafts';
 import { uid } from '../lib/ids';
 
 const blankFood = (): Food => ({ id: uid(), name: '', category: '', source: 'custom', kcal: 0, protein: 0, carbs: 0, fat: 0 });
@@ -18,6 +20,19 @@ export default function FoodDetailPage() {
   const { foods, map } = useFoods();
   const isNew = id === 'new';
   const food = isNew ? undefined : map.get(id);
+  const scannedParam = params.get('scanned');
+  const barcode = params.get('barcode') ?? undefined;
+  // A new food is set up once per visit of the page (not on every refresh of the archive).
+  const fresh = useMemo<Food | undefined>(() => {
+    if (!isNew || !foods) return undefined;
+    const scanned = scannedParam ? getDraft<Food>('food:scanned')?.item : undefined;
+    if (scanned) return scanned;
+    const source = copyOf ? map.get(copyOf) : undefined;
+    if (source) return { ...source, id: uid(), name: source.source === 'custom' ? `${source.name} (copy)` : source.name, source: 'custom', barcode: undefined, origin: undefined };
+    return { ...blankFood(), barcode };
+    // map is complete once foods is loaded; it is not a reason to start over.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, !!foods, copyOf, scannedParam, barcode]);
 
   if (!foods) return <div className="page" />;
   if (!isNew && !food)
@@ -28,8 +43,7 @@ export default function FoodDetailPage() {
       </div>
     );
   if (food && food.source !== 'custom') return <ReferenceFood food={food} />;
-  const source = copyOf ? map.get(copyOf) : undefined;
-  const start: Food = food ?? (source ? { ...source, id: uid(), name: source.source === 'custom' ? `${source.name} (copy)` : source.name, source: 'custom', barcode: undefined } : blankFood());
+  const start = (food ?? fresh)!;
   return <OwnFood key={start.id} initial={start} isNew={isNew} />;
 }
 
@@ -101,7 +115,7 @@ function OwnFood({ initial, isNew }: { initial: Food; isNew: boolean }) {
 
   const save = async () => {
     if (!f.name.trim()) return toast('Give the food a name');
-    const next = { ...f, name: f.name.trim(), category: f.category.trim(), updatedAt: Date.now() };
+    const next = { ...f, name: f.name.trim(), category: f.category.trim(), brand: f.brand?.trim() || undefined, updatedAt: Date.now() };
     await db.foods.put(next);
     setF(next);
     setSaved(next);
@@ -128,9 +142,22 @@ function OwnFood({ initial, isNew }: { initial: Food; isNew: boolean }) {
           <input value={f.name} onChange={(e) => set({ name: e.target.value })} />
         </label>
         <label className="field">
+          Brand
+          <input value={f.brand ?? ''} onChange={(e) => set({ brand: e.target.value || undefined })} />
+        </label>
+        <label className="field">
           Category
           <input value={f.category} onChange={(e) => set({ category: e.target.value })} />
         </label>
+        <label className="field">
+          Barcode
+          <input inputMode="numeric" value={f.barcode ?? ''} onChange={(e) => set({ barcode: e.target.value.replace(/\D/g, '') || undefined })} />
+        </label>
+        {f.origin === 'openfoodfacts' && (
+          <p className="tiny faint" style={{ margin: 0 }}>
+            Values from {OFF_SOURCE}. Check them against the label.
+          </p>
+        )}
         <div className="nutri-grid">
           <NumberField label="Energy" suffix="kcal" value={f.kcal || undefined} onChange={num('kcal')} />
           <NumberField label="Protein" suffix="g" value={f.protein || undefined} onChange={num('protein')} />

@@ -353,3 +353,8 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - **Food diary**: day by day, log the options chosen from the plan or any food with its grams; totals against the targets, water, this week's limits, today's menu and the guidelines.
 - **Visits**: weight, height, BMI and your list of measures (body fat, circumferences, skinfolds), with a chart over time. The visit weight also goes to the weight log.
 - Nutrition data is included in sync and backups.
+
+## Nutrition, step 2: barcode (2026-10-18)
+- **Scan barcode** in Foods and in the food diary (Food → Scan barcode): the camera reads the barcode of a packaged product, or you type its number.
+- The product is looked up among your foods, then on Open Food Facts; its values (per 100 g) open in a form to check against the label and save. In the diary you go straight to the grams.
+- Products not found can be added as a new food with their barcode. Your foods now have Brand and Barcode fields.

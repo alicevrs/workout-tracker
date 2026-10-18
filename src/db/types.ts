@@ -400,6 +400,9 @@ export interface Food extends Nutrients {
   /** Edible part in % (the values are per 100 g of edible part). */
   ediblePct?: number;
   barcode?: string;
+  brand?: string;
+  /** Values taken from Open Food Facts when the barcode was scanned (then editable). */
+  origin?: 'openfoodfacts';
   updatedAt?: number;
 }
 

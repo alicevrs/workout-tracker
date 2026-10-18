@@ -36,9 +36,11 @@ export default function FoodDiaryPage() {
   const counts = limitCounts(weekEntries ?? []);
 
   const remove = (e: FoodEntry) => db.foodEntries.delete(e.id);
-  const addFood = async (food: Food, grams?: number) => {
+  const addFood = async (food: Food, grams?: number, isNew?: boolean) => {
     if (!addTo || !grams) return;
     const now = Date.now();
+    // A scanned product joins the user's foods, so next time it is found without a connection.
+    if (isNew) await db.foods.put({ ...food, updatedAt: now });
     await db.foodEntries.put({ id: uid(), date, kind: 'food', meal: addTo, name: food.name, foodId: food.id, grams, createdAt: now, updatedAt: now });
     setAddTo(null);
     toast('Added');
@@ -65,7 +67,7 @@ export default function FoodDiaryPage() {
         subtitle={formatDate(fromDateKey(date).getTime())}
         actions={
           <InfoButton title="Food diary">
-            <p style={{ margin: 0 }}>For each meal, “From plan” logs the options you chose from your diet plan; “Food” logs any food of the archive with its grams.</p>
+            <p style={{ margin: 0 }}>For each meal, “From plan” logs the options you chose from your diet plan; “Food” logs any food of the archive with its grams, or a packaged product by scanning its barcode.</p>
             <p style={{ margin: 0 }}>Calories and macros are added up against the targets of the plan in force on that day. Items without a linked food are listed but not counted.</p>
             <p style={{ margin: 0 }}>Weekly limits count the plan options marked for them; use + and − for anything eaten outside the plan.</p>
           </InfoButton>
@@ -176,7 +178,7 @@ export default function FoodDiaryPage() {
         )}
       </div>
       <FromPlanSheet meal={fromPlan} date={date} onClose={() => setFromPlan(null)} onAdded={() => toast('Added')} />
-      <FoodPicker open={!!addTo} onClose={() => setAddTo(null)} onPick={addFood} withGrams title={addTo ? `Add to ${addTo}` : ''} />
+      <FoodPicker open={!!addTo} onClose={() => setAddTo(null)} onPick={addFood} withGrams scan title={addTo ? `Add to ${addTo}` : ''} />
     </div>
   );
 }
