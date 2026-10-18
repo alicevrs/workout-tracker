@@ -229,3 +229,8 @@ Choices made while building the app, with the reason for each.
 - The exercise picker clears its search whenever it opens.
 - “How they are combined” is available for every block (user's choice) and comes before Log as. With sets × reps it sets grouping and the rests as before (`withStructure`); with a timer it only records the grouping (`withGrouping`) as information about the order, since the timer's rounds already decide the turns. Switching format keeps the grouping (except drop sets).
 - The sample workouts (`src/lib/templates.ts`) are no longer offered in the app (user's choice, and in line with “no examples in the app”); the file stays only because tests use it.
+
+## Exercise animations
+- Drawn, not photos (user's request): `src/lib/motion.ts` describes each exercise as two poses of a side-view stick figure (joint angles, a joint pinned to a fixed point so feet or hands stay put) plus simple props; `components/ExerciseAnimation.tsx` turns them into SVG lines animated with SMIL (`<animate>` A → B → A), so there is no JavaScript loop and no extra file to download. Front view for side-to-side movements. Reduced-motion setting shows the still start pose.
+- The figures show the movement pattern, not a coaching-level technique demo: similar exercises share a pattern (all bench presses, all rows…). Custom exercises borrow a pattern by keywords in their name; otherwise no animation.
+- A test checks that every catalogue exercise has an animation and stays inside the picture.

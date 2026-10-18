@@ -274,3 +274,7 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Add exercise: the search box starts empty every time (the previous search is not kept), and the list shows all exercises again.
 - Training blocks: **How they are combined** (in sequence, alternating, circuit) can now be chosen with every Log as and every timer, and it comes right after the exercises, before Log as. With a timer it records the order to follow; the timer itself is unchanged.
 - Workouts list: “Add sample workouts” removed. New workout builds a workout; below is the list of your workouts.
+
+## Exercise animations and muscle filter (2026-10-18)
+- Every exercise page now starts with a small looping animation of the movement: a stylised yellow figure in the app's style, with the equipment (barbell, dumbbells, bench, bar, cable…) in pink. Sideways movements (lateral raises, hip abduction/adduction, jumping jacks…) are shown from the front. Your own exercises get the animation of a similar movement when their name makes it clear (for example a name containing “squat” or “curl”).
+- Add exercise (in training blocks): a muscle group menu under the category filters.

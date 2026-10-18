@@ -1,6 +1,8 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { BodyMap } from '../components/BodyMap';
+import { ExerciseAnimation } from '../components/ExerciseAnimation';
+import { motionFor } from '../lib/motion';
 import { ExerciseHistory } from '../components/ExerciseHistory';
 import { Icon } from '../components/Icon';
 import { EmptyState, PageHeader } from '../components/ui';
@@ -26,6 +28,7 @@ export default function ExerciseDetailPage() {
       </div>
     );
 
+  const motion = motionFor(exercise.id, exercise.name);
   return (
     <div className="page">
       <PageHeader
@@ -38,6 +41,11 @@ export default function ExerciseDetailPage() {
           </Link>
         }
       />
+      {motion && (
+        <section className="card mb" aria-label={`How to do ${exercise.name}`}>
+          <ExerciseAnimation motion={motion} label={`${exercise.name}: movement`} />
+        </section>
+      )}
       <div className="grid two">
         <section className="card" aria-labelledby="muscles-h">
           <h2 id="muscles-h" className="mb">

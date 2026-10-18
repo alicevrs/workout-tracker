@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MUSCLE_LABEL } from '../data/muscles';
+import { MUSCLE_LABEL, MUSCLES } from '../data/muscles';
 import { useVisibleExercises } from '../db/repo';
-import type { ExerciseCategory } from '../db/types';
+import type { ExerciseCategory, MuscleId } from '../db/types';
 import { Sheet } from './ui';
 
 export function ExercisePicker({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (id: string) => void }) {
   const exercises = useVisibleExercises();
   const [q, setQ] = useState('');
   const [cat, setCat] = useState<ExerciseCategory | 'all'>('all');
+  const [muscle, setMuscle] = useState<MuscleId | ''>('');
   // Every search starts empty (the previous one is not kept).
   useEffect(() => {
     if (open) setQ('');
@@ -18,12 +19,13 @@ export function ExercisePicker({ open, onClose, onPick }: { open: boolean; onClo
     return (exercises ?? []).filter(
       (e) =>
         (cat === 'all' || e.category === cat) &&
+        (!muscle || e.primaryMuscles.includes(muscle) || e.secondaryMuscles.includes(muscle)) &&
         (!query ||
           e.name.toLowerCase().includes(query) ||
           e.primaryMuscles.some((m) => MUSCLE_LABEL[m].toLowerCase().includes(query)) ||
           e.equipment.includes(query)),
     );
-  }, [exercises, q, cat]);
+  }, [exercises, q, cat, muscle]);
 
   return (
     <Sheet open={open} onClose={onClose} title="Add exercise">
@@ -35,6 +37,17 @@ export function ExercisePicker({ open, onClose, onPick }: { open: boolean; onClo
           </button>
         ))}
       </div>
+      <label className="field mt-s">
+        <span className="sr-only">Muscle group</span>
+        <select value={muscle} onChange={(e) => setMuscle(e.target.value as MuscleId | '')}>
+          <option value="">All muscle groups</option>
+          {MUSCLES.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.label}
+            </option>
+          ))}
+        </select>
+      </label>
       <ul className="list mt-s">
         {list.map((e) => (
           <li key={e.id}>

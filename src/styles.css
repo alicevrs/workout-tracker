@@ -2234,3 +2234,48 @@ kbd {
   max-width: 340px;
   margin: 0 auto 18px;
 }
+
+/* Exercise animations (components/ExerciseAnimation.tsx): yellow figure, pink equipment. */
+.ex-anim {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  margin: 0 auto;
+}
+.ex-anim line,
+.ex-anim rect,
+.ex-anim circle {
+  vector-effect: non-scaling-stroke;
+}
+.ex-anim .ea-body line {
+  stroke: var(--accent);
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+.ex-anim .ea-far line {
+  opacity: 0.45;
+}
+.ex-anim .ea-head {
+  fill: var(--accent);
+}
+.ex-anim .ea-prop {
+  stroke: var(--rest);
+  stroke-width: 3;
+  stroke-linecap: round;
+  fill: none;
+}
+.ex-anim .ea-fill {
+  fill: var(--rest);
+}
+.ex-anim .ea-fill-soft {
+  fill: rgba(239, 163, 179, 0.25);
+}
+.ex-anim .ea-cable {
+  stroke: var(--rest);
+  stroke-width: 1.5;
+  opacity: 0.8;
+}
+.ex-anim .ea-floor {
+  stroke: var(--border);
+  stroke-width: 2;
+}
