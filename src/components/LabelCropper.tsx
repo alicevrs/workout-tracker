@@ -5,6 +5,8 @@ type Box = { x: number; y: number; w: number; h: number }; // fractions of the p
 type Drag = { mode: 'move' | 'tl' | 'tr' | 'bl' | 'br'; startX: number; startY: number; box: Box } | null;
 
 const MIN = 0.08;
+/** The frame starts around the whole photo: Read sends it all; a tighter frame reads small print better. */
+const WHOLE: Box = { x: 0.02, y: 0.02, w: 0.96, h: 0.96 };
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 /** Cut the chosen part of a photo, at full resolution. */
@@ -25,7 +27,7 @@ async function crop(file: Blob, box: Box): Promise<Blob> {
 /** Full-screen step after taking the photo: drag the frame around the nutrition table, then Read. */
 export function LabelCropper({ file, onCancel, onCropped }: { file: Blob | null; onCancel: () => void; onCropped: (part: Blob) => void }) {
   const [url, setUrl] = useState<string | null>(null);
-  const [box, setBox] = useState<Box>({ x: 0.1, y: 0.25, w: 0.8, h: 0.5 });
+  const [box, setBox] = useState<Box>(WHOLE);
   const [busy, setBusy] = useState(false);
   const area = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag>(null);
@@ -34,7 +36,7 @@ export function LabelCropper({ file, onCancel, onCropped }: { file: Blob | null;
     if (!file) return;
     const u = URL.createObjectURL(file);
     setUrl(u);
-    setBox({ x: 0.1, y: 0.25, w: 0.8, h: 0.5 });
+    setBox(WHOLE);
     setBusy(false);
     return () => URL.revokeObjectURL(u);
   }, [file]);
@@ -92,7 +94,7 @@ export function LabelCropper({ file, onCancel, onCropped }: { file: Blob | null;
         </button>
       </div>
       <p className="tiny faint" style={{ margin: '4px 0 0' }}>
-        Drag the corners so that only the nutrition table is inside the frame.
+        Drag the corners around the nutrition table, then tap Read.
       </p>
       <div className="crop-stage">
         <div className="crop-area" ref={area} onPointerMove={move} onPointerUp={end} onPointerCancel={end}>

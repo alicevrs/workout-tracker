@@ -1,101 +1,107 @@
-// Reads the text of a nutrition label photo on the phone with Tesseract (nothing leaves the
-// device). Its files are published with the app under ocr/ (see vite.config.ts) and loaded only here.
+// Reads a nutrition label photo with Claude, through the app's own Cloudflare Worker (the API key
+// stays there). The photo (the framed part) is reduced and sent; nothing is stored.
 
-import { parseLabel, reconcile, type LabelValues } from './labelReader';
+import { SYNC_URL } from './sync/config';
 
-/** Small label text needs pixels: photos are read at up to 3200 px, small images are enlarged to 2400 px. */
-const MAX_SIDE = 3200;
-const MIN_SIDE = 2400;
-
-/** The photo, upright, sized for reading, in high-contrast grey. */
-async function prepare(file: Blob): Promise<HTMLCanvasElement> {
-  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
-  const side = Math.max(bitmap.width, bitmap.height);
-  const scale = side > MAX_SIDE ? MAX_SIDE / side : side < MIN_SIDE ? MIN_SIDE / side : 1;
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-  const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const d = img.data;
-  // Grey, then stretch the contrast between the darkest and lightest 2 %.
-  const hist = new Uint32Array(256);
-  for (let i = 0; i < d.length; i += 4) {
-    const g = Math.round(d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114);
-    d[i] = g;
-    hist[g]++;
-  }
-  const total = d.length / 4;
-  let lo = 0;
-  let hi = 255;
-  for (let acc = 0; lo < 255 && (acc += hist[lo]) < total * 0.02; lo++);
-  for (let acc = 0; hi > 0 && (acc += hist[hi]) < total * 0.02; hi--);
-  const range = Math.max(1, hi - lo);
-  for (let i = 0; i < d.length; i += 4) {
-    const v = Math.max(0, Math.min(255, ((d[i] - lo) * 255) / range));
-    d[i] = d[i + 1] = d[i + 2] = v;
-  }
-  ctx.putImageData(img, 0, 0);
-  return canvas;
+/** Values per 100 g read from a label. */
+export interface LabelValues {
+  kcal?: number;
+  fat?: number;
+  saturatedFat?: number;
+  carbs?: number;
+  sugars?: number;
+  fiber?: number;
+  protein?: number;
+  /** mg */
+  sodium?: number;
+  portionG?: number;
 }
 
-/** The same picture with light and dark swapped (labels with white text on a coloured band). */
-function inverted(src: HTMLCanvasElement): HTMLCanvasElement {
-  const c = document.createElement('canvas');
-  c.width = src.width;
-  c.height = src.height;
-  const ctx = c.getContext('2d', { willReadFrequently: true })!;
-  // Pixel by pixel: older iPhones do not support canvas filters.
-  const img = src.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, src.width, src.height);
-  const d = img.data;
-  for (let i = 0; i < d.length; i += 4) d[i] = d[i + 1] = d[i + 2] = 255 - d[i];
-  ctx.putImageData(img, 0, 0);
-  return c;
-}
-
-const count = (v: LabelValues) => Object.values(v).filter((x) => x !== undefined).length;
-
-/** Values of the better reading, completed with the other one. */
-export function mergeReadings(a: LabelValues, b: LabelValues): LabelValues {
-  const [main, extra] = count(a) >= count(b) ? [a, b] : [b, a];
-  const out: LabelValues = { ...main };
-  for (const k of Object.keys(extra) as (keyof LabelValues)[]) out[k] ??= extra[k];
-  return reconcile(out);
-}
+/** Names of the values found, for the message after reading. */
+export const LABEL_NAMES: Record<keyof LabelValues, string> = {
+  kcal: 'energy',
+  fat: 'fat',
+  saturatedFat: 'saturated fat',
+  carbs: 'carbohydrates',
+  sugars: 'sugars',
+  fiber: 'fibre',
+  protein: 'protein',
+  sodium: 'salt',
+  portionG: 'portion',
+};
 
 export interface LabelReading {
   values: LabelValues;
-  text: string;
+  name?: string;
+  brand?: string;
 }
 
-/** Read a label photo. `onProgress` gets 0…1. */
-export async function readLabelPhoto(file: Blob, onProgress?: (p: number) => void): Promise<LabelReading> {
-  const [{ createWorker }, canvas] = await Promise.all([import('tesseract.js'), prepare(file)]);
-  const base = new URL('ocr/', document.baseURI).href;
-  // Progress: loading 0–0.2, first reading 0.2–0.6, second reading 0.6–1.
-  let stage = 0;
-  const worker = await createWorker('ita', 1, {
-    workerPath: `${base}worker.min.js`,
-    corePath: base,
-    langPath: `${base}lang`,
-    workerBlobURL: false,
-    logger: (m: { status: string; progress: number }) => {
-      if (m.status === 'recognizing text') onProgress?.(0.2 + stage * 0.4 + m.progress * 0.4);
-      else if (stage === 0) onProgress?.(Math.min(0.2, m.progress * 0.2));
-    },
-  });
-  try {
-    const first = await worker.recognize(canvas);
-    const a = parseLabel(first.data.text);
-    // Dark labels (white text) read badly the normal way: read them again with colours swapped.
-    if (count(a) >= 7) return { values: a, text: first.data.text };
-    stage = 1;
-    const second = await worker.recognize(inverted(canvas));
-    return { values: mergeReadings(a, parseLabel(second.data.text)), text: `${first.data.text}\n---\n${second.data.text}` };
-  } finally {
-    await worker.terminate();
+export class LabelError extends Error {}
+
+/** Longest side sent: enough for small print, as recommended for images sent to Claude. */
+const MAX_SIDE = 1568;
+
+/** The photo as a JPEG (base64), upright, at most 1568 px. */
+export async function encodePhoto(file: Blob): Promise<string> {
+  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext('2d')!;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const url = canvas.toDataURL('image/jpeg', 0.88);
+  return url.slice(url.indexOf(',') + 1);
+}
+
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
+/** The Worker's answer turned into the food's fields (salt → sodium in mg). */
+export function readingFromResponse(body: { found?: boolean; values?: Record<string, unknown> }): LabelReading {
+  const v = body.values ?? {};
+  const num = (k: string) => (typeof v[k] === 'number' ? (v[k] as number) : undefined);
+  const values: LabelValues = {};
+  const kcal = num('kcal');
+  if (kcal !== undefined) values.kcal = Math.round(kcal);
+  for (const k of ['fat', 'saturatedFat', 'carbs', 'sugars', 'fiber', 'protein'] as const) {
+    const n = num(k);
+    if (n !== undefined) values[k] = round1(n);
   }
+  const salt = num('salt');
+  if (salt !== undefined) values.sodium = Math.round((salt / 2.5) * 1000);
+  const portion = num('portionG');
+  if (portion !== undefined) values.portionG = Math.round(portion);
+  return { values, name: typeof v.name === 'string' ? v.name : undefined, brand: typeof v.brand === 'string' ? v.brand : undefined };
+}
+
+const MESSAGES: Record<string, string> = {
+  not_configured: 'Label reading is not set up yet (the service key is missing). Type the values for now.',
+  limit: 'Too many label photos today. Try again tomorrow, or type the values.',
+  busy: 'The reading service is busy. Try again in a minute.',
+  refused: 'This photo could not be read. Try another photo of the table.',
+};
+
+/** Send a label photo to be read. Throws LabelError with a message for the person. */
+export async function readLabelPhoto(file: Blob, fetchFn: typeof fetch = fetch): Promise<LabelReading> {
+  const image = await encodePhoto(file);
+  return sendLabel(image, fetchFn);
+}
+
+/** The network part of readLabelPhoto (separate so it can be tested without a canvas). */
+export async function sendLabel(image: string, fetchFn: typeof fetch = fetch): Promise<LabelReading> {
+  let res: Response;
+  try {
+    res = await fetchFn(`${SYNC_URL.replace(/\/$/, '')}/v1/label`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image, mediaType: 'image/jpeg' }),
+    });
+  } catch {
+    throw new LabelError('No connection: the photo needs internet to be read.');
+  }
+  const body = (await res.json().catch(() => ({}))) as { error?: string; found?: boolean; values?: Record<string, unknown> };
+  if (!res.ok) throw new LabelError(MESSAGES[body.error ?? ''] ?? 'The photo could not be read right now. Try again, or type the values.');
+  return readingFromResponse(body);
 }

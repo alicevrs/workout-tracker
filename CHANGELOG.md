@@ -363,3 +363,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - **Read label photo** in the form of your own foods: take or choose a photo of the nutrition table and the values per 100 g (energy, fat, saturated fat, carbohydrates, sugars, fibre, protein, salt) fill the fields. The text is read on the phone; check the values and save.
 - Works for products not found by barcode: Add as a new food → Read label photo.
 - Label photo, improved after the first test: after the photo you frame only the nutrition table; sharper reading, labels with white text on a dark band, numbers written after the unit, row names on several lines, and fixes for decimal commas the reader misses.
+- Label photo now read by AI (Claude) instead of on the phone: much more reliable on real labels. The framed photo is sent to the app's server and read, never stored. Name and brand are filled in too when they are on the photo.

@@ -8,7 +8,7 @@ import { useFoods } from '../hooks/useFoods';
 import { CREA_SOURCE, nutrientsFor, round1 } from '../lib/nutrition';
 import { OFF_SOURCE } from '../lib/barcode';
 import { getDraft } from '../lib/drafts';
-import { LABEL_NAMES, type LabelValues } from '../lib/labelReader';
+import { LABEL_NAMES, LabelError, readLabelPhoto, type LabelValues } from '../lib/readLabelPhoto';
 import { Icon } from '../components/Icon';
 import { LabelCropper } from '../components/LabelCropper';
 import { uid } from '../lib/ids';
@@ -116,30 +116,29 @@ function OwnFood({ initial, isNew }: { initial: Food; isNew: boolean }) {
   const set = (patch: Partial<Food>) => setF((cur) => ({ ...cur, ...patch }));
   const num = (key: 'kcal' | 'protein' | 'carbs' | 'fat') => (v: number | undefined) => set({ [key]: v ?? 0 });
   const photo = useRef<HTMLInputElement>(null);
-  const [reading, setReading] = useState<number | null>(null);
+  const [reading, setReading] = useState(false);
   const [readNote, setReadNote] = useState<string | null>(null);
   /** Photo waiting to be framed. */
   const [framing, setFraming] = useState<File | null>(null);
 
   const readPhoto = async (file: Blob | undefined) => {
     if (!file) return;
-    setReading(0);
+    setReading(true);
     setReadNote(null);
     try {
-      const { readLabelPhoto } = await import('../lib/readLabelPhoto');
-      const { values } = await readLabelPhoto(file, setReading);
+      const { values, name, brand } = await readLabelPhoto(file);
       const found = (Object.keys(values) as (keyof LabelValues)[]).filter((k) => values[k] !== undefined);
-      if (found.length) set(values);
+      // Name and brand only fill empty fields; the values replace what was typed.
+      setF((cur) => ({ ...cur, ...values, name: cur.name.trim() ? cur.name : (name ?? cur.name), brand: cur.brand?.trim() ? cur.brand : (brand ?? cur.brand) }));
       setReadNote(
         found.length
-          ? `Read from the photo: ${found.map((k) => LABEL_NAMES[k]).join(', ')}. Check every value against the label${found.length < 5 ? ' and type the missing ones' : ''}.`
-          : 'No values could be read. Take a sharp, straight photo close to the table, in good light, frame only the table, or type the values.',
+          ? `Read from the photo: ${found.map((k) => LABEL_NAMES[k]).join(', ')}. Check the values against the label.`
+          : 'No nutrition values were found in the photo. Frame the nutrition table and try again, or type the values.',
       );
-    } catch {
-      setReadNote('The photo could not be read (the reader needs a connection the first time). Type the values instead.');
+    } catch (e) {
+      setReadNote(e instanceof LabelError ? e.message : 'The photo could not be read. Try again, or type the values.');
     } finally {
-      setReading(null);
-      if (photo.current) photo.current.value = '';
+      setReading(false);
     }
   };
 
@@ -162,7 +161,7 @@ function OwnFood({ initial, isNew }: { initial: Food; isNew: boolean }) {
         actions={
           <InfoButton title="Your food">
             <p style={{ margin: 0 }}>Values per 100 g (or 100 ml), as on the nutrition label. When Energy is empty, a button fills it from the macros.</p>
-            <p style={{ margin: 0 }}>Read label photo: take or choose a photo of the nutrition table, frame only the table, and the values per 100 g fill the fields. The text is read on this device. Always check the values.</p>
+            <p style={{ margin: 0 }}>Read label photo: take or choose a photo of the nutrition table and frame the table; the values per 100 g fill the fields. The framed photo is sent to an AI service (Claude, by Anthropic) only to be read, and is not stored. Always check the values.</p>
             <p style={{ margin: 0 }}>Changes are kept only when you tap Save.</p>
           </InfoButton>
         }
@@ -200,8 +199,8 @@ function OwnFood({ initial, isNew }: { initial: Food; isNew: boolean }) {
               e.target.value = '';
             }}
           />
-          <button className="btn" disabled={reading !== null} onClick={() => photo.current?.click()}>
-            <Icon name="camera" /> {reading === null ? 'Read label photo' : `Reading the label… ${Math.round(reading * 100)}%`}
+          <button className="btn" disabled={reading} onClick={() => photo.current?.click()}>
+            <Icon name="camera" /> {reading ? 'Reading the label…' : 'Read label photo'}
           </button>
           {readNote && <p className="tiny faint" style={{ margin: 0 }}>{readNote}</p>}
         </div>
