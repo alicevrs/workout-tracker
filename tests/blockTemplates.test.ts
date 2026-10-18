@@ -207,7 +207,9 @@ describe('log fields: reps, time, distance in any combination', () => {
     expect(logMode(['reps', 'time', 'distance'])).toBe('RTD');
     expect(withLog(base, ['reps']).format).toBe('sets_reps');
     const t = withLog(base, ['time']);
-    expect([t.format, durationOf(t), setsOf(t), restOf(t)]).toEqual(['timed_sets', 60, 1, 0]);
+    expect([t.format, Math.round((t.params.timeCapMin ?? 0) * 60)]).toEqual(['amrap', 600]);
+    const dt = withLog(base, ['time', 'distance']);
+    expect([dt.format, durationOf(dt), setsOf(dt), restOf(dt)]).toEqual(['timed_sets', 60, 1, 0]);
     const d = withLog(base, ['distance']);
     expect([d.format, setsOf(d), restOf(d)]).toEqual(['sets_reps', 1, 0]);
     expect(withLog(base, ['time', 'distance']).format).toBe('timed_sets');

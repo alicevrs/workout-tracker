@@ -17,6 +17,8 @@ import {
   addExercise,
   blockLog,
   durationOf,
+  totalTimeOf,
+  withTotalTime,
   hasStructure,
   linkedBlock,
   LOG_FIELDS,
@@ -56,11 +58,11 @@ function unlinkTimer(b: Block): Block {
 }
 
 const LOG_LABEL: Record<LogField, string> = { reps: 'Reps', time: 'Time', distance: 'Distance' };
-const COUNT_TITLE: Record<LogMode, string> = { R: 'Rounds and rest', RT: 'Timer', RTD: 'Timer', T: 'Time', DT: 'Time', DR: 'Reps and rest', D: '' };
+const COUNT_TITLE: Record<LogMode, string> = { R: 'Rounds and rest', RT: 'Timer', RTD: 'Timer', T: 'Total time', DT: 'Time', DR: 'Reps and rest', D: '' };
 const TARGETS_TITLE: Record<LogMode, string> = {
   R: 'Reps and weight',
-  RT: 'Reps and weight',
-  T: 'Weight',
+  RT: 'Weight',
+  T: 'Reps and weight',
   D: 'Distance',
   DR: 'Distance',
   DT: 'Incline and speed',
@@ -198,7 +200,7 @@ export default function ExerciseTemplateEditPage() {
             <p style={{ margin: 0 }}>A block is a ready-made piece of a workout. Build it in order:</p>
             <p style={{ margin: 0 }}>
               <strong>1.</strong> pick the exercises; <strong>2.</strong> how they are combined, if they are; <strong>3.</strong> what you log: reps, time, distance or a combination;
-              <strong>4.</strong> how it is counted, which follows from step 3 (rounds and rest, a saved timer, a time); <strong>5.</strong> the targets.</p>
+              <strong>4.</strong> how it is counted, which follows from step 3 (rounds and rest, a saved timer, a total time); <strong>5.</strong> the targets.</p>
             <p style={{ margin: 0 }}>Changes are kept only when you tap Save. Workouts that use this block then follow from their next session; workouts already done stay as they were.</p>
           </InfoButton>
         }
@@ -326,7 +328,15 @@ export default function ExerciseTemplateEditPage() {
                 </Line>
               </div>
             )}
-            {(mode === 'T' || mode === 'DT') && (
+            {mode === 'T' && (
+              <div className="sentences compact-sentences">
+                <Line>
+                  <ClockPick small value={totalTimeOf(b)} min={5} maxMin={120} onChange={(v) => setBlock(withTotalTime(b, v))} label="Total time" />
+                  <span>total</span>
+                </Line>
+              </div>
+            )}
+            {mode === 'DT' && (
               <div className="sentences compact-sentences">
                 <Line>
                   <ClockPick small value={durationOf(b)} min={5} maxMin={120} onChange={(v) => setBlock(withDuration(b, v))} label="Time" />
@@ -353,9 +363,9 @@ export default function ExerciseTemplateEditPage() {
                     </div>
                   ) : (
                     <div className="form-grid">
-                      {(mode === 'R' || mode === 'RT') && (
+                      {(mode === 'R' || mode === 'T') && (
                         <NumberField
-                          label={mode === 'R' ? 'Reps' : b.format === 'emom' ? 'Reps per interval' : 'Reps per round'}
+                          label="Reps"
                           value={perSet(e) ? undefined : e.reps}
                           placeholder="none"
                           disabled={perSet(e)}
@@ -376,7 +386,7 @@ export default function ExerciseTemplateEditPage() {
                     </div>
                   )}
                   {mode === 'DR' && e.distanceKm ? <p className="tiny faint" style={{ margin: '6px 0 0' }}>{`${Math.round((e.distanceKm * 1000) / Math.max(1, setsOf(b)))} m per rep`}</p> : null}
-                  {(mode === 'R' || (mode === 'RT' && b.format === 'emom')) && (
+                  {mode === 'R' && (
                     <SetTargetsEditor entry={e} unit={unit} perInterval={b.format === 'emom'} count={intervalsFor(i)} onChange={(patch) => setEntry(e.id, patch)} />
                   )}
                 </div>

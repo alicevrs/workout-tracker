@@ -137,7 +137,8 @@ const TIMERS = new Set<BlockFormat>(['amrap', 'emom', 'tabata', 'for_time']);
 
 /**
  * How each combination is set up:
- * reps → rounds and rest; reps + time → a saved timer; time → one time;
+ * reps → rounds and rest; reps + time → a saved timer (its rounds give the reps); time → one total
+ * time for all the exercises, each with its reps and weight (run as one countdown);
  * distance → a distance (log the time); time + distance → one time (log the distance);
  * reps + distance → a distance in a number of reps with rest (log the time of each);
  * all three → a saved timer, logging the distance of each round.
@@ -167,8 +168,15 @@ export function blockLog(b: Block, exercises: Map<string, Exercise>): LogField[]
   return ['reps'];
 }
 
-/** Time of each exercise for “time” and “time + distance” blocks. */
+/** Time of each exercise for “time + distance” blocks. */
 export const durationOf = (b: Block) => b.entries[0]?.durationSec ?? 60;
+/** Total time of a “time” block (one countdown for all its exercises). */
+export const totalTimeOf = (b: Block) => (b.format === 'amrap' ? Math.round((b.params.timeCapMin ?? 10) * 60) : durationOf(b));
+/** One countdown of this length for all the exercises of a “time” block. */
+export function withTotalTime(b: Block, sec: number): Block {
+  const next = b.format === 'amrap' ? b : withFormat(b, 'amrap');
+  return { ...next, params: { ...next.params, timeCapMin: sec / 60 } };
+}
 /** One timed set per exercise, all with this time. */
 export function withDuration(b: Block, sec: number): Block {
   return { ...b, entries: b.entries.map((e) => ({ ...e, sets: 1, restSec: 0, durationSec: sec, setTargets: undefined })) };
@@ -183,7 +191,8 @@ export function withLog(b: Block, log: LogField[]): Block {
     return TIMERS.has(b.format) ? unlinked : withFormat({ ...unlinked, timerId: undefined }, 'tabata');
   }
   delete unlinked.timerId;
-  if (mode === 'T' || mode === 'DT') return withDuration(withFormat(unlinked, 'timed_sets'), b.format === 'timed_sets' ? durationOf(b) : 60);
+  if (mode === 'T') return withTotalTime(unlinked, b.format === 'amrap' && !b.timerId ? totalTimeOf(b) : 600);
+  if (mode === 'DT') return withDuration(withFormat(unlinked, 'timed_sets'), b.format === 'timed_sets' ? durationOf(b) : 60);
   const sets = withFormat(unlinked, 'sets_reps');
   return mode === 'D' ? withSetsRest(sets, 1, 0) : sets;
 }
