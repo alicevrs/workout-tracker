@@ -5,21 +5,19 @@ import { BlockEditor } from '../components/BlockEditor';
 import { Icon } from '../components/Icon';
 import { SetLogger, type PrevLookup } from '../components/SetLogger';
 import { hasActiveRun, TimerScreen } from '../components/TimerScreen';
-import { EmptyState, NumberField, PageHeader, Segmented, useToast } from '../components/ui';
+import { EmptyState, NumberField, PageHeader, useToast } from '../components/ui';
 import { db } from '../db/db';
 import { useExerciseMap, useProfile } from '../db/repo';
-import type { BlockFormat, Intensity, PerformedBlock, Session } from '../db/types';
-import { formatClock, formatDate, formatDuration, pad, toDateKey } from '../lib/dates';
-import { describeBlock, estimateBlockSeconds, FORMAT_INFO, FORMATS, newBlock } from '../lib/program';
+import type { BlockFormat, PerformedBlock, Session } from '../db/types';
+import { formatClock, formatDate, formatDuration } from '../lib/dates';
+import { describeBlock, estimateBlockSeconds, FORMAT_INFO, newBlock } from '../lib/program';
 import { applyBlockEdit, blockToPerformed, hasPlannedSets, performedToBlock } from '../lib/session';
 import { completeBlocks } from '../lib/quickLog';
 import { previousSets } from '../lib/stats';
 import { formatWeight } from '../lib/units';
 
-function toLocalInput(ms: number): string {
-  const d = new Date(ms);
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+/** Kinds of block that can be added here: the same as in training blocks (reps, or one of the timers). */
+const ADD_FORMATS: BlockFormat[] = ['sets_reps', 'amrap', 'for_time', 'emom', 'tabata'];
 
 export default function WorkoutPage() {
   const { id = '' } = useParams();
@@ -131,7 +129,6 @@ export default function WorkoutPage() {
     toast('All marked as done');
   };
 
-  const durationMin = session.endedAt ? Math.round((session.endedAt - session.startedAt) / 60000) : undefined;
 
   return (
     <div className="page">
@@ -296,7 +293,7 @@ export default function WorkoutPage() {
           <label className="field" style={{ flex: 1 }}>
             <span className="sr-only">New block format</span>
             <select value={newFormat} onChange={(e) => setNewFormat(e.target.value as BlockFormat)}>
-              {FORMATS.map((f) => (
+              {ADD_FORMATS.map((f) => (
                 <option key={f} value={f}>
                   {FORMAT_INFO[f].label}
                 </option>
@@ -315,43 +312,7 @@ export default function WorkoutPage() {
           </button>
         </div>
 
-        <section className="card form-grid">
-          <label className="field full">
-            Title
-            <input defaultValue={session.title} onBlur={(e) => e.target.value.trim() && save({ title: e.target.value.trim() })} />
-          </label>
-          <div className="full">
-            <div className="small muted" style={{ fontWeight: 600, marginBottom: 6 }}>
-              Effort (used for the calorie estimate)
-            </div>
-            <Segmented<Intensity>
-              label="Effort"
-              value={session.intensity}
-              onChange={(intensity) => save({ intensity })}
-              options={[
-                { value: 'light', label: 'Light' },
-                { value: 'moderate', label: 'Moderate' },
-                { value: 'vigorous', label: 'Vigorous' },
-              ]}
-            />
-          </div>
-          <label className="field">
-            Start
-            <input
-              type="datetime-local"
-              value={toLocalInput(session.startedAt)}
-              onChange={(e) => {
-                const t = new Date(e.target.value).getTime();
-                if (!Number.isNaN(t)) {
-                  const shift = t - session.startedAt;
-                  save({ startedAt: t, date: toDateKey(t), endedAt: session.endedAt ? session.endedAt + shift : undefined });
-                }
-              }}
-            />
-          </label>
-          {!inProgress && (
-            <NumberField label="Duration" suffix="min" value={durationMin} onChange={(v) => v && save({ endedAt: session.startedAt + v * 60000 })} inputMode="numeric" />
-          )}
+        <section className="card">
           <label className="field full">
             Notes
             <textarea defaultValue={session.notes ?? ''} onBlur={(e) => save({ notes: e.target.value || undefined })} />

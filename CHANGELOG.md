@@ -300,3 +300,7 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - List: the “Timer” tag was removed; the Strava tag stays.
 - Training blocks: clearer, more professional description of **Circuit** (a structured sequence performed continuously as a single unit, logged as a whole with one confirmation).
 - Training blocks: **How they are combined** is available as soon as there is one exercise. Choose **In sequence** or **Circuit**, or nothing (tap the selected one again). Short descriptions only: In sequence = exercises one after the other, rest after each round; Circuit = one continuous routine, logged in one go.
+
+## Simpler workout page (2026-10-18)
+- During a workout the bottom card only has **Notes**: Title, Effort, Start and Duration were removed (the title is the workout's, the date and duration come from the workout itself, effort is no longer asked).
+- Add block offers the kinds used everywhere else: Sets × Reps, AMRAP, For Time, EMOM, Tabata (Timed sets and Intervals are gone from this list).
