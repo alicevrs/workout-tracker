@@ -7,7 +7,7 @@ import type { Block } from '../db/types';
 import { useDragReorder } from '../hooks/useDragReorder';
 import { linkedBlock, newBlockTemplate, templateFromBlock } from '../lib/blockTemplates';
 import { setDraft } from '../lib/drafts';
-import { cloneBlock, describeBlock, FORMAT_INFO } from '../lib/program';
+import { blockTag, cloneBlock, describeBlock, FORMAT_INFO } from '../lib/program';
 import { BlockEditor } from './BlockEditor';
 import { Icon } from './Icon';
 import { Sheet, useToast } from './ui';
@@ -100,7 +100,7 @@ export function BlockList({ blocks, onChange, backTo, workoutId }: { blocks: Blo
                     />
                   </span>
                   <span className="mix-pill-desc">
-                    {FORMAT_INFO[b.format].short} · {describeBlock(b)}
+                    {blockTag(b)} · {describeBlock(b)}
                   </span>
                   {names && <span className="mix-pill-desc ellipsis">{names}</span>}
                 </span>
@@ -169,7 +169,7 @@ export function BlockList({ blocks, onChange, backTo, workoutId }: { blocks: Blo
                 <button className="lib-main" onClick={() => add(linkedBlock(t))}>
                   <span className="lib-name">
                     {t.name}
-                    <span className="lib-badge">{FORMAT_INFO[t.block.format].short}</span>
+                    <span className="lib-badge">{blockTag(t.block)}</span>
                   </span>
                   <span className="lib-sub">{describeBlock(t.block)}</span>
                 </button>

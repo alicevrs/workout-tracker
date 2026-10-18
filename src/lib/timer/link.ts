@@ -4,6 +4,7 @@
 import type { PerformedBlock, SetRecord } from '../../db/types';
 import type { CompletedPhase } from './engine';
 import type { Phase } from './phases';
+import { isTotalTime } from '../program';
 
 export type SetOverrides = Record<number, Partial<SetRecord>>;
 
@@ -28,6 +29,12 @@ export function applyCompleted(
     const entry = p.entryId ? b.entries.find((e) => e.id === p.entryId) : undefined;
     const elapsedSec = Math.round(c.elapsedMs / 1000);
     const extra = overrides[c.index] ?? {};
+
+    // Total-time block: finishing its countdown means every exercise was done as planned.
+    if (isTotalTime(b) && !c.skipped) {
+      for (const e of b.entries) for (const set of e.sets) if (!set.skipped) set.completed = true;
+      continue;
+    }
 
     switch (b.format) {
       case 'sets_reps':

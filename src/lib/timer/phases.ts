@@ -1,5 +1,5 @@
 import type { BlockFormat, ExerciseEntry, PerformedBlock } from '../../db/types';
-import { groupEntries, tabataSets } from '../program';
+import { groupEntries, isTotalTime, tabataSets } from '../program';
 import { entrySets, plannedDropWeights, setTarget } from '../session';
 
 export type PhaseKind = 'prep' | 'work' | 'rest';
@@ -85,6 +85,12 @@ export function blockPhases(block: PerformedBlock, blockIndex: number): Phase[] 
 
   if ((t.restBeforeSec ?? 0) > 0) out.push({ ...base, kind: 'rest', label: t.restBeforeLabel || 'Rest', durationSec: t.restBeforeSec ?? 0, countUp: false });
   if (t.prepSec > 0) out.push({ ...base, kind: 'prep', label: 'Get ready', durationSec: t.prepSec, countUp: false });
+
+  // Total-time block: one countdown for all its exercises.
+  if (isTotalTime(block)) {
+    out.push(work({ label: 'Time' }, Math.max(1, Math.round((p.timeCapMin ?? 1) * 60))));
+    return out;
+  }
 
   switch (block.format) {
     case 'sets_reps':

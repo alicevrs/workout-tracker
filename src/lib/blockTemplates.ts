@@ -171,10 +171,13 @@ export function blockLog(b: Block, exercises: Map<string, Exercise>): LogField[]
 /** Time of each exercise for “time + distance” blocks. */
 export const durationOf = (b: Block) => b.entries[0]?.durationSec ?? 60;
 /** Total time of a “time” block (one countdown for all its exercises). */
-export const totalTimeOf = (b: Block) => (b.format === 'amrap' ? Math.round((b.params.timeCapMin ?? 10) * 60) : durationOf(b));
-/** One countdown of this length for all the exercises of a “time” block. */
+export const totalTimeOf = (b: Block) => Math.round((b.params.timeCapMin ?? 10) * 60);
+/**
+ * One countdown of this length for all the exercises of a “time” block. Stored as one planned set
+ * per exercise (reps and weight), so finishing it logs every exercise as planned.
+ */
 export function withTotalTime(b: Block, sec: number): Block {
-  const next = b.format === 'amrap' ? b : withFormat(b, 'amrap');
+  const next = withSetsRest(b.format === 'sets_reps' ? b : withFormat(b, 'sets_reps'), 1, 0);
   return { ...next, params: { ...next.params, timeCapMin: sec / 60 } };
 }
 /** One timed set per exercise, all with this time. */
@@ -191,9 +194,11 @@ export function withLog(b: Block, log: LogField[]): Block {
     return TIMERS.has(b.format) ? unlinked : withFormat({ ...unlinked, timerId: undefined }, 'tabata');
   }
   delete unlinked.timerId;
-  if (mode === 'T') return withTotalTime(unlinked, b.format === 'amrap' && !b.timerId ? totalTimeOf(b) : 600);
+  if (mode === 'T') return withTotalTime(unlinked, b.params.timeCapMin && !b.timerId ? totalTimeOf(b) : 600);
   if (mode === 'DT') return withDuration(withFormat(unlinked, 'timed_sets'), b.format === 'timed_sets' ? durationOf(b) : 60);
   const sets = withFormat(unlinked, 'sets_reps');
+  // The total time belongs to time-only blocks.
+  if (sets.params.timeCapMin) sets.params = { ...sets.params, timeCapMin: undefined };
   return mode === 'D' ? withSetsRest(sets, 1, 0) : sets;
 }
 
@@ -203,7 +208,11 @@ export function withLog(b: Block, log: LogField[]): Block {
  */
 export async function migrateBlockLog(db: WorkoutDB): Promise<number> {
   const exercises = new Map((await db.exercises.toArray()).map((e) => [e.id, e]));
-  const fill = (b: Block): Block => (b.log?.length || !b.entries.length ? b : { ...b, log: blockLog(b, exercises) });
+  const fill = (b: Block): Block => {
+    // Time-only blocks made as one AMRAP countdown become planned sets within a total time.
+    if (b.log?.length === 1 && b.log[0] === 'time' && b.format === 'amrap') return withTotalTime(b, totalTimeOf(b));
+    return b.log?.length || !b.entries.length ? b : { ...b, log: blockLog(b, exercises) };
+  };
   let n = 0;
   for (const t of await db.blockTemplates.toArray()) {
     const block = fill(t.block);

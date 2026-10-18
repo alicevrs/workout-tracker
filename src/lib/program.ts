@@ -133,8 +133,25 @@ export const splitsSets = (f: BlockFormat) => f === 'amrap' || f === 'emom' || f
 export const timerSets = (b: Pick<Block, 'format' | 'params'>) => (b.format === 'tabata' || splitsSets(b.format) ? tabataSets(b.params) : 1);
 
 /** Approximate planned duration of a block in seconds (rep-based work counted as 40 s per set). */
+/**
+ * A training block logged by time only: its exercises (each with reps and weight) are done within
+ * one total time (`params.timeCapMin`), run as a single countdown and logged as planned sets.
+ */
+export const isTotalTime = (b: Pick<Block, 'log' | 'params' | 'format'>) =>
+  b.format === 'sets_reps' && b.log?.length === 1 && b.log[0] === 'time' && !!b.params.timeCapMin;
+
+/** Short tag of a block, from what it logs: Reps, Time, Distance, or its timer (AMRAP, EMOM…). */
+export function blockTag(b: Pick<Block, 'log' | 'format'>): string {
+  const log = b.log ?? [];
+  if (log.includes('distance') && !(log.includes('reps') && log.includes('time'))) return 'Distance';
+  if (log.length === 1 && log[0] === 'time') return 'Time';
+  if (log.length === 1 && log[0] === 'reps') return 'Reps';
+  return FORMAT_INFO[b.format].short;
+}
+
 export function estimateBlockSeconds(b: Block): number {
   const p = b.params;
+  if (isTotalTime(b)) return Math.round((p.timeCapMin ?? 0) * 60);
   switch (b.format) {
     case 'tabata': {
       const sets = tabataSets(p);
@@ -162,6 +179,7 @@ export function minutesLabel(min: number): string {
 }
 
 export function describeBlock(b: Block): string {
+  if (isTotalTime(b)) return `${minutesLabel(b.params.timeCapMin ?? 0)} · ${b.entries.length} exercise${b.entries.length === 1 ? '' : 's'}`;
   const sets = splitsSets(b.format) && timerSets(b) > 1 ? ` · ${timerSets(b)} sets` : '';
   return describeOne(b) + sets;
 }

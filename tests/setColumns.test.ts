@@ -33,7 +33,8 @@ describe('log columns from the block log', () => {
     const ex = { id: 'x', name: 'X', category: 'strength', equipment: 'none', primaryMuscles: [], secondaryMuscles: [], isCustom: true } as Exercise;
     const entry: PerformedEntry = { id: 'e', exerciseId: 'x', sets: [] };
     expect(columnsFor(ex, entry, 'sets_reps', undefined, ['reps'])).toEqual(['weight', 'reps']);
-    expect(columnsFor(ex, entry, 'timed_sets', undefined, ['time'])).toEqual(['weight', 'time']);
+    expect(columnsFor(ex, entry, 'sets_reps', undefined, ['time'])).toEqual(['weight', 'reps']);
+    expect(columnsFor(ex, entry, 'tabata', undefined, ['reps', 'time'])).toEqual(['weight', 'reps']);
     expect(columnsFor(ex, entry, 'sets_reps', undefined, ['distance'])).toEqual(['time', 'distance']);
     expect(columnsFor(ex, entry, 'tabata', undefined, ['reps', 'time', 'distance'])).toEqual(['time', 'distance']);
   });

@@ -9,7 +9,7 @@ import { useExerciseMap, useProfile } from '../db/repo';
 import type { MuscleId } from '../db/types';
 import { formatClock, formatDate, formatDuration, formatTime } from '../lib/dates';
 import { muscleShares, sessionMuscleLoad } from '../lib/muscleLoad';
-import { cloneBlock, FORMAT_INFO } from '../lib/program';
+import { blockTag, cloneBlock, FORMAT_INFO } from '../lib/program';
 import { blockToPerformed, createSession, performedToBlock } from '../lib/session';
 import { detectPRs, exerciseHistory, PR_LABEL, sessionMetrics, sessionSummary } from '../lib/stats';
 import { compact, formatWeight } from '../lib/units';
@@ -180,7 +180,7 @@ export default function SessionDetailPage() {
               .map((b) => (
                 <div key={b.id} className="row between mt-s">
                   <span>
-                    <span className="chip primary">{FORMAT_INFO[b.format].short}</span> {b.name ?? FORMAT_INFO[b.format].label}
+                    <span className="chip primary">{blockTag(b)}</span> {b.name ?? FORMAT_INFO[b.format].label}
                   </span>
                   <strong className="num">
                     {b.result?.rounds !== undefined && `${b.result.rounds} rounds`}

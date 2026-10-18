@@ -10,7 +10,7 @@ import { db } from '../db/db';
 import { useExerciseMap, useProfile } from '../db/repo';
 import type { BlockFormat, PerformedBlock, Session } from '../db/types';
 import { formatClock, formatDate, formatDuration } from '../lib/dates';
-import { describeBlock, estimateBlockSeconds, FORMAT_INFO, newBlock } from '../lib/program';
+import { blockTag, describeBlock, estimateBlockSeconds, FORMAT_INFO, newBlock } from '../lib/program';
 import { applyBlockEdit, blockToPerformed, hasPlannedSets, performedToBlock } from '../lib/session';
 import { completeBlocks } from '../lib/quickLog';
 import { previousSets } from '../lib/stats';
@@ -211,7 +211,7 @@ export default function WorkoutPage() {
                   </button>
                 </div>
                 <div className="small muted">
-                  <span className="chip primary">{FORMAT_INFO[b.format].short}</span> {describeBlock(performedToBlock(b))}
+                  <span className="chip primary">{blockTag(b)}</span> {describeBlock(performedToBlock(b))}
                   {b.durationSec ? ` · ${formatClock(b.durationSec)} timed` : ''}
                 </div>
               </div>

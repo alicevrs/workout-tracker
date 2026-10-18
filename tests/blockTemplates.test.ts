@@ -207,7 +207,7 @@ describe('log fields: reps, time, distance in any combination', () => {
     expect(logMode(['reps', 'time', 'distance'])).toBe('RTD');
     expect(withLog(base, ['reps']).format).toBe('sets_reps');
     const t = withLog(base, ['time']);
-    expect([t.format, Math.round((t.params.timeCapMin ?? 0) * 60)]).toEqual(['amrap', 600]);
+    expect([t.format, Math.round((t.params.timeCapMin ?? 0) * 60), setsOf(t), restOf(t)]).toEqual(['sets_reps', 600, 1, 0]);
     const dt = withLog(base, ['time', 'distance']);
     expect([dt.format, durationOf(dt), setsOf(dt), restOf(dt)]).toEqual(['timed_sets', 60, 1, 0]);
     const d = withLog(base, ['distance']);
@@ -235,5 +235,28 @@ describe('log fields: reps, time, distance in any combination', () => {
     const { newEntry } = await import('../src/lib/program');
     const e = { ...newEntry('running', 'sets_reps', 60), sets: 4, distanceKm: 2 };
     expect(plannedSet(e, 1).distanceM).toBe(500);
+  });
+});
+
+describe('time-only blocks in the workout', () => {
+  it('run as one countdown, are logged as planned sets with reps and weight, and show a Time tag', async () => {
+    const { addExercise, withLog, withTotalTime } = await import('../src/lib/blockTemplates');
+    const { blockTag, describeBlock, estimateBlockSeconds } = await import('../src/lib/program');
+    const { blockToPerformed } = await import('../src/lib/session');
+    const { blockPhases } = await import('../src/lib/timer/phases');
+    let b = addExercise(addExercise(newBlockTemplate().block, 'push-up', 60), 'back-squat', 60);
+    b.entries = b.entries.map((e) => ({ ...e, reps: 12, targetWeight: 20 }));
+    b = withTotalTime(withLog(b, ['time']), 300);
+    expect(blockTag(b)).toBe('Time');
+    expect(describeBlock(b)).toBe('5 min · 2 exercises');
+    expect(estimateBlockSeconds(b)).toBe(300);
+    const pb = blockToPerformed(b);
+    expect(pb.entries.map((e) => e.sets.map((x) => [x.reps, x.weight]))).toEqual([[[12, 20]], [[12, 20]]]);
+    const work = blockPhases(pb, 0).filter((p) => p.kind === 'work');
+    expect(work.map((p) => [p.label, p.durationSec])).toEqual([['Time', 300]]);
+    const { completeBlocks } = await import('../src/lib/quickLog');
+    const done = completeBlocks([pb], [0], 0).blocks[0];
+    expect(done.entries.every((e) => e.sets.every((x) => x.completed && x.reps === 12 && x.weight === 20))).toBe(true);
+    expect(done.durationSec).toBe(300);
   });
 });

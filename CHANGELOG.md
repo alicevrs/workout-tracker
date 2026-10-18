@@ -321,3 +321,8 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - Existing training blocks and workout parts got the matching combination automatically.
 - Log as **Time** alone: step 4 is one **total time** for all the listed exercises, and step 5 asks **reps and weight** for each exercise. (Reps + Time is unchanged: a saved timer, with reps and weight per exercise.)
 - Log as **Distance** alone: step 4 has a **Total distance** field for the whole block, besides each exercise's own distance in step 5.
+
+## Workouts follow the training block settings (2026-10-18)
+- A block logged by **Time** alone is no longer shown or run as an AMRAP: in the workout it shows a **Time** tag with its total time (e.g. “10 min · 2 exercises”), its exercises with their reps and kg, and the timer runs one countdown of that total time. Finishing the countdown, or **Circuit done** for a Circuit block, logs every exercise with its planned reps and weight.
+- Block tags everywhere (workout, workout editor, finished sessions) follow what the block logs: Reps, Time, Distance, or the timer's name (AMRAP, EMOM, Tabata, For Time) for Reps + Time.
+- Set log columns: weight and reps, unless distance is logged (then time and distance).

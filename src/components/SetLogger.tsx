@@ -14,12 +14,15 @@ type Col = 'weight' | 'reps' | 'time' | 'distance';
 
 export function columnsFor(ex: Exercise | undefined, entry: PerformedEntry, format: PerformedBlock['format'], logAs?: PerformedBlock['logAs'], log?: PerformedBlock['log']): Col[] {
   if (log?.length) {
-    // What the training block logs: weight with reps or time; with distance, the time and the distance.
+    // What the training block logs: weight and reps; with distance, the time and the distance.
     const d = log.includes('distance');
     const out: Col[] = [];
     if (!d) out.push('weight');
-    if (log.includes('reps') && !d) out.push('reps');
-    if (log.includes('time') || d) out.push('time');
+    const timeOnly = log.length === 1 && log[0] === 'time';
+    // Time only = one total time for exercises with reps and weight.
+    if ((log.includes('reps') || timeOnly) && !d) out.push('reps');
+    // The time comes from the timer or the total time; it is entered only alongside a distance.
+    if (d) out.push('time');
     if (d) out.push('distance');
     return out;
   }
