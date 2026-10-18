@@ -2280,7 +2280,7 @@ kbd {
   stroke-width: 2;
 }
 
-/* Quarter and year views of the activity calendar: small months, one square per day. */
+/* Year view of the activity calendar: small months, one square per day. */
 .mini-months {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));

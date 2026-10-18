@@ -261,3 +261,6 @@ Choices made while building the app, with the reason for each.
 ## Changing a part during a workout
 - The part header shows `blockSummary` (one line, no tag). The pencil opens `SessionPlanEditor`: only non-structural values the block already has (reps, weight; distance, incline, speed), per-set rows only if `setTargets` exist. Structure (format, name, exercises, timer) is changed in the training block itself.
 - Parts added during the workout (`PerformedBlock.addedInSession`) have nothing to follow, so they keep the full block editor and Remove block.
+
+## Calendar periods (revised)
+- Only month and year (user's choice). A remembered week/quarter view falls back to month.

@@ -330,3 +330,6 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 ## Simpler parts during a workout (2026-10-18)
 - Under each part's name in a running workout there is no coloured tag any more, only one line with its timer: Time and its total time, the timer with its settings (Tabata, AMRAP, EMOM, For Time), Distance, or the number of sets for Reps. The extra “timed” line is gone.
 - The pencil of a part now changes only the values the training block already has: reps and weight (or distance, incline and speed when distance is logged). Format, name, adding or removing exercises and per-set targets are not there; per-set targets show only when the block already had them. Parts added during the workout keep the full editor.
+
+## History calendar: Month and Year only (2026-10-18)
+- The History calendar has only the **Month** and **Year** views; Week and Quarter were removed.

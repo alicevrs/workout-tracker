@@ -3,38 +3,23 @@ import { Link } from 'react-router-dom';
 import { GROUP_INFO, type SportGroup } from '../data/sports';
 import type { Session } from '../db/types';
 import { activeDays, monthGrid, sessionActivity, sessionsByDay } from '../lib/activities';
-import { addDays, addMonths, formatDuration, fromDateKey, startOfDay, startOfMonth, startOfWeek, startOfYear, toDateKey } from '../lib/dates';
+import { addMonths, formatDuration, fromDateKey, startOfDay, startOfMonth, startOfYear, toDateKey } from '../lib/dates';
 import { sessionDurationSec } from '../lib/session';
 import { Icon } from './Icon';
 import { Segmented } from './ui';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-export type CalView = 'week' | 'month' | 'quarter' | 'year';
+export type CalView = 'month' | 'year';
 const VIEW_KEY = 'history-cal-view';
 
 /** First day of the period containing `ms`, the first day of the next one, and its title. */
 function period(view: CalView, ms: number): { start: number; end: number; title: string } {
   const month = (t: number, opts: Intl.DateTimeFormatOptions) => new Date(t).toLocaleDateString('en-GB', opts);
   switch (view) {
-    case 'week': {
-      const start = startOfWeek(ms);
-      const last = addDays(start, 6);
-      const sameMonth = new Date(start).getMonth() === new Date(last).getMonth();
-      return {
-        start,
-        end: addDays(start, 7),
-        title: `${month(start, sameMonth ? { day: 'numeric' } : { day: 'numeric', month: 'short' })} – ${month(last, { day: 'numeric', month: 'short', year: 'numeric' })}`,
-      };
-    }
     case 'month': {
       const start = startOfMonth(ms);
       return { start, end: addMonths(start, 1), title: month(start, { month: 'long', year: 'numeric' }) };
-    }
-    case 'quarter': {
-      const d = new Date(ms);
-      const start = new Date(d.getFullYear(), d.getMonth() - (d.getMonth() % 3), 1).getTime();
-      return { start, end: addMonths(start, 3), title: `${month(start, { month: 'short' })} – ${month(addMonths(start, 2), { month: 'short', year: 'numeric' })}` };
     }
     case 'year': {
       const start = startOfYear(ms);
@@ -42,13 +27,13 @@ function period(view: CalView, ms: number): { start: number; end: number; title:
     }
   }
 }
-const stepPeriod = (view: CalView, ms: number, dir: 1 | -1) => (view === 'week' ? addDays(ms, 7 * dir) : addMonths(ms, dir * (view === 'month' ? 1 : view === 'quarter' ? 3 : 12)));
+const stepPeriod = (view: CalView, ms: number, dir: 1 | -1) => addMonths(ms, dir * (view === 'month' ? 1 : 12));
 
-/** Activity calendar by week, month, quarter or year: every day shows the colour of each activity type done. */
+/** Activity calendar by month or year: every day shows the colour of each activity type done. */
 export function ActivityCalendar({ sessions }: { sessions: Session[] }) {
   const [view, setView] = useState<CalView>(() => {
     try {
-      return (localStorage.getItem(VIEW_KEY) as CalView) || 'month';
+      return localStorage.getItem(VIEW_KEY) === 'year' ? 'year' : 'month';
     } catch {
       return 'month';
     }
@@ -121,12 +106,12 @@ export function ActivityCalendar({ sessions }: { sessions: Session[] }) {
     );
   };
 
-  /** A small month for the quarter and year views: one coloured square per day. */
+  /** A small month for the year view: one coloured square per day. */
   const miniMonth = (start: number) => {
     const weeks = monthGrid(start);
     return (
       <div key={start} className="mini-month">
-        <div className="mini-title">{new Date(start).toLocaleDateString('en-GB', { month: view === 'year' ? 'short' : 'long' })}</div>
+        <div className="mini-title">{new Date(start).toLocaleDateString('en-GB', { month: 'short' })}</div>
         <div className="mini-grid" role="grid" aria-label={new Date(start).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}>
           {weeks.flat().map((d) => {
             if (!d.inMonth) return <span key={d.key} aria-hidden />;
@@ -149,11 +134,7 @@ export function ActivityCalendar({ sessions }: { sessions: Session[] }) {
     );
   };
 
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const t = addDays(p.start, i);
-    return { key: toDateKey(t), date: new Date(t), inMonth: true };
-  });
-  const months = view === 'quarter' || view === 'year' ? Array.from({ length: view === 'year' ? 12 : 3 }, (_, i) => addMonths(p.start, i)) : [];
+  const months = view === 'year' ? Array.from({ length: 12 }, (_, i) => addMonths(p.start, i)) : [];
 
   return (
     <section
@@ -176,9 +157,7 @@ export function ActivityCalendar({ sessions }: { sessions: Session[] }) {
           value={view}
           onChange={changeView}
           options={[
-            { value: 'week', label: 'Week' },
             { value: 'month', label: 'Month' },
-            { value: 'quarter', label: 'Quarter' },
             { value: 'year', label: 'Year' },
           ]}
         />
@@ -208,7 +187,7 @@ export function ActivityCalendar({ sessions }: { sessions: Session[] }) {
         </div>
       )}
 
-      {(view === 'week' || view === 'month') && (
+      {view === 'month' && (
         <div className="cal" role="grid" aria-label="Days">
           <div className="cal-row cal-head" role="row">
             {WEEKDAYS.map((d) => (
@@ -220,7 +199,7 @@ export function ActivityCalendar({ sessions }: { sessions: Session[] }) {
               Days
             </div>
           </div>
-          {view === 'week' ? weekRow(weekDays) : monthGrid(p.start).map(weekRow)}
+          {monthGrid(p.start).map(weekRow)}
         </div>
       )}
       {months.length > 0 && <div className={`mini-months ${view}`}>{months.map(miniMonth)}</div>}
