@@ -101,6 +101,24 @@ export function UsedInSheet({ used, onClose }: { used: { title: string; intro: s
   );
 }
 
+/** Equipment filter: the kinds of equipment used by the listed exercises. */
+export function EquipmentSelect({ exercises, value, onChange }: { exercises: { equipment: string }[]; value: string; onChange: (v: string) => void }) {
+  const kinds = [...new Set(exercises.map((e) => e.equipment).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  return (
+    <label className="field">
+      <span className="sr-only">Equipment</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">All equipment</option>
+        {kinds.map((k) => (
+          <option key={k} value={k}>
+            {k[0].toUpperCase() + k.slice(1)}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 /** Search box with only a magnifying glass. */
 export function SearchField({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
   return (

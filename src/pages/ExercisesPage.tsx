@@ -2,13 +2,14 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useState, type ComponentProps } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icon';
-import { InfoButton, LibraryList, SearchField, UsedInSheet } from '../components/Library';
+import { EquipmentSelect, InfoButton, LibraryList, SearchField, UsedInSheet } from '../components/Library';
 import { EmptyState, PageHeader, useToast } from '../components/ui';
 import { db } from '../db/db';
 import { blocksUsingExercise } from '../lib/usage';
 import { MUSCLES } from '../data/muscles';
 import { useVisibleExercises } from '../db/repo';
 import type { ExerciseCategory, MuscleId } from '../db/types';
+import { useScrollMemory, useStickyState } from '../hooks/useStickyState';
 
 const CATEGORIES: { value: ExerciseCategory | 'all'; label: string }[] = [
   { value: 'strength', label: 'Strength' },
@@ -23,20 +24,23 @@ export default function ExercisesPage() {
   const toast = useToast();
   const navigate = useNavigate();
   const [used, setUsed] = useState<ComponentProps<typeof UsedInSheet>['used']>(null);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useStickyState('exercises:query', '');
   /** 'all' = no filter: tapping the selected chip again clears it. */
-  const [category, setCategory] = useState<ExerciseCategory | 'all'>('all');
-  const [muscle, setMuscle] = useState<MuscleId | ''>('');
+  const [category, setCategory] = useStickyState<ExerciseCategory | 'all'>('exercises:category', 'all');
+  const [muscle, setMuscle] = useStickyState<MuscleId | ''>('exercises:muscle', '');
+  const [equipment, setEquipment] = useStickyState('exercises:equipment', '');
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (exercises ?? []).filter((e) => {
       if (category !== 'all' && e.category !== category) return false;
       if (muscle && !e.primaryMuscles.includes(muscle) && !e.secondaryMuscles.includes(muscle)) return false;
+      if (equipment && e.equipment !== equipment) return false;
       if (q && !e.name.toLowerCase().includes(q) && !e.equipment.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [exercises, query, category, muscle]);
+  }, [exercises, query, category, muscle, equipment]);
+  useScrollMemory('exercises', !!exercises);
 
   // The copy opens in the exercise form: it is stored only when saved.
   const duplicate = (id: string) => navigate(`/exercises/new?copy=${encodeURIComponent(id)}`);
@@ -102,6 +106,7 @@ export default function ExercisesPage() {
             ))}
           </select>
         </label>
+        <EquipmentSelect exercises={exercises ?? []} value={equipment} onChange={setEquipment} />
         {exercises && filtered.length === 0 ? (
           <EmptyState icon="search" title="No exercises match">
             Try a different search or filter.

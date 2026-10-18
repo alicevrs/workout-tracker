@@ -11,6 +11,7 @@ import type { BlockFormat, ExerciseCategory, MuscleId } from '../db/types';
 import { duplicateTemplate, newBlockTemplate, unlinkTemplate } from '../lib/blockTemplates';
 import { setDraft } from '../lib/drafts';
 import { workoutsUsingBlock } from '../lib/usage';
+import { useScrollMemory, useStickyState } from '../hooks/useStickyState';
 
 const CATEGORIES: { value: ExerciseCategory | 'all'; label: string }[] = [
   { value: 'strength', label: 'Strength' },
@@ -35,10 +36,10 @@ export default function ExerciseTemplatesPage() {
   const exercises = useExerciseMap();
   const templates = useLiveQuery(() => db.blockTemplates.orderBy('name').toArray(), []);
   const usedIds = useLiveQuery(async () => new Set((await db.programs.toArray()).flatMap((p) => p.days.flatMap((d) => d.blocks.map((b) => b.templateId)))), []);
-  const [query, setQuery] = useState('');
-  const [category, setCategory] = useState<ExerciseCategory | 'all'>('all');
-  const [muscle, setMuscle] = useState<MuscleId | ''>('');
-  const [count, setCount] = useState<BlockFormat | 'all'>('all');
+  const [query, setQuery] = useStickyState('blocks:query', '');
+  const [category, setCategory] = useStickyState<ExerciseCategory | 'all'>('blocks:category', 'all');
+  const [muscle, setMuscle] = useStickyState<MuscleId | ''>('blocks:muscle', '');
+  const [count, setCount] = useStickyState<BlockFormat | 'all'>('blocks:count', 'all');
   const [used, setUsed] = useState<ComponentProps<typeof UsedInSheet>['used']>(null);
 
   const items = useMemo(() => {
@@ -54,6 +55,7 @@ export default function ExerciseTemplatesPage() {
       })
       .map((t) => ({ id: t.id, name: t.name, to: `/workouts/blocks/${t.id}`, unused: !!usedIds && !usedIds.has(t.id) }));
   }, [templates, query, exercises, category, muscle, count, usedIds]);
+  useScrollMemory('blocks', !!templates);
 
   const create = () => {
     const t = newBlockTemplate('sets_reps', profile.defaultPrepSec);

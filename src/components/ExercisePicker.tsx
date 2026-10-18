@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MUSCLE_LABEL, MUSCLES } from '../data/muscles';
 import { useVisibleExercises } from '../db/repo';
 import type { ExerciseCategory, MuscleId } from '../db/types';
+import { EquipmentSelect } from './Library';
 import { Sheet } from './ui';
 
 export function ExercisePicker({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (id: string) => void }) {
@@ -10,6 +11,7 @@ export function ExercisePicker({ open, onClose, onPick }: { open: boolean; onClo
   const [q, setQ] = useState('');
   const [cat, setCat] = useState<ExerciseCategory | 'all'>('all');
   const [muscle, setMuscle] = useState<MuscleId | ''>('');
+  const [equipment, setEquipment] = useState('');
   // Every search starts empty (the previous one is not kept).
   useEffect(() => {
     if (open) setQ('');
@@ -20,12 +22,13 @@ export function ExercisePicker({ open, onClose, onPick }: { open: boolean; onClo
       (e) =>
         (cat === 'all' || e.category === cat) &&
         (!muscle || e.primaryMuscles.includes(muscle) || e.secondaryMuscles.includes(muscle)) &&
+        (!equipment || e.equipment === equipment) &&
         (!query ||
           e.name.toLowerCase().includes(query) ||
           e.primaryMuscles.some((m) => MUSCLE_LABEL[m].toLowerCase().includes(query)) ||
           e.equipment.includes(query)),
     );
-  }, [exercises, q, cat, muscle]);
+  }, [exercises, q, cat, muscle, equipment]);
 
   return (
     <Sheet open={open} onClose={onClose} title="Add exercise">
@@ -48,6 +51,9 @@ export function ExercisePicker({ open, onClose, onPick }: { open: boolean; onClo
           ))}
         </select>
       </label>
+      <div className="mt-s">
+        <EquipmentSelect exercises={exercises ?? []} value={equipment} onChange={setEquipment} />
+      </div>
       <ul className="list mt-s">
         {list.map((e) => (
           <li key={e.id}>

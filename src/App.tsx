@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, useLayoutEffect } from 'react';
 import { lazyPage as lazy } from './lib/lazyPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Navigate, NavLink, Route, Routes, useLocation, useParams } from 'react-router-dom';
@@ -53,6 +53,10 @@ function navActive(to: string, path: string): boolean {
 
 export default function App() {
   const location = useLocation();
+  // A new page opens from the top (lists then restore their own position, see useScrollMemory).
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
   return (
     <div className="app">
       <nav className="sidebar" aria-label="Main">

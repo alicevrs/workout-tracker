@@ -278,3 +278,8 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 ## Exercise animations and muscle filter (2026-10-18)
 - Every exercise page now starts with a small looping animation of the movement: a stylised yellow figure in the app's style, with the equipment (barbell, dumbbells, bench, bar, cable…) in pink. Sideways movements (lateral raises, hip abduction/adduction, jumping jacks…) are shown from the front. Your own exercises get the animation of a similar movement when their name makes it clear (for example a name containing “squat” or “curl”).
 - Add exercise (in training blocks): a muscle group menu under the category filters.
+
+## Lists remember where you were; equipment filter (2026-10-18)
+- Exercises, training blocks, timers and workouts lists keep their search, filters and scroll position when you open an item and come back (while the app stays open).
+- Every page now opens from the top (an exercise page used to open scrolled down, hiding its animation).
+- Exercises list and Add exercise: an **All equipment** menu to filter by equipment (dumbbell, barbell, cable, machine…), listing the equipment the exercises actually use.

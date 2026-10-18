@@ -9,6 +9,7 @@ import { setDraft } from '../lib/drafts';
 import { duplicateTimer, newTimerTemplate, TIMER_KINDS, unlinkTimer } from '../lib/timerTemplates';
 import { blocksUsingTimer } from '../lib/usage';
 import { QUICK_LABEL, type QuickKind } from '../lib/timer/quick';
+import { useScrollMemory, useStickyState } from '../hooks/useStickyState';
 
 /** Library of saved timers, used to count training blocks by time. */
 export default function TimerTemplatesPage() {
@@ -16,8 +17,8 @@ export default function TimerTemplatesPage() {
   const toast = useToast();
   const timers = useLiveQuery(() => db.timerTemplates.orderBy('name').toArray(), []);
   const usedIds = useLiveQuery(async () => new Set((await db.blockTemplates.toArray()).map((b) => b.block.timerId)), []);
-  const [query, setQuery] = useState('');
-  const [kind, setKind] = useState<QuickKind | 'all'>('all');
+  const [query, setQuery] = useStickyState('timers:query', '');
+  const [kind, setKind] = useStickyState<QuickKind | 'all'>('timers:kind', 'all');
   const [used, setUsed] = useState<ComponentProps<typeof UsedInSheet>['used']>(null);
 
   const items = useMemo(() => {
@@ -26,6 +27,7 @@ export default function TimerTemplatesPage() {
       .filter((t) => (kind === 'all' || t.timer.kind === kind) && (!q || t.name.toLowerCase().includes(q) || QUICK_LABEL[t.timer.kind].toLowerCase().includes(q)))
       .map((t) => ({ id: t.id, name: t.name, to: `/workouts/timers/${t.id}`, unused: !!usedIds && !usedIds.has(t.id) }));
   }, [timers, query, kind, usedIds]);
+  useScrollMemory('timers', !!timers);
 
   const create = () => {
     const t = newTimerTemplate();
