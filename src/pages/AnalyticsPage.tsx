@@ -35,38 +35,24 @@ import {
   type ValueKind,
 } from '../lib/analytics';
 import { ageOn, bmrMifflin, netExerciseKcal, weightOn } from '../lib/calories';
-import { addDays, addMonths, DAY_MS, formatClock, formatDuration, formatShortDate, fromDateKey, startOfDay, startOfMonth, startOfWeek, toDateKey, type Grain } from '../lib/dates';
+import { addDays, addMonths, DAY_MS, formatClock, formatDuration, formatShortDate, fromDateKey, startOfDay, startOfMonth, startOfWeek, startOfYear, toDateKey, type Grain } from '../lib/dates';
 import { muscleLoad, muscleShares } from '../lib/muscleLoad';
 import { compact, KG_PER_LB } from '../lib/units';
 import { activeDays, activityMix, historyFilterKey } from '../lib/activities';
 import { PeriodPicker } from '../components/PeriodPicker';
 import { GROUP_INFO, type SportGroup } from '../data/sports';
 
-type RangeKey = '1w' | '1m' | '3m' | '6m' | '12m' | 'all';
+type RangeKey = 'week' | 'month' | 'year' | 'custom';
 const RANGE_OPTIONS: { value: RangeKey; label: string }[] = [
-  { value: '1w', label: 'Week' },
-  { value: '1m', label: 'Month' },
-  { value: '3m', label: '3 months' },
-  { value: '6m', label: '6 months' },
-  { value: '12m', label: '12 months' },
-  { value: 'all', label: 'All' },
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Month' },
+  { value: 'year', label: 'Year' },
+  { value: 'custom', label: 'Custom' },
 ];
 
-function rangeStart(key: RangeKey, sessions: Session[], now: number): number {
-  switch (key) {
-    case '1w':
-      return startOfWeek(now);
-    case '1m':
-      return startOfMonth(now);
-    case '3m':
-      return addMonths(startOfMonth(now), -2);
-    case '6m':
-      return addMonths(startOfMonth(now), -5);
-    case '12m':
-      return addMonths(startOfMonth(now), -11);
-    case 'all':
-      return sessions.length ? startOfDay(Math.min(...sessions.map((s) => s.startedAt))) : startOfWeek(now);
-  }
+/** Start of the current week, month or year. */
+function rangeStart(key: Exclude<RangeKey, 'custom'>, now: number): number {
+  return key === 'week' ? startOfWeek(now) : key === 'month' ? startOfMonth(now) : startOfYear(now);
 }
 
 const vol = (kg: number, unit: WeightUnit) => (unit === 'kg' ? kg : kg / KG_PER_LB);
@@ -91,7 +77,8 @@ export default function AnalyticsPage() {
   const exercises = useExerciseMap();
   const { unit } = useProfile();
   const { calories } = useCalories();
-  const [rangeKey, setRangeKey] = useState<RangeKey>('1m');
+  const [rangeKey, setRangeKey] = useState<RangeKey>('month');
+  const [custom, setCustom] = useState(() => ({ from: toDateKey(startOfMonth(Date.now())), to: toDateKey(Date.now()) }));
   const programs = useLiveQuery(() => db.programs.toArray(), []);
   const now = Date.now();
 
@@ -108,8 +95,10 @@ export default function AnalyticsPage() {
       </div>
     );
 
-  const from = rangeStart(rangeKey, sessions, now);
-  const inPeriod = inRange(sessions, from, now);
+  const from = rangeKey === 'custom' ? fromDateKey(custom.from).getTime() : rangeStart(rangeKey, now);
+  // The end of the chosen period (never later than now).
+  const to = rangeKey === 'custom' ? Math.min(now, fromDateKey(custom.to).getTime() + DAY_MS - 1) : now;
+  const inPeriod = inRange(sessions, from, to);
   const kcal = (s: Session) => calories(s).kcal ?? 0;
   const names = new Map((programs ?? []).map((p) => [p.id, p.name]));
   /** What a session is: a workout by its name, an activity by its sport. */
@@ -121,17 +110,29 @@ export default function AnalyticsPage() {
       <div className="row wrap mb" style={{ position: 'sticky', top: 0, zIndex: 5, background: 'var(--bg)', padding: '6px 0' }}>
         <Segmented<RangeKey> label="Period" value={rangeKey} onChange={setRangeKey} options={RANGE_OPTIONS} />
       </div>
+      {rangeKey === 'custom' && (
+        <div className="form-grid mb">
+          <label className="field">
+            From
+            <input type="date" value={custom.from} max={custom.to} onChange={(e) => e.target.value && setCustom({ ...custom, from: e.target.value })} />
+          </label>
+          <label className="field">
+            To
+            <input type="date" value={custom.to} min={custom.from} max={toDateKey(now)} onChange={(e) => e.target.value && setCustom({ ...custom, to: e.target.value })} />
+          </label>
+        </div>
+      )}
 
-      <Overview sessions={inPeriod} kindOf={kindOf} unit={unit} kcal={kcal} from={from} now={now} />
+      <Overview sessions={inPeriod} kindOf={kindOf} unit={unit} kcal={kcal} from={from} now={to} />
 
       <div className="grid two-wide mt">
         <Progress sessions={inPeriod} unit={unit} kcal={kcal} kindOf={kindOf} names={(id) => exercises.get(id)?.name ?? id} />
         <PeriodComparison sessions={sessions} unit={unit} kcal={kcal} now={now} />
-        <ActivityMixChart sessions={inPeriod} from={from} now={now} />
-        <CumulativeChart sessions={inPeriod} from={from} now={now} unit={unit} kcal={kcal} />
-        <Frequency sessions={inPeriod} from={from} now={now} />
+        <ActivityMixChart sessions={inPeriod} from={from} now={to} />
+        <CumulativeChart sessions={inPeriod} from={from} now={to} unit={unit} kcal={kcal} />
+        <Frequency sessions={inPeriod} from={from} now={to} />
         <MuscleDistribution sessions={sessions} now={now} />
-        <CaloriesChart sessions={inPeriod} from={from} now={now} />
+        <CaloriesChart sessions={inPeriod} from={from} now={to} />
       </div>
     </div>
   );

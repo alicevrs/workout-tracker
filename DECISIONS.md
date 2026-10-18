@@ -275,3 +275,4 @@ Choices made while building the app, with the reason for each.
 - Progress measures are offered only when the chosen item has a non-zero value for them (`measuresWithData`).
 - `ChartCard` no longer has a table view. The Period comparison keeps its small comparison table of numbers above the chart (it is the content of that card, not the removed Table view).
 - Calendar picker (`PeriodPicker`) opens from the label between the arrows; in workout mode only days with a session can be tapped, and a day with several sessions lists them.
+- Analytics period = the current week / month / calendar year up to now, or Custom From–To (whole days, never past today). Month is the default.

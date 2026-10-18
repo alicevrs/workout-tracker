@@ -344,3 +344,4 @@ All notable changes to this project. Dates are in YYYY-MM-DD.
 - **Progress** (was Exercise progress): choose Exercises, Training blocks or Workouts, then the item; the measure list shows only measures that have logged data for it.
 - Every chart shows only the chart: the Table button is gone everywhere. Period comparison: Week, Month, Year, Custom (30 days removed). Training frequency: the “Workout days · last 6 months” grid is removed.
 - Muscle distribution: tap the workout, week or month shown between the arrows to choose it from a calendar (days show the colours of the activities done; months with activity are marked).
+- Period bar (revised): **Week, Month, Year, Custom** (this week, this month, this year; Custom shows From and To dates). 3, 6, 12 months and All removed.
